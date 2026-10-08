@@ -323,12 +323,12 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 const FIREBASE_CONFIG={
-  apiKey:"ISI_API_KEY",
-  authDomain:"ISI_PROJECT_ID.firebaseapp.com",
-  projectId:"ISI_PROJECT_ID",
-  storageBucket:"ISI_PROJECT_ID.appspot.com",
-  messagingSenderId:"ISI_SENDER_ID",
-  appId:"ISI_APP_ID"
+  apiKey:"AIzaSyAOaEiO2MwfkgvsCO9CblXtVlnRWPwtLXI",
+  authDomain:"game-tiger-5203a.firebaseapp.com",
+  projectId:"game-tiger-5203a",
+  storageBucket:"game-tiger-5203a.firebasestorage.app",
+  messagingSenderId:"541349499807",
+  appId:"1:541349499807:web:8f9f8369b0d3e38cd563aa"
 };
 </script>
 <script>
@@ -1501,7 +1501,7 @@ function fbInit(){
       const cur=await new Promise(res=>{const u=au.onAuthStateChanged(x=>{u();res(x)})});
       FB.uid=(cur||(await au.signInAnonymously()).user).uid;
       FB.ok=true;return true;
-    }catch(e){console.warn("Firebase gagal:",e);return false}
+    }catch(e){console.warn("Firebase gagal:",e);FB.err=e;setTimeout(()=>{try{setMsg("☁️ Firebase gagal: "+(e.code||e.message))}catch(_){}},800);return false}
   })();
   return FB.ready;
 }
@@ -1603,7 +1603,7 @@ async function fbAttach(a){   // dipanggil tiap login
   const ok=await fbInit();
   if(!ok||acct!==a)return;
   if(!a.admin){
-    try{await fbRegister(a)}catch(e){console.warn("Daftar profil gagal:",e);return}
+    try{await fbRegister(a)}catch(e){console.warn("Daftar profil gagal:",e);setMsg("☁️ Gagal daftar online: "+(e.code||e.message)+(String(e.code).indexOf("permission")>=0?" — cek Rules Firestore sudah di-Publish":""));return}
     if(acct!==a)return;
     fbWatch(a);
   }
