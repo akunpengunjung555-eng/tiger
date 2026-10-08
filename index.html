@@ -329,9 +329,164 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .jpFrame .winAmt{font-size:clamp(26px,min(8vw,6.4vh),48px);margin:10px 0 2px}
 .jpFrame .btn{margin-top:8px;width:100%}
 .jpParticles{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+
+
+/* ===== LOBI / BERANDA UTAMA (hub semua game slot) ===== */
+.lobby{position:fixed;inset:0;z-index:95;display:none;flex-direction:column;
+  background:radial-gradient(circle at 50% 0,#b3203f 0,#5a0a1a 38%,#1a0208 80%,#050106 100%)}
+.lobby.show{display:flex;animation:lbIn .4s ease}
+@keyframes lbIn{from{opacity:0}to{opacity:1}}
+.lbTop{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px;
+  background:linear-gradient(#35040dee,#35040d99);border-bottom:2px solid #d98a1b}
+.lbUser{display:flex;align-items:center;gap:8px;min-width:0;flex:1;padding:0;border:0;background:none;color:#fff;text-align:left;cursor:pointer}
+.lbAv{flex:none;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;
+  border:2px solid var(--gold);background:radial-gradient(circle at 50% 30%,#fff09b,#c9801a 60%,#5a0716)}
+.lbWho{min-width:0;display:flex;flex-direction:column}
+.lbWho b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbWho small{font-size:11px;color:#ffe9a6}
+.lbChip{flex:none;text-align:right;padding:4px 10px;border:2px solid var(--gold);border-radius:12px;background:#2a0309}
+.lbChip small{display:block;font-size:10px;letter-spacing:1px;color:#ffe9a6}
+.lbChip strong{font-size:clamp(13px,3.8vw,17px);color:#ffe36a;font-variant-numeric:tabular-nums}
+.lbBody{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 16px}
+.lbWrap{width:min(720px,100%);margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.lbHero{text-align:center}
+.lbHero h1{margin:0;font-size:clamp(22px,6.4vw,32px);color:#fff27d;letter-spacing:2px;text-shadow:0 3px 0 #672400,0 0 18px #ff9b16}
+.lbHero p{margin:2px 0 0;font-size:12px;letter-spacing:3px;color:#ffe9a6;font-weight:900}
+.lbDaily{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:2px solid #f6bf45;border-radius:14px;color:#fff;
+  background:linear-gradient(#7b27a1,#3f0b62);text-align:left;cursor:pointer;font-weight:700;font-size:14px}
+.lbDaily .ic{font-size:26px}
+.lbDaily.ready{background:linear-gradient(#ffc238,#df6d07);color:#3b1600;animation:lbPulse 1.1s ease-in-out infinite alternate}
+@keyframes lbPulse{from{box-shadow:0 0 6px #ffb000}to{box-shadow:0 0 22px #ffe36a}}
+.lbSec{font-size:13px;font-weight:900;letter-spacing:3px;color:#ffe9a6;border-bottom:1px solid #ffd34d55;padding-bottom:4px}
+.lbGames{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.gCard{position:relative;display:flex;flex-direction:column;justify-content:flex-end;aspect-ratio:1/1.12;padding:10px;overflow:hidden;
+  border:3px solid var(--gold);border-radius:16px;color:#fff;text-align:left;cursor:pointer;
+  background:linear-gradient(160deg,var(--c1),var(--c2));box-shadow:0 0 16px #ffb00055,inset 0 0 20px #0006}
+.gCard:active{transform:scale(.97)}
+.gCard .gi{position:absolute;left:0;right:0;top:8%;text-align:center;font-size:clamp(54px,16vw,78px);filter:drop-shadow(0 5px 8px #000a);animation:homeFloat 2.4s ease-in-out infinite alternate}
+@keyframes homeFloat{from{transform:translateY(4px) scale(.97)}to{transform:translateY(-6px) scale(1.04)}}
+.gCard b{position:relative;font-size:14px;line-height:1.15;text-shadow:0 2px 0 #000a}
+.gCard small{position:relative;font-size:11px;color:#ffe9a6;font-weight:700}
+.gCard .gTick{position:relative;margin-top:3px;font-size:11px;font-weight:900;color:#ffe36a;font-variant-numeric:tabular-nums}
+.gCard .gPlay{position:relative;margin-top:6px;padding:6px 0;text-align:center;font-weight:900;font-size:13px;border-radius:9px;
+  background:linear-gradient(#ffc238,#df6d07);color:#3b1600;text-shadow:0 1px #fff6}
+.gCard .gInfo{position:absolute;right:7px;top:7px;width:28px;height:28px;border-radius:50%;border:2px solid #ffe36a;background:#000a;color:#ffe36a;
+  font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center}
+.gCard.soon{--c1:#4a3a3f;--c2:#1b1114;border-color:#8a7a60;box-shadow:none;cursor:default}
+.gCard.soon .gi{filter:grayscale(1) drop-shadow(0 4px 6px #000a);opacity:.55;animation:none}
+.gCard.soon .gPlay{background:#3a2d31;color:#bfae93;text-shadow:none}
+.lbNav{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(#35040d,#1a0208);border-top:2px solid #d98a1b}
+.lbNav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0;border:0;border-radius:10px;
+  background:none;color:#ffe9a6;font-weight:900;font-size:11px;cursor:pointer}
+.lbNav button .ic{font-size:22px}
+.lbNav button:active{background:#ffffff18}
+.lbNav .dot{position:absolute;top:2px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#ff3b3b;color:#fff;
+  font-size:11px;line-height:17px;text-align:center;border:1px solid #fff}
+.lbNav .dot[hidden]{display:none}
+.setRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #ffd34d33;text-align:left;font-size:14px}
+.setRow b{color:#fff}
+.setRow .ubtn{flex:none;min-width:96px}
+.inbSum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 8px}
+.inbSum div{padding:6px;border-radius:10px;background:#2a0409;border:1px solid #ffd34d55;font-size:11px;color:#ffe9a6}
+.inbSum strong{display:block;font-size:14px;color:#ffe36a}
+.inbTabs{display:flex;gap:6px;margin-bottom:6px}
+.inbTabs .ubtn{flex:1}
+.inbTabs .ubtn.on{background:linear-gradient(#ffc238,#df6d07);text-shadow:0 1px #6d2b00}
+.inbList{max-height:42vh;overflow:auto;text-align:left;font-size:13px}
+.inbList>div{padding:7px 4px;border-bottom:1px solid #ffd34d22;line-height:1.35}
+.inbList small{display:block;color:#ffe9a699;font-size:11px}
+
+
+/* ===== MABAR / ROOM ===== */
+.roomPill{position:fixed;left:0;top:42%;z-index:60;padding:8px 10px 8px 8px;border:2px solid var(--gold);border-left:0;border-radius:0 14px 14px 0;
+  background:#35040df2;color:#ffe36a;font-weight:900;font-size:12px;line-height:1.2;cursor:pointer;box-shadow:0 0 14px #000a;text-align:center}
+.roomPill[hidden]{display:none}
+.roomPill small{display:block;color:#fff;font-size:11px}
+.roomToast{position:fixed;left:50%;transform:translateX(-50%);top:calc(8px + env(safe-area-inset-top,0px));z-index:88;width:min(440px,94%);
+  display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.roomToast div{padding:7px 12px;border-radius:12px;border:2px solid var(--gold);background:#35040dee;color:#fff;font-size:13px;text-align:center;
+  animation:rtIn .25s ease,rtOut .4s ease 3.6s forwards}
+@keyframes rtIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+@keyframes rtOut{to{opacity:0;transform:translateY(-8px)}}
+.roomPanel{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:min(520px,100%);max-height:66vh;z-index:92;display:none;flex-direction:column;gap:6px;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border:3px solid var(--gold);border-bottom:0;border-radius:18px 18px 0 0;
+  background:linear-gradient(#7a0c1e,#2a0309);box-shadow:0 -6px 30px #000c}
+.roomPanel.show{display:flex}
+.rpHead{display:flex;align-items:center;gap:6px}
+.rpHead>div{flex:1;min-width:0;text-align:left;color:#ffe36a}
+.rpHead small{display:block;color:#ffe9a6;font-size:11px}
+.rpPlayers{display:flex;flex-direction:column;gap:4px;overflow:auto;max-height:28vh}
+.rpP{display:grid;grid-template-columns:22px 28px 1fr auto auto;gap:6px;align-items:center;padding:5px 8px;border-radius:10px;background:#2a0409;border:1px solid #ffd34d44;font-size:12px;text-align:left}
+.rpP.me{border-color:#ffe36a;background:#4a0f1a}
+.rpP .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:900}
+.rpP .ch{color:#ffe9a6;font-variant-numeric:tabular-nums}
+.rpP .nt{font-weight:900;font-variant-numeric:tabular-nums}
+.rpP .up{color:#7dffa0}.rpP .dn{color:#ff8a8a}
+.rpFeed{overflow:auto;min-height:60px;max-height:20vh;text-align:left;font-size:12px;padding:4px 6px;border-radius:10px;background:#1a0208;border:1px solid #ffd34d33}
+.rpFeed>div{padding:3px 0;border-bottom:1px solid #ffd34d18;line-height:1.3}
+.rpReact{display:flex;gap:6px;justify-content:center}
+.rpReact button{flex:1;padding:6px 0;font-size:20px;border:2px solid #f6bf45;border-radius:10px;background:#3f0b62;cursor:pointer}
+.rpChat{display:flex;gap:6px}
+.rpChat input{flex:1;min-width:0;padding:9px;border-radius:8px;border:2px solid #f6bf45;background:#2a0409;color:#fff;font-size:16px}
+.modeBtn small{display:block;font-size:12px;font-weight:700;opacity:.85}
+
+.rpWatch{padding:8px;border-radius:12px;background:#1a0208;border:2px solid #ffe36a;text-align:center}
+.rpWatch[hidden]{display:none}
+.rpWatch .wh{display:flex;align-items:center;gap:6px;margin-bottom:6px;text-align:left;font-size:13px;color:#ffe36a;font-weight:900}
+.rpWatch .wh span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;width:min(264px,100%);margin:0 auto}
+.wGrid div{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:clamp(15px,5vw,22px);background:#3a0a14;border-radius:6px;border:1px solid #ffd34d22}
+.wGrid .w{background:#6b4a00;border-color:#ffe36a;box-shadow:0 0 8px #ffd34d88}
+.wGrid .sc{background:#0b3a45;border-color:#6df5ff}
+.wInfo{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;margin-top:6px;font-size:12px;color:#ffe9a6}
+.wInfo b{color:#fff}
+.wGrid.flash{animation:wFlash .6s ease}
+@keyframes wFlash{from{filter:brightness(2)}to{filter:none}}
+.rpP[data-id]{cursor:pointer}
+.rpP.watched{border-color:#6df5ff}
+.roomPanel{overflow:auto}
+.roomPanel.watching .rpFeed{display:none}
+.roomPanel.watching .rpPlayers{max-height:15vh}
 </style>
 </head>
 <body>
+<div id="lobby" class="lobby" aria-label="Lobi">
+  <div class="lbTop">
+    <button id="lbUser" class="lbUser" type="button"><span id="lbAv" class="lbAv">👤</span><span class="lbWho"><b id="lbName">Tamu</b><small id="lbPid">Belum login</small></span></button>
+    <div class="lbChip"><small>CHIP</small><strong id="lbChip">0</strong></div>
+    <button id="lbLogin" class="ubtn gold" type="button">LOGIN</button>
+  </div>
+  <div class="lbBody"><div class="lbWrap">
+    <div class="lbHero"><h1>🎰 LOBI SLOT 🎰</h1><p>PILIH PERMAINAN</p></div>
+    <button id="lbDaily" class="lbDaily" type="button"><span class="ic">🎁</span><span id="lbDailyTxt"></span></button>
+    <div class="lbSec">PERMAINAN</div>
+    <div id="lbGames" class="lbGames"></div>
+  </div></div>
+  <nav class="lbNav">
+    <button id="nvProfile" type="button"><span class="ic">🪪</span>PROFIL</button>
+    <button id="nvInbox" type="button"><span class="ic">📥</span>INBOX<span id="nvInboxDot" class="dot" hidden>0</span></button>
+    <button id="nvDaily" type="button"><span class="ic">🎁</span>HARIAN<span id="nvDailyDot" class="dot" hidden>!</span></button>
+    <button id="nvSend" type="button"><span class="ic">📤</span>KIRIM</button>
+    <button id="nvSet" type="button"><span class="ic">⚙️</span>SETELAN</button>
+  </nav>
+</div>
+
+<div id="roomPill" class="roomPill" hidden>👥 <span id="rpCode"></span><small id="rpN"></small></div>
+<div id="roomToast" class="roomToast"></div>
+<div id="roomPanel" class="roomPanel">
+  <div class="rpHead">
+    <div><b>👥 ROOM <span id="rpCode2"></span></b><small id="rpMeta"></small></div>
+    <button id="rpCopy" class="ubtn gold" type="button">SALIN KODE</button>
+    <button id="rpClose" class="ubtn" type="button">✕</button>
+  </div>
+  <div id="rpWatch" class="rpWatch" hidden></div>
+  <div id="rpPlayers" class="rpPlayers"></div>
+  <div id="rpFeed" class="rpFeed"></div>
+  <div class="rpReact"><button type="button" data-r="🔥">🔥</button><button type="button" data-r="👏">👏</button><button type="button" data-r="😂">😂</button><button type="button" data-r="😭">😭</button><button type="button" data-r="🍀">🍀</button></div>
+  <div class="rpChat"><input id="rpInput" type="text" maxlength="60" placeholder="Ketik pesan…" autocomplete="off"><button id="rpSend" class="ubtn gold" type="button">KIRIM</button></div>
+  <button id="rpLeave" class="btn small" type="button" style="font-size:14px;margin:0">🚪 KELUAR ROOM (lanjut solo)</button>
+</div>
 <div class="game" id="game">
   <div class="top">
     <div class="jack" id="jp-GRAND"><b>GRAND • ×1000 BET</b><strong>3,520,296,400</strong></div>
@@ -343,6 +498,7 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 
   <div class="userbar" id="userbar">
     <span id="userName">👤 Belum login</span>
+    <button id="exitGameBtn" class="ubtn" type="button">🏠 KELUAR KE LOBI</button>
     <button id="loginBtn" class="ubtn gold" type="button">👤 LOGIN PENGUNJUNG</button>
     <button id="adminBtn" class="ubtn" type="button">👑 ADMIN</button>
     <button id="freeExitBtn" class="ubtn gold" type="button" hidden>KELUAR MODE GRATIS</button>
@@ -796,7 +952,7 @@ function startRain(){
   },200);
 }
 function stopRain(){clearInterval(rainTimer);rainTimer=null;document.getElementById("rain").innerHTML=""}
-document.addEventListener("pointerdown",()=>{unlockAudio();if(!bgmTimer)startBgm()},{once:true});
+document.addEventListener("pointerdown",()=>{unlockAudio();if(!bgmTimer&&inGame&&voiceOn)startBgm()},{once:true});
 
 function updateUI(){
   document.getElementById("balance").textContent=isAdmin()?"∞ ADMIN":money(balance);
@@ -1304,6 +1460,7 @@ async function spin(isFree=false){
   if(!isFree&&!isAdmin()&&balance<BET_STEP){openBroke();return 0}   // chip habis -> tawarkan mode gratis
   busy=true;
   spinCount++;
+  const spinBet=bet;
   unlockAudio();
   document.getElementById("spin").disabled=true;
   document.getElementById("meter").style.width="0%";
@@ -1367,6 +1524,7 @@ async function spin(isFree=false){
   document.getElementById("spin").disabled=false;
   busy=false;
   if(!isAdmin()&&freeSpins===0&&balance<BET_STEP)openBroke();
+  try{roomAfterSpin({win,bet:spinBet,isFree,special})}catch(e){console.warn(e)}
   return win;
 }
 async function autoLoop(){
@@ -1388,11 +1546,7 @@ document.getElementById("stop").addEventListener("click",()=>{
   auto=false;document.getElementById("auto").textContent="AUTO";
   document.getElementById("msg").textContent="AUTO dihentikan";
 });
-document.getElementById("speed").addEventListener("click",()=>{
-  SPD=SPEEDS[(SPEEDS.indexOf(SPD)+1)%SPEEDS.length];
-  document.documentElement.style.setProperty("--spd",SPD.f);
-  document.getElementById("speed").textContent="⚡ "+SPD.n;
-});
+document.getElementById("speed").addEventListener("click",()=>setSpeedIdx(SPEEDS.indexOf(SPD)+1));
 document.getElementById("minus").addEventListener("click",()=>{
   if(busy)return;
   bet=Math.max(BET_STEP,bet-BET_STEP);updateUI();
@@ -1402,7 +1556,7 @@ document.getElementById("plus").addEventListener("click",()=>{
   bet=Math.min(BET_MAX,bet+BET_STEP);clampBet();updateUI();   // tidak bisa melebihi chip
 });
 document.getElementById("voiceTest").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||!isAdmin())return;unlockAudio();if(b.dataset.l==="alarm")SFX.scatter();else speakWin(+b.dataset.l)});
-function toggleSound(){voiceOn=!voiceOn;if(voiceOn){unlockAudio();startBgm()}else{stopBgm();stopVoices()};document.getElementById("soundToggle").textContent=voiceOn?"🔊 SUARA ON":"🔇 SUARA OFF";}
+function toggleSound(){setVoice(!voiceOn)}
 document.getElementById("soundToggle").addEventListener("click",toggleSound);
 document.getElementById("soundToggle").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();toggleSound();}});
 document.addEventListener("keydown",e=>{
@@ -1483,7 +1637,7 @@ function saveGame(){
   LS.set("daf_acct_"+acct.id,JSON.stringify(acct));
 }
 function avatarOf(a){return a.admin?"👑":animals[(parseInt(a.pid,10)||0)%animals.length].e}
-function logTx(a,t){a.tx=a.tx||[];a.tx.unshift(t);if(a.tx.length>15)a.tx.length=15}
+function logTx(a,t){a.tx=a.tx||[];a.tx.unshift(t);if(a.tx.length>50)a.tx.length=50}
 function createGuest(){
   const pid=newPid();
   const used=new Set(rawAccounts().map(a=>String(a.name).toLowerCase()));
@@ -2052,8 +2206,411 @@ window.addEventListener("storage",e=>{   // chip masuk saat akun ini juga terbuk
     if(n){setMsg("📥 Chip kiriman diterima");if(!modalOpen)openInfo("📥 CHIP MASUK",n,"closeModal()")}
   }
 });
+
+
+/* ===== LOBI: hub semua game. Tambah game baru = tambah 1 objek di GAMES (lihat contoh "soon") ===== */
+let inGame=null;
+const GAMES=[
+  {id:"daf",name:"Dragon Animal Fortune",tag:"MAX WIN • SOLO & MABAR",icon:"🐉",multi:true,c1:"#b3203f",c2:"#4a0612",live:true,
+   ticker:()=>{const e=document.querySelector("#jp-GRAND strong");return e?"👑 GRAND "+e.textContent:""},
+   howto:"• Putar untuk mencocokkan gambar hewan di papan 6×5.<br>• <b>FULL GAMBAR</b>: satu papan penuh gambar sama = hadiah besar.<br>• <b>HORIZONTAL &amp; DIAGONAL</b>: 3–5 gambar sama dari kiri ke kanan.<br>• <b>JACKPOT</b> (MINI/MINOR/MAJOR/GRAND): buka 3 dari 12 kartu, 3 simbol sama = hadiah.<br>• Chip habis? Main <b>MODE GRATIS</b> untuk latihan.",
+   canExit(){if(busy){setMsg("Tunggu spin selesai dulu");return false}return true},
+   onEnter(){unlockAudio();if(voiceOn&&!bgmTimer)startBgm();window.scrollTo(0,0)},
+   onExit(){auto=false;document.getElementById("auto").textContent="AUTO";stopBgm();stopVoices();saveGame()}},
+  {id:"soon1",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎰",live:false},
+  {id:"soon2",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎲",live:false}
+];
+function renderGames(){
+  document.getElementById("lbGames").innerHTML=GAMES.map(g=>g.live
+    ?`<button class="gCard" type="button" style="--c1:${g.c1};--c2:${g.c2}" data-g="${g.id}"><span class="gInfo" data-info="${g.id}">i</span><span class="gi">${g.icon}</span><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gTick" data-tick="${g.id}"></span><span class="gPlay">▶ MAIN</span></button>`
+    :`<div class="gCard soon"><span class="gi">${g.icon}</span><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gPlay">🔒 SEGERA</span></div>`).join("");
+}
+function openGame(id){
+  const g=GAMES.find(x=>x.id===id);if(!g||!g.live)return;
+  hideLobby();inGame=id;
+  if(g.onEnter)g.onEnter();
+}
+function exitGame(){
+  const g=GAMES.find(x=>x.id===inGame);if(!g)return;
+  if(g.canExit&&!g.canExit())return;
+  roomLeave();
+  if(g.onExit)g.onExit();
+  inGame=null;showLobby();
+}
+let lbTimer=null;
+function realChips(){return (freeMode&&stash)?stash.balance:balance}
+function lobbySync(){
+  const on=!!acct,adm=isAdmin();
+  document.getElementById("lbAv").textContent=on?avatarOf(acct):"👤";
+  document.getElementById("lbName").textContent=on?(adm?"ADMIN":acct.name):"Tamu";
+  document.getElementById("lbPid").textContent=on?(adm?"👑 chip ∞":"ID "+acct.pid+(acct.streak?" • 🔥 "+acct.streak:"")):"Belum login — data tidak tersimpan";
+  document.getElementById("lbChip").textContent=adm?"∞":money(realChips());
+  document.getElementById("lbLogin").hidden=on;
+  // hadiah harian
+  const d=document.getElementById("lbDaily"),dt=document.getElementById("lbDailyTxt"),dot=document.getElementById("nvDailyDot");
+  let ready=false;
+  if(!on){dt.textContent="Login untuk menyimpan chip & dapat hadiah harian";}
+  else if(adm){dt.textContent="Admin tidak memakai hadiah harian"}
+  else{const st=dailyState();ready=!st.claimed;
+    dt.innerHTML=st.claimed?"Hadiah harian sudah diklaim ✔ — kembali besok":`<b>Hadiah harian siap!</b> Klaim +${money(DAILY_REWARD[st.idx])} chip`}
+  d.classList.toggle("ready",ready);dot.hidden=!ready;
+  // inbox: jumlah chip masuk yang belum dilihat
+  let n=0;
+  if(on&&!adm){if(acct.inboxSeen===undefined)acct.inboxSeen=Date.now();n=(acct.tx||[]).filter(t=>t.k==="in"&&t.ts>acct.inboxSeen).length}
+  const ib=document.getElementById("nvInboxDot");ib.hidden=!n;ib.textContent=n>9?"9+":n;
+  // ticker jackpot di kartu game
+  GAMES.forEach(g=>{if(g.ticker){const e=document.querySelector(`[data-tick="${g.id}"]`);if(e)e.textContent=g.ticker()}});
+}
+function showLobby(){
+  lobbySync();clearInterval(lbTimer);lbTimer=setInterval(lobbySync,500);
+  document.getElementById("lobby").classList.add("show");
+}
+function hideLobby(){
+  clearInterval(lbTimer);lbTimer=null;
+  document.getElementById("lobby").classList.remove("show");
+}
+function needAcct(fn){if(!acct){openWelcome();return}fn()}
+
+/* ----- inbox: riwayat chip masuk & keluar ----- */
+function openInbox(f){
+  if(!acct){openWelcome();return}
+  if(isAdmin()){openInfo("📥 INBOX","Akun admin tidak punya inbox chip.","closeModal()");return}
+  f=f||"all";
+  const all=acct.tx||[];
+  const list=all.filter(t=>f==="all"||t.k===f);
+  const tin=all.filter(t=>t.k==="in").reduce((a,t)=>a+(t.net||0),0);
+  const tout=all.filter(t=>t.k==="out").reduce((a,t)=>a+(t.amt||0),0);
+  const row=t=>{
+    const d=new Date(t.ts).toLocaleString("id-ID",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+    return t.k==="out"
+      ?`<div>📤 <b>−${money(t.amt)}</b> ke ${esc(t.peer)}<small>pajak ${money(t.tax)} • ${d}</small></div>`
+      :`<div>📥 <b style="color:#7dffa0">+${money(t.net)}</b> dari ${esc(t.peer)}<small>${d}</small></div>`;
+  };
+  const tab=(k,l)=>`<button class="ubtn ${f===k?"on":""}" type="button" onclick="openInbox('${k}')">${l}</button>`;
+  openModal(`<h2>📥 INBOX CHIP</h2>
+    <div class="inbSum"><div>TOTAL DITERIMA<strong>+${money(tin)}</strong></div><div>TOTAL DIKIRIM<strong>−${money(tout)}</strong></div></div>
+    <div class="inbTabs">${tab("all","SEMUA")}${tab("in","MASUK")}${tab("out","KELUAR")}</div>
+    <div class="inbList">${list.map(row).join("")||"<div>Belum ada transaksi</div>"}</div>
+    <button class="btn spin" type="button" style="font-size:18px" onclick="openTransfer()">📤 KIRIM CHIP</button>
+    <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
+  acct.inboxSeen=Date.now();saveGame();
+  lobbySync();
+}
+
+/* ----- pengaturan (tersimpan di perangkat) ----- */
+function saveSettings(){LS.set("daf_settings",JSON.stringify({voice:voiceOn,spd:SPEEDS.indexOf(SPD)}))}
+function applySpeedUI(){
+  document.documentElement.style.setProperty("--spd",SPD.f);
+  document.getElementById("speed").textContent="⚡ "+SPD.n;
+}
+function setSpeedIdx(i){SPD=SPEEDS[i%SPEEDS.length];applySpeedUI();saveSettings()}
+function setVoice(on){
+  voiceOn=!!on;
+  if(voiceOn){unlockAudio();if(inGame&&!bgmTimer)startBgm()}else{stopBgm();stopVoices()}
+  document.getElementById("soundToggle").textContent=voiceOn?"🔊 SUARA ON":"🔇 SUARA OFF";
+  saveSettings();
+}
+function loadSettings(){
+  try{
+    const o=JSON.parse(LS.get("daf_settings")||"null");
+    if(o){if(typeof o.voice==="boolean")voiceOn=o.voice;if(Number.isInteger(o.spd)&&SPEEDS[o.spd])SPD=SPEEDS[o.spd]}
+  }catch(e){}
+  document.getElementById("soundToggle").textContent=voiceOn?"🔊 SUARA ON":"🔇 SUARA OFF";
+  applySpeedUI();
+}
+function openSettings(){
+  const on=!!acct;
+  openModal(`<h2>⚙️ PENGATURAN</h2>
+  <div class="setRow"><span><b>Suara &amp; musik</b></span><button class="ubtn ${voiceOn?"gold":""}" type="button" onclick="setVoice(!voiceOn);openSettings()">${voiceOn?"🔊 ON":"🔇 OFF"}</button></div>
+  <div class="setRow"><span><b>Kecepatan spin</b></span><button class="ubtn gold" type="button" onclick="setSpeedIdx(SPEEDS.indexOf(SPD)+1);openSettings()">⚡ ${SPD.n}</button></div>
+  ${on?`<div class="setRow"><span><b>Akun</b><br><small>${isAdmin()?"Admin":esc(acct.name)}</small></span><button class="ubtn" type="button" onclick="openProfile()">🪪 PROFIL</button></div>`
+      :`<div class="setRow"><span><b>Akun</b><br><small>Belum login</small></span><button class="ubtn gold" type="button" onclick="openWelcome()">LOGIN</button></div>`}
+  <div class="setRow"><span><b>Cara main</b></span><button class="ubtn" type="button" onclick="openHowTo()">📖 LIHAT</button></div>
+  ${on?`<button class="btn small" type="button" style="font-size:14px;background:linear-gradient(#7d1729,#430713)" onclick="closeModal();logout()">🚪 KELUAR AKUN</button>`:""}
+  <p style="font-size:11px;color:#ffe9a699;margin:10px 0 0">Permainan hiburan dengan chip virtual, tanpa uang sungguhan.</p>
+  <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
+}
+function openHowTo(id){
+  const list=GAMES.filter(g=>g.live&&g.howto);
+  const g=list.find(x=>x.id===id)||list[0];if(!g)return;
+  const sw=list.length>1?list.map(x=>`<button class="ubtn ${x===g?"on":""}" type="button" onclick="openHowTo('${x.id}')">${x.icon}</button>`).join(""):"";
+  openModal(`<h2>📖 CARA MAIN</h2><p><b>${esc(g.name)}</b></p><div class="inbTabs">${sw}</div><p style="text-align:left">${g.howto}</p>
+    <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
+}
+
+/* ----- tombol-tombol lobi ----- */
+document.getElementById("lbGames").addEventListener("click",e=>{
+  const inf=e.target.closest("[data-info]");if(inf){e.stopPropagation();openHowTo(inf.dataset.info);return}
+  const c=e.target.closest("[data-g]");if(c){unlockAudio();const g=GAMES.find(x=>x.id===c.dataset.g);if(g&&g.multi)openMode(g.id);else openGame(c.dataset.g)}
+});
+document.getElementById("lbUser").addEventListener("click",()=>needAcct(openProfile));
+document.getElementById("lbLogin").addEventListener("click",()=>{unlockAudio();openWelcome()});
+document.getElementById("lbDaily").addEventListener("click",()=>needAcct(()=>isAdmin()?null:openDaily()));
+document.getElementById("nvProfile").addEventListener("click",()=>needAcct(openProfile));
+document.getElementById("nvInbox").addEventListener("click",()=>openInbox("all"));
+document.getElementById("nvDaily").addEventListener("click",()=>needAcct(()=>isAdmin()?openInfo("🎁 HARIAN","Akun admin tidak memakai hadiah harian.","closeModal()"):openDaily()));
+document.getElementById("nvSend").addEventListener("click",()=>needAcct(openTransfer));
+document.getElementById("nvSet").addEventListener("click",openSettings);
+document.getElementById("exitGameBtn").addEventListener("click",exitGame);
+renderGames();
+
+
+/* ===== MODE SOLO & MABAR (ROOM) =====
+   Mabar = beberapa pemain di satu room (kode 5 huruf), tiap pemain putar slot sendiri dengan chip sendiri,
+   tapi saling lihat: papan peringkat sesi, kemenangan besar/jackpot, reaksi & chat.
+   Online lewat Firebase Firestore (rooms/{kode}/players & feed). Kalau Firebase tidak tersambung -> room LOKAL (antar tab browser yang sama). */
+const ROOM_MAX=6,ROOM_STALE=45000,ROOM_CHARS="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+let R=null,roomBusy=false,lastChat=0;
+function genCode(){let c="";for(let i=0;i<5;i++)c+=ROOM_CHARS[Math.floor(Math.random()*ROOM_CHARS.length)];return c}
+function cleanCode(v){return String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5)}
+
+function rtOnline(code){
+  const ref=FB.db.collection("rooms").doc(code),pl=ref.collection("players"),fd=ref.collection("feed");
+  let un=[];
+  return{kind:"online",
+    async getMeta(){const x=await ref.get();return x.exists?x.data():null},
+    async setMeta(m){await ref.set(m)},
+    async listPlayers(){const q=await pl.get();return q.docs.map(d=>Object.assign({id:d.id},d.data()))},
+    put(id,d){return pl.doc(id).set(d,{merge:true})},
+    drop(id){return pl.doc(id).delete()},
+    event(ev){return fd.add(ev)},
+    listen(onP,onE,onErr){
+      un.push(pl.onSnapshot(x=>onP(x.docs.map(d=>Object.assign({id:d.id},d.data()))),onErr));
+      let first=true;
+      un.push(fd.orderBy("ts","desc").limit(30).onSnapshot(x=>{
+        const all=x.docs.map(d=>d.data());
+        const fresh=first?[]:x.docChanges().filter(c=>c.type==="added").map(c=>c.doc.data());
+        first=false;onE(all,fresh);
+      },onErr));
+    },
+    stop(){un.forEach(f=>{try{f()}catch(e){}});un=[]}
+  };
+}
+function rtLocal(code){
+  const key="daf_room_"+code;
+  const ch=typeof BroadcastChannel!=="undefined"?new BroadcastChannel(key):null;
+  const P={},E=[];let hP=null,hE=null,me=null;
+  const emitP=()=>{if(hP)hP(Object.keys(P).map(id=>Object.assign({id},P[id])))};
+  const emitE=(ev,fresh)=>{E.unshift(ev);if(E.length>30)E.length=30;if(hE)hE(E.slice(),fresh?[ev]:[])};
+  if(ch)ch.onmessage=e=>{const m=e.data||{};
+    if(m.t==="p"){P[m.id]=m.d;emitP()}
+    else if(m.t==="d"){delete P[m.id];emitP()}
+    else if(m.t==="e"){emitE(m.ev,true)}
+    else if(m.t==="hello"&&me&&P[me]){ch.postMessage({t:"p",id:me,d:P[me]})}};
+  return{kind:"local",
+    async getMeta(){try{return JSON.parse(LS.get(key+"_meta"))}catch(e){return null}},
+    async setMeta(m){LS.set(key+"_meta",JSON.stringify(m))},
+    async listPlayers(){if(ch)ch.postMessage({t:"hello"});await sleepRaw(300);return Object.keys(P).map(id=>Object.assign({id},P[id]))},
+    async put(id,d){me=id;P[id]=Object.assign(P[id]||{},d);if(ch)ch.postMessage({t:"p",id,d:P[id]});emitP()},
+    async drop(id){delete P[id];if(ch)ch.postMessage({t:"d",id});emitP()},
+    async event(ev){if(ch)ch.postMessage({t:"e",ev});emitE(ev,false)},
+    listen(a,b){hP=a;hE=b;if(ch)ch.postMessage({t:"hello"})},
+    stop(){hP=hE=null;if(ch){try{ch.close()}catch(e){}}}
+  };
+}
+
+/* ----- pilih mode ----- */
+function openMode(id){
+  const g=GAMES.find(x=>x.id===id);if(!g)return;
+  openModal(`<h2>${g.icon} ${esc(g.name)}</h2><p>Pilih mode main</p>
+  <button class="btn spin modeBtn" type="button" style="font-size:20px" onclick="startSolo('${id}')">🎮 MODE SOLO<small>Main sendiri, santai</small></button>
+  <button class="btn modeBtn" type="button" style="font-size:20px" onclick="openRoomMenu('${id}')">👥 MODE MABAR<small>Satu room bareng teman (maks ${ROOM_MAX} pemain)</small></button>
+  <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">BATAL</button>`);
+}
+function startSolo(id){closeModal();openGame(id)}
+function openRoomMenu(id,msg){
+  if(!acct){closeModal();setMsg("Login dulu untuk mode mabar");openWelcome();return}
+  openModal(`<h2>👥 MODE MABAR</h2>
+  <p>Buat room lalu bagikan kodenya, atau masukkan kode dari temanmu.</p>
+  <button class="btn spin" type="button" style="font-size:18px" onclick="roomCreate()">➕ BUAT ROOM BARU</button>
+  <input id="rmCode" type="text" maxlength="5" placeholder="KODE ROOM (5 huruf/angka)" autocomplete="off" autocapitalize="characters" style="text-transform:uppercase;text-align:center;letter-spacing:4px">
+  <button class="btn" type="button" style="font-size:18px" onclick="roomJoin()">🚪 GABUNG ROOM</button>
+  <div id="rmMsg" class="hint" style="min-height:20px;color:#ffe9a6;font-weight:900">${msg?esc(msg):""}</div>
+  <button class="btn small" type="button" style="font-size:14px" onclick="openMode('${id||"daf"}')">KEMBALI</button>`);
+}
+function rmSay(t){const e=document.getElementById("rmMsg");if(e)e.textContent=t}
+
+/* ----- hubungkan / buat / gabung ----- */
+async function roomCreate(){
+  for(let t=0;t<3;t++){const r=await roomConnect(genCode(),true);if(r!=="clash")return}
+  rmSay("Gagal membuat room, coba lagi");
+}
+async function roomJoin(){
+  const c=cleanCode((document.getElementById("rmCode")||{}).value);
+  if(c.length<5){rmSay("Kode room 5 karakter");return}
+  roomConnect(c,false);
+}
+async function roomConnect(code,create){
+  if(roomBusy||R)return "busy";
+  roomBusy=true;
+  try{
+    rmSay("Menghubungkan…");
+    await Promise.race([fbInit(),sleepRaw(6000).then(()=>false)]);
+    const rt=FB.ok?rtOnline(code):rtLocal(code);
+    let meta=await rt.getMeta();
+    const uid=FB.ok?FB.uid:"L"+Math.random().toString(36).slice(2,9);
+    if(create){
+      if(meta)return "clash";
+      meta={game:"daf",host:uid,hostName:acct.name,max:ROOM_MAX,created:Date.now()};
+      await rt.setMeta(meta);
+    }else{
+      if(!meta){rmSay("Room "+code+" tidak ditemukan");return "no"}
+      if(meta.game!=="daf"){rmSay("Room ini untuk game lain");return "no"}
+    }
+    const now=Date.now();
+    const list=(await rt.listPlayers()).filter(p=>now-(p.seen||0)<ROOM_STALE);
+    if(!create&&!list.some(p=>p.id===uid)&&list.length>=(meta.max||ROOM_MAX)){rmSay("Room penuh ("+list.length+"/"+(meta.max||ROOM_MAX)+")");return "full"}
+    R={code,rt,uid,meta,players:{},feed:[],sessWin:0,sessBet:0,spins:0,best:0,open:false,hb:null};
+    rt.listen(roomOnPlayers,roomOnFeed,roomOnErr);
+    await roomPutSelf();
+    await roomEvent({k:"join"});
+    R.hb=setInterval(roomBeat,10000);
+    closeModal();
+    if(inGame!=="daf")openGame("daf");
+    roomUI(true);
+    roomToast(`Room <b>${esc(code)}</b> ${create?"dibuat — bagikan kodenya ke teman":"— kamu masuk"} ${rt.kind==="local"?"(lokal: antar tab)":""}`);
+    return "ok";
+  }catch(e){
+    console.warn("room:",e);
+    if(R){try{R.rt.stop()}catch(_){}clearInterval(R.hb);R=null}
+    rmSay(e&&e.code==="permission-denied"?"Firestore menolak akses room — atur Rules untuk koleksi 'rooms'":"Gagal terhubung: "+((e&&(e.code||e.message))||"error"));
+    return "err";
+  }finally{roomBusy=false}
+}
+function roomSelf(){
+  return Object.assign({name:acct.name,av:avatarOf(acct),chips:isAdmin()?null:realChips(),net:R.sessWin-R.sessBet,spins:R.spins,best:R.best,seen:Date.now()},R.last||{});
+}
+function roomPutSelf(){if(!R)return Promise.resolve();return Promise.resolve(R.rt.put(R.uid,roomSelf())).catch(roomOnErr)}
+function roomBeat(){if(!R)return;Promise.resolve(R.rt.put(R.uid,{seen:Date.now(),chips:isAdmin()?null:realChips()})).catch(roomOnErr)}
+function roomEvent(ev){
+  if(!R||!acct)return Promise.resolve();
+  return Promise.resolve(R.rt.event(Object.assign({uid:R.uid,name:acct.name,av:avatarOf(acct),ts:Date.now()},ev))).catch(roomOnErr);
+}
+function roomOnErr(e){console.warn("room err",e);roomToast(e&&e.code==="permission-denied"?"⚠️ Firestore menolak akses room (cek Rules)":"⚠️ Koneksi room bermasalah")}
+function roomOnPlayers(list){
+  if(!R)return;const now=Date.now();R.players={};
+  list.forEach(p=>{if(now-(p.seen||0)<ROOM_STALE||p.id===R.uid)R.players[p.id]=p});
+  roomRender();
+}
+function roomOnFeed(all,fresh){
+  if(!R)return;R.feed=all;
+  fresh.forEach(ev=>{if(ev.uid!==R.uid)roomToast(evText(ev))});
+  roomRender();
+}
+function evText(e){
+  const n=`<b>${esc(String(e.name||"?").slice(0,12))}</b>`,a=esc(String(e.av||"👤").slice(0,4)),amt=money(Number(e.amt)||0);
+  switch(e.k){
+    case"join":return `${a} ${n} masuk room`;
+    case"leave":return `${a} ${n} keluar room`;
+    case"win":return `🏆 ${n} menang <b>+${amt}</b> (×${Number(e.mult)||0})`;
+    case"full":return `🖼️ ${n} FULL GAMBAR <b>+${amt}</b>`;
+    case"jp":return `👑 ${n} JACKPOT ${esc(String(e.tier||"").slice(0,6))} <b>+${amt}</b>`;
+    case"chat":return `${n}: ${esc(String(e.text||"").slice(0,60))}`;
+    case"react":return `${n} ${esc(String(e.text||"").slice(0,4))}`;
+  }
+  return "";
+}
+function roomToast(html){
+  const box=document.getElementById("roomToast");if(!html)return;
+  const d=document.createElement("div");d.innerHTML=html;box.appendChild(d);
+  while(box.children.length>3)box.removeChild(box.firstChild);
+  setTimeout(()=>d.remove(),4100);
+}
+function roomRender(){
+  if(!R)return;
+  const arr=Object.keys(R.players).map(id=>Object.assign({id},R.players[id])).sort((a,b)=>(b.net||0)-(a.net||0));
+  document.getElementById("rpCode").textContent=R.code;
+  document.getElementById("rpN").textContent=arr.length+"/"+(R.meta.max||ROOM_MAX)+" pemain";
+  if(!document.getElementById("roomPanel").classList.contains("show"))return;
+  document.getElementById("rpCode2").textContent=R.code;
+  document.getElementById("rpMeta").textContent=(R.rt.kind==="online"?"🌐 Online":"💻 Lokal (antar tab)")+" • ketuk 👁 pemain untuk intip layarnya";
+  document.getElementById("rpPlayers").innerHTML=arr.map((p,i)=>{
+    const net=Number(p.net)||0,chips=p.chips==null?"∞":money(Number(p.chips)||0);
+    return `<div class="rpP ${p.id===R.uid?"me":""} ${R.watch===p.id?"watched":""}" ${p.id===R.uid?"":`data-id="${esc(p.id)}"`}><span>${i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</span><span>${esc(String(p.av||"👤").slice(0,4))}</span><span class="nm">${p.id===R.uid?"":"👁 "}${esc(String(p.name||"?").slice(0,12))}${R.meta.host===p.id?" 👑":""}</span><span class="ch">${chips}</span><span class="nt ${net>=0?"up":"dn"}">${net>=0?"+":"−"}${money(Math.abs(net))}</span></div>`;
+  }).join("");
+  roomRenderWatch();
+  document.getElementById("rpFeed").innerHTML=R.feed.map(e=>`<div>${evText(e)}</div>`).join("")||"<div>Belum ada aktivitas</div>";
+}
+function roomUI(on){
+  document.getElementById("roomPill").hidden=!on;
+  if(!on){document.getElementById("roomPanel").classList.remove("show");document.getElementById("roomToast").innerHTML=""}
+  roomRender();
+}
+function roomTogglePanel(force){
+  if(!R)return;const p=document.getElementById("roomPanel");
+  p.classList.toggle("show",force===undefined?!p.classList.contains("show"):force);roomRender();
+}
+function roomAfterSpin(i){   // dipanggil di akhir tiap spin
+  if(!R)return;
+  const sb=i.isFree?0:i.bet;
+  R.spins++;R.sessBet+=sb;R.sessWin+=i.win;if(i.win>R.best)R.best=i.win;
+  let bd="";   // papan akhir spin, 30 digit (0-7 hewan, 8 scatter) — hanya dikirim setelah spin selesai, jadi tidak membocorkan hasil
+  try{bd=board.flat().map(x=>{const k=animals.findIndex(a=>a.e===x.e);return k<0?8:k}).join("")}catch(e){}
+  R.last={bd:bd.length===ROWS*COLS?bd:"",sb:i.bet,lw:i.win,fs:freeSpins,sm:scatterMode?1:0,lt:Date.now()};
+  roomPutSelf();
+  const sp=i.special;
+  if(sp&&sp.kind==="jp")roomEvent({k:"jp",tier:sp.tier,amt:i.win});
+  else if(sp&&sp.kind==="full")roomEvent({k:"full",amt:i.win});
+  else if(i.bet>0&&i.win>=10*i.bet)roomEvent({k:"win",amt:i.win,mult:Math.round(i.win/i.bet*10)/10});
+  roomRender();
+}
+function roomChat(){
+  const inp=document.getElementById("rpInput"),t=inp.value.trim().slice(0,60);
+  if(!t||!R||Date.now()-lastChat<1500)return;
+  lastChat=Date.now();inp.value="";roomEvent({k:"chat",text:t});
+}
+function roomReact(em){if(!R||Date.now()-lastChat<700)return;lastChat=Date.now();roomEvent({k:"react",text:em})}
+/* ----- intip layar teman: papan 6×5 dari spin terakhir ----- */
+let watchBd="";
+function roomWatch(id){
+  if(!R||id===R.uid)return;
+  R.watch=(R.watch===id)?null:id;watchBd="";roomRender();
+}
+function roomRenderWatch(){
+  const box=document.getElementById("rpWatch"),panel=document.getElementById("roomPanel");
+  const p=R&&R.watch?R.players[R.watch]:null;
+  if(R&&R.watch&&!p){roomToast("Pemain yang kamu intip sudah keluar");R.watch=null}
+  panel.classList.toggle("watching",!!p);
+  if(!p){box.hidden=true;box.innerHTML="";return}
+  box.hidden=false;
+  const bd=String(p.bd||""),ok=bd.length===ROWS*COLS&&/^[0-8]+$/.test(bd);
+  let cells="";
+  if(ok){
+    const rowWin=r=>{const f=bd[r*COLS];return f!=="8"&&bd.slice(r*COLS,r*COLS+COLS).split("").every(x=>x===f)};
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const k=bd[r*COLS+c],cls=k==="8"?"sc":rowWin(r)?"w":"";
+      cells+=`<div class="${cls}">${k==="8"?SCATTER:animals[+k].e}</div>`;
+    }
+  }
+  const ago=p.lt?Math.max(0,Math.round((Date.now()-p.lt)/1000)):null;
+  const chips=p.chips==null?"∞":money(Number(p.chips)||0);
+  box.innerHTML=`<div class="wh"><span>👀 Layar ${esc(String(p.name||"?").slice(0,12))} ${esc(String(p.av||"").slice(0,4))}</span><button class="ubtn" type="button" onclick="roomWatch(R.watch)">✕ TUTUP</button></div>`
+    +(ok?`<div id="wGrid" class="wGrid">${cells}</div>`:`<div style="padding:18px 0;color:#ffe9a6">Belum ada spin dari pemain ini</div>`)
+    +`<div class="wInfo"><span>BET <b>${money(Number(p.sb)||0)}</b></span><span>WIN <b style="color:#7dffa0">${money(Number(p.lw)||0)}</b></span><span>CHIP <b>${chips}</b></span>`
+    +(p.sm?`<span>🎁 <b>SCATTER MODE</b></span>`:"")+((Number(p.fs)||0)>0?`<span>FREE SPIN <b>${Number(p.fs)}</b></span>`:"")
+    +(ago!==null?`<span>spin terakhir <b>${ago<60?ago+" dtk":Math.round(ago/60)+" mnt"} lalu</b></span>`:"")+`</div>`;
+  if(ok&&watchBd&&watchBd!==bd){const g=document.getElementById("wGrid");if(g)g.classList.add("flash")}
+  watchBd=ok?bd:"";
+}
+document.getElementById("rpPlayers").addEventListener("click",e=>{const r=e.target.closest("[data-id]");if(r)roomWatch(r.dataset.id)});
+function roomLeave(){
+  if(!R)return;
+  const r=R;R=null;clearInterval(r.hb);watchBd="";
+  const me={uid:r.uid,name:acct?acct.name:"?",av:acct?avatarOf(acct):"👤",ts:Date.now(),k:"leave"};
+  Promise.allSettled([r.rt.event(me),r.rt.drop(r.uid)]).then(()=>r.rt.stop());
+  roomUI(false);
+}
+document.getElementById("roomPill").addEventListener("click",()=>roomTogglePanel());
+document.getElementById("rpClose").addEventListener("click",()=>roomTogglePanel(false));
+document.getElementById("rpLeave").addEventListener("click",()=>{roomLeave();setMsg("Keluar room — lanjut mode solo")});
+document.getElementById("rpSend").addEventListener("click",roomChat);
+document.getElementById("rpInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();roomChat()}});
+document.getElementById("rpCopy").addEventListener("click",()=>{if(!R)return;const t=R.code;
+  try{navigator.clipboard.writeText(t).then(()=>roomToast("Kode "+t+" disalin"),()=>roomToast("Kode room: <b>"+t+"</b>"))}catch(e){roomToast("Kode room: <b>"+t+"</b>")}});
+document.querySelector(".rpReact").addEventListener("click",e=>{const b=e.target.closest("[data-r]");if(b)roomReact(b.dataset.r)});
+window.addEventListener("beforeunload",()=>{if(R){try{R.rt.drop(R.uid)}catch(e){}}});
 makeBoard=function(){seedResult("normal",true);render(false)}; // initial board
-seedResult("normal",true);render(false);updateUI();renderFullTable();loadPhotos();fbInit();initAccount();
+seedResult("normal",true);render(false);updateUI();renderFullTable();loadPhotos();fbInit();loadSettings();showLobby();initAccount();   // buka di LOBI; modal login (jika perlu) muncul di atas lobi
 </script>
 </body>
 </html>
