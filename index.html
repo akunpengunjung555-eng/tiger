@@ -85,7 +85,7 @@ button{font:inherit}
 .scatterText{color:#6df5ff}
 @keyframes fadeIn{from{opacity:0;transform:scale(.65)}to{opacity:1;transform:scale(1)}}
 .controls{
-  display:grid;grid-template-columns:.7fr 1.6fr .7fr 1fr 1fr 1fr;gap:7px;margin-top:8px
+  display:grid;grid-template-columns:.7fr 1.6fr .7fr .9fr 1fr 1fr;gap:7px;margin-top:8px
 }
 .btn{
   min-height:54px;border:2px solid #f6bf45;border-radius:10px;font-weight:1000;cursor:pointer;
@@ -94,8 +94,9 @@ button{font:inherit}
 .btn:active{transform:translateY(2px)}
 .small{background:linear-gradient(#7d1729,#430713);color:#fff;font-size:22px}
 .spin{background:linear-gradient(#ffc238,#df6d07);color:#fff;font-size:29px;text-shadow:0 2px #6d2b00}
+.maxbet{background:linear-gradient(#ff6a3d,#b3200f);color:#fff;font-size:15px;line-height:1.1;text-shadow:0 1px #4a0800}
 .auto{background:linear-gradient(#7b27a1,#3f0b62);color:#fff;font-size:18px}
-.stop{background:linear-gradient(#fff,#ccc);color:#63101b;font-size:20px}
+.spin.isStop,body.scatter-mode .spin.isStop{background:linear-gradient(#ff5a5a,#a80f1f);color:#fff;text-shadow:0 2px #4a0008}
 .meter{height:10px;margin-top:8px;border:1px solid #b96d17;border-radius:10px;background:#24030a;overflow:hidden}
 .meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#00cfff,#5ff,#fff,#ffd83d);transition:width .25s}
 .status{
@@ -269,7 +270,7 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 @media(max-width:760px){
   .top{grid-template-columns:1fr 1fr}.pot{grid-column:1/-1;order:-1}
   .reels{min-height:370px;gap:2px;padding:3px}.cell{min-height:63px;font-size:36px}
-  .controls{grid-template-columns:1fr 1fr}.spinGroup{grid-column:1/-1;order:-1}
+  .controls{grid-template-columns:1fr 1fr}.spinGroup{grid-column:1/-1;order:-1}.maxbet{grid-column:1/-1}
   .status{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -472,6 +473,44 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .roomPanel{overflow:auto}
 .roomPanel.watching .rpFeed{display:none}
 .roomPanel.watching .rpPlayers{max-height:15vh}
+
+/* ===== REVISI: KONTROL RINGKAS (bet di samping MAX BET & tombol +/−) ===== */
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px}
+.controls .btn{min-height:34px;border-width:1.5px;border-radius:8px;box-shadow:inset 0 0 8px #fff2,0 2px 0 #551400}
+.betCtl{display:flex;align-items:center;gap:4px;flex:1 1 250px;min-width:0}
+.betCtl .small{flex:none;width:34px;padding:0;font-size:18px;line-height:1}
+.betCtl .maxbet{flex:none;width:auto;padding:0 9px;font-size:11px;letter-spacing:.3px}
+.betCtl .betbox{position:relative;flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:0 6px;height:34px;border-width:1.5px;border-radius:8px;white-space:nowrap}
+.betCtl .betbox .bl{font-size:10px;font-weight:900;color:#ffd978;letter-spacing:.5px}
+.betCtl .betbox strong{font-size:14px;font-variant-numeric:tabular-nums}
+.betCtl .betbox small{position:absolute;left:0;right:0;bottom:calc(100% + 2px);text-align:center;font-size:10px;color:#ffd978;pointer-events:none;text-shadow:0 1px #000}
+.controls .spinGroup{flex:1.4 1 170px;order:0;grid-column:auto;gap:4px}
+.controls .spin{min-height:42px;font-size:20px}
+.controls .spinN{width:42px;font-size:15px}
+.controls .spinN small{font-size:8px;margin-top:1px}
+.controls .auto,.controls .speed{flex:0 0 auto;padding:0 10px;font-size:12px}
+.spinPick button[data-n]{min-height:38px;font-size:16px}
+@media(max-width:760px){
+  .controls{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .betCtl{grid-column:1/-1}
+  .controls .spinGroup{grid-column:1/-1;order:0}
+  .controls .auto,.controls .speed{width:100%}
+}
+
+/* ===== REVISI: BAR ATAS RINGKAS + MENU ===== */
+.userbar{min-width:0;max-width:100%;box-sizing:border-box;position:relative;gap:6px;margin-bottom:5px;padding:3px 8px;border-width:1.5px;font-size:12px;flex-wrap:nowrap}
+.userbar #userName{min-width:0;flex:1 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.userbar .ubtn{padding:4px 9px;font-size:11px;border-width:1.5px;white-space:nowrap}
+.menuBtn{position:relative;flex:none}
+.mdot{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:#ff3b3b;border:1.5px solid #fff}
+.mdot[hidden]{display:none}
+.menuPanel{position:absolute;right:0;top:calc(100% + 4px);z-index:60;min-width:190px;display:flex;flex-direction:column;gap:5px;padding:8px;
+  border:2px solid #f6bf45;border-radius:10px;background:linear-gradient(#7a0c1e,#2a0309);box-shadow:0 6px 24px #000c}
+.menuPanel[hidden]{display:none}
+.menuPanel .ubtn{width:100%;text-align:left;padding:8px 10px;font-size:12px;box-sizing:border-box}
+.menuSound{cursor:pointer;background:linear-gradient(#1fb6d6,#0b5f86)}
+.menuVoice{font-size:10px;color:#ffd978;text-align:center;opacity:.8}
 </style>
 </head>
 <body>
@@ -522,18 +561,22 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 
   <div class="userbar" id="userbar">
     <span id="userName">👤 Belum login</span>
-    <button id="exitGameBtn" class="ubtn" type="button">🏠 KELUAR KE LOBI</button>
-    <button id="loginBtn" class="ubtn gold" type="button">👤 LOGIN PENGUNJUNG</button>
-    <button id="adminBtn" class="ubtn" type="button">👑 ADMIN</button>
     <button id="freeExitBtn" class="ubtn gold" type="button" hidden>KELUAR MODE GRATIS</button>
-    <button id="dailyBtn" class="ubtn gold" type="button" hidden>🎁 HARIAN</button>
-    <button id="logoutBtn" class="ubtn" type="button" hidden>KELUAR</button>
-    <button id="profileBtn" class="ubtn" type="button" hidden>🪪 PROFIL</button>
+    <button id="menuBtn" class="ubtn menuBtn" type="button" aria-haspopup="true" aria-expanded="false">☰ MENU<i class="mdot" id="menuDot" hidden></i></button>
+    <div id="menuPanel" class="menuPanel" hidden>
+      <button id="profileBtn" class="ubtn" type="button" hidden>🪪 PROFIL</button>
+      <button id="dailyBtn" class="ubtn gold" type="button" hidden>🎁 HARIAN</button>
+      <button id="loginBtn" class="ubtn gold" type="button">👤 LOGIN PENGUNJUNG</button>
+      <button id="adminBtn" class="ubtn" type="button">👑 ADMIN</button>
+      <span id="soundToggle" class="ubtn menuSound" role="button" tabindex="0">🔊 SUARA ON</span>
+      <span id="voiceState" class="menuVoice">VOICE: READY</span>
+      <button id="exitGameBtn" class="ubtn" type="button">🏠 KELUAR KE LOBI</button>
+      <button id="logoutBtn" class="ubtn" type="button" hidden>🚪 KELUAR AKUN</button>
+    </div>
   </div>
 
   <div class="info">
     <div class="chipbox"><span id="chipLabel">CHIP</span> <strong id="balance">500,000,000</strong></div>
-    <div class="betbox">BET <strong id="bet">17,600,000</strong><small id="betNote"></small></div>
     <div class="freebox">FREE SPIN <strong id="free">0</strong></div>
     <div class="chipbox">JUMLAH SPIN <strong id="spinCount">0</strong></div>
     <div class="chipbox">WIN <strong id="lastWin">0</strong></div>
@@ -559,7 +602,12 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
     </div>
     <div class="meter"><i id="meter"></i></div>
     <div class="controls">
-      <button id="minus" class="btn small" type="button">−</button>
+      <div class="betCtl">
+        <button id="minus" class="btn small" type="button" aria-label="Kurangi bet">−</button>
+        <div class="betbox"><span class="bl">BET</span><strong id="bet">17,600,000</strong><small id="betNote"></small></div>
+        <button id="plus" class="btn small" type="button" aria-label="Tambah bet">+</button>
+        <button id="maxbet" class="btn maxbet" type="button">MAX</button>
+      </div>
       <div class="spinGroup" id="spinGroup">
         <button id="spin" class="btn spin" type="button">SPIN</button>
         <button id="spinN" class="btn spinN" type="button" aria-label="Pilih jumlah auto spin" title="Pilih jumlah spin (atau tahan tombol SPIN)">▾<small>AUTO</small></button>
@@ -576,16 +624,12 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
           </div>
         </div>
       </div>
-      <button id="plus" class="btn small" type="button">+</button>
       <button id="auto" class="btn auto" type="button">AUTO</button>
       <button id="speed" class="btn speed" type="button">⚡ NORMAL</button>
-      <button id="stop" class="btn stop" type="button">STOP</button>
     </div>
     <div class="status">
       <span id="msg" aria-live="polite">Siap — tekan SPIN</span>
-      <span id="voiceState">VOICE: READY</span>
       <span id="voiceTest" hidden>🛠 TES ADMIN: <button type="button" data-l="1">BIG</button> <button type="button" data-l="2">MEGA</button> <button type="button" data-l="3">SUPER</button> <button type="button" data-l="alarm">⏰ SCATTER</button></span>
-      <span id="soundToggle" role="button" tabindex="0" style="cursor:pointer">🔊 SUARA ON</span>
     </div>
   </section>
 </div>
@@ -713,6 +757,13 @@ function decodeVoices(){
 
 function sleep(ms){return new Promise(r=>setTimeout(r,ms*SPD.f));}
 function sleepRaw(ms){return new Promise(r=>setTimeout(r,ms));}
+let reelSkip=null;
+function reelWait(ms){return new Promise(r=>{const t=setTimeout(done,ms*SPD.f);function done(){clearTimeout(t);reelSkip=null;r()}reelSkip=done})}
+function syncSpinBtn(){
+  const b=document.getElementById("spin");if(!b)return;
+  const st=!!(busy||auto);
+  b.textContent=st?"STOP":"SPIN";b.classList.toggle("isStop",st);
+}
 function pick(a){return a[Math.floor(Math.random()*a.length)];}
 function money(n){return Math.max(0,Math.floor(n)).toLocaleString("id-ID");}
 
@@ -739,7 +790,7 @@ async function speakWin(level=1){
   if(!voiceOn)return;
   const idx=Math.max(0,Math.min(2,level-1));
   const label=document.getElementById("voiceState");
-  const done=()=>{duck(false);label.textContent="VOICE: READY"};
+  const done=()=>{voicePlaying=false;duck(false);label.textContent="VOICE: READY"};
   // jalur 1: WebAudio (sama dengan efek koin/alarm)
   try{
     const a=ac();
@@ -752,8 +803,8 @@ async function speakWin(level=1){
         src.buffer=voiceBufs[idx];g.gain.value=1;
         src.connect(g);g.connect(a.destination);   // langsung ke speaker, tidak lewat master
         voiceNode=src;
-        duck(true);label.textContent="VOICE: PLAYING 🔊";
-        src.onended=done;setTimeout(done,3600);
+        duck(true);voicePlaying=true;label.textContent="VOICE: PLAYING 🔊";
+        src.onended=done;setTimeout(done,Math.ceil((voiceBufs[idx].duration||3.4)*1000)+250);
         src.start();
         return;
       }
@@ -764,16 +815,25 @@ async function speakWin(level=1){
   try{
     if(unlockP)await unlockP;
     stopVoices();v.muted=false;v.volume=1;v.currentTime=0;
-    duck(true);label.textContent="VOICE: PLAYING";
+    duck(true);voicePlaying=true;label.textContent="VOICE: PLAYING";
     v.onended=done;setTimeout(done,3600);
     await v.play();
   }catch(e){
-    duck(false);label.textContent="VOICE: TAP LAYAR / KLIK SPIN DULU";
+    voicePlaying=false;duck(false);label.textContent="VOICE: TAP LAYAR / KLIK SPIN DULU";
   }
 }
 
 /* ===== SOUND ENGINE (WebAudio, tanpa file luar) ===== */
 let AC=null,master=null,bgmTimer=null,bgmStep=0,rainTimer=null;
+let sndEnd=0,noTrack=false,voicePlaying=false;   // pelacak: kapan semua efek suara hadiah selesai (BGM tidak dihitung)
+async function waitAudioIdle(maxMs=12000){        // tunggu efek suara + voice hadiah benar-benar habis (tidak ikut dipercepat)
+  const t0=performance.now();
+  while(performance.now()-t0<maxMs){
+    const rem=(AC&&voiceOn)?(sndEnd-AC.currentTime):0;
+    if(rem<=.05&&!voicePlaying)break;
+    await sleepRaw(80);
+  }
+}
 function ac(){
   if(!AC){
     try{AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.gain.value=.55;master.connect(AC.destination);}catch(e){}
@@ -784,6 +844,7 @@ function ac(){
 function tone(f,t0,d,type="sine",vol=.2,slide=0){
   const a=ac();if(!a||!voiceOn)return;
   const t=a.currentTime+t0,o=a.createOscillator(),g=a.createGain();
+  if(!noTrack)sndEnd=Math.max(sndEnd,t+d+.05);
   o.type=type;o.frequency.setValueAtTime(f,t);
   if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t+d);
   g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+d);
@@ -795,6 +856,7 @@ function hat(t0,vol=.05){
   for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);
   const src=a.createBufferSource(),g=a.createGain(),hp=a.createBiquadFilter();
   hp.type="highpass";hp.frequency.value=6000;g.gain.value=vol;
+  if(!noTrack)sndEnd=Math.max(sndEnd,a.currentTime+t0+.05);
   src.buffer=buf;src.connect(hp);hp.connect(g);g.connect(master);src.start(a.currentTime+t0);
 }
 // satu koin: dua nada logam tidak harmonis + klik
@@ -831,6 +893,7 @@ function noiseBurst(t0,d,vol,ftype="highpass",freq=4000){
   for(let i=0;i<len;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/len,1.5);
   const src=a.createBufferSource(),g=a.createGain(),f=a.createBiquadFilter();
   f.type=ftype;f.frequency.value=freq;g.gain.value=vol;
+  if(!noTrack)sndEnd=Math.max(sndEnd,a.currentTime+t0+d+.05);
   src.buffer=buf;src.connect(f);f.connect(g);g.connect(master);src.start(a.currentTime+t0);
 }
 function kick(t){tone(150,t,.26,"sine",.45,-112);noiseBurst(t,.03,.15,"lowpass",900)}
@@ -914,6 +977,7 @@ function scatterAlarm(){
   const bus=a.createGain();bus.gain.value=1.6;
   bus.connect(comp);comp.connect(a.destination);
   const T=a.currentTime+.03;
+  sndEnd=Math.max(sndEnd,T+6*.62+.4);
   const osc=(type,f,t,d,v,slide)=>{
     const o=a.createOscillator(),g=a.createGain();
     o.type=type;o.frequency.setValueAtTime(f,t);
@@ -971,6 +1035,9 @@ const BGM={
 };
 function bgmTick(){
   if(!voiceOn||!AC)return;
+  noTrack=true;try{bgmTick2()}finally{noTrack=false}
+}
+function bgmTick2(){
   const B=BGM[scatterMode?"scatter":"normal"],i=bgmStep++%8;
   tone(B.bass[i],0,B.ms/1000*1.6,"triangle",.07);
   if(B.lead[i])tone(B.lead[i],0,B.ms/1000*.9,"sine",scatterMode?.018:.035);
@@ -1206,6 +1273,7 @@ async function showOverlay(title,sub,pct,mega=false,amt=0){
     for(let k=1;k<=JP.b;k++)setTimeout(()=>burstCoins(true),k*(4200/JP.b));
     SFX.jackpot(jpTier);         // audio beda tiap tier, ±5 detik
     await sleepRaw(5000);        // jackpot selalu tampil penuh, tidak ikut dipercepat
+    await waitAudioIdle();       // dan tunggu audionya habis
     jpFXOff();
     wt.className="winText";
     ov.classList.remove("jp"+jpTier);
@@ -1214,7 +1282,8 @@ async function showOverlay(title,sub,pct,mega=false,amt=0){
     coinRain([0,45,90,150][level],1500+level*500);
     SFX.win(level);              // suara koin dominan
     speakWin(level);             // BIG / MEGA / SUPER WIN = audio lo
-    await sleep(3000);           // tunggu voice 2,9 detik selesai
+    await sleepRaw(3000);        // tunggu voice selesai (tidak ikut dipercepat)
+    await waitAudioIdle();
   }
   document.getElementById("overlay").classList.remove("show");
   document.getElementById("cabinet").classList.remove("shake");
@@ -1245,7 +1314,7 @@ function showAmt(key,amount,raw=false,elId="winAmt"){
   el.className="winAmt";void el.offsetWidth;                       // restart animasi
   el.style.setProperty("--g1",st.g[0]);el.style.setProperty("--g2",st.g[1]);el.style.setProperty("--g3",st.g[2]);el.style.setProperty("--gl",st.gl);
   el.className="winAmt k-"+st.k+(st.shine?" shine":"");
-  const dur=raw?st.ms:Math.max(500,st.ms*SPD.f),t0=performance.now();
+  const dur=st.ms,t0=performance.now();      // hitung angka hadiah selalu penuh, tidak ikut turbo/super
   const ease=x=>x>=1?1:1-Math.pow(2,-10*x);                          // easeOutExpo: cepat lalu melambat halus
   const paint=v=>{const t=money(v);el.textContent=t;el.setAttribute("data-t",t)};
   paint(0);
@@ -1265,7 +1334,8 @@ async function showDiag(len,mult,amt,kind="D",side="L"){
   showAmt("DIAG",amt);
   burstCoins(false);coinRain(18,900);
   SFX.win(1);
-  await sleep(1900);
+  await sleepRaw(1900);
+  await waitAudioIdle();
   ov.classList.remove("show");wt.className="winText";clearAmt();
 }
 function updateBanner(){
@@ -1377,6 +1447,7 @@ async function jpCards(tier,amt,reason){
   await sleepRaw(300);
   showAmt(tier,amt,true,"jpPrize");
   await sleepRaw(3600);
+  await waitAudioIdle();           // audio jackpot habis dulu baru boleh klaim / lanjut auto
   claim.hidden=false;
   await new Promise(r=>{claim.onclick=r;setTimeout(r,auto?1200:9000)});
   claim.onclick=null;
@@ -1389,12 +1460,12 @@ async function awardJackpot(tier,reason){
   const jb=document.getElementById("jp-"+tier);
   document.getElementById("msg").textContent=`JACKPOT ${tier}!`;
   jb.classList.add("hit");
-  await sleep(700);                 // kotak jackpot berkedip dulu
+  await sleepRaw(700);              // kotak jackpot berkedip dulu
   balance+=amt;
   if(scatterMode)scatterTotal+=amt;
   updateUI();
   await jpCards(tier,amt,reason);
-  await sleep(300);
+  await sleepRaw(300);
   jb.classList.remove("hit");
   return amt;
 }
@@ -1408,7 +1479,7 @@ async function awardFull(a,reason){
   const reels=document.getElementById("reels");
   reels.classList.add("jpFull");
   document.getElementById("msg").textContent=`FULL GAMBAR ${P.tier} — ${a.e} ${a.n.toUpperCase()}!`;
-  await sleep(1100);
+  await sleepRaw(1100);
   balance+=amt;
   if(scatterMode)scatterTotal+=amt;
   updateUI();updateBanner();
@@ -1424,7 +1495,8 @@ async function awardFull(a,reason){
   coinRain(30+P.lv*30,2000+P.lv*400);
   SFX.full(P.lv);
   speakWin(3);                 // FULL GAMBAR selalu pakai audio SUPER WIN
-  await sleep(3000+P.lv*300);
+  await sleepRaw(3000+P.lv*300);
+  await waitAudioIdle();
   document.getElementById("overlay").classList.remove("show");
   document.getElementById("cabinet").classList.remove("shake");
   wt.className="winText";wt.style.color="";
@@ -1500,6 +1572,7 @@ async function showScatter(count){
   burstCoins(false);
   SFX.scatter();                 // suara jam weker menggelegar
   await sleepRaw(3600);          // beri waktu alarm bunyi sampai habis
+  await waitAudioIdle();
   ov.classList.remove("show","alarmflash");
   wt.classList.remove("alarm");
   document.getElementById("cabinet").classList.remove("shake");
@@ -1511,7 +1584,7 @@ async function endScatterMode(){
   document.getElementById("winText").textContent="SCATTER SELESAI";
   document.getElementById("winSub").textContent=`TOTAL SCATTER MODE +${money(scatterTotal)}`;
   document.getElementById("overlay").classList.add("show");
-  await sleep(1500);
+  await sleepRaw(1500);
   document.getElementById("overlay").classList.remove("show");
   setMode(false);
   document.getElementById("msg").textContent="Kembali ke mode NORMAL";
@@ -1521,11 +1594,10 @@ async function spin(isFree=false){
   if(freeSpins>0)isFree=true;
   if(!isFree)clampBet();          // bet otomatis turun kalau chip tidak cukup
   if(!isFree&&!isAdmin()&&balance<BET_STEP){openBroke();return 0}   // chip habis -> tawarkan mode gratis
-  busy=true;
+  busy=true;syncSpinBtn();
   spinCount++;
   const spinBet=bet;
   unlockAudio();
-  document.getElementById("spin").disabled=true;
   document.getElementById("meter").style.width="0%";
   if(!bgmTimer)startBgm();
   SFX.spin();
@@ -1545,7 +1617,7 @@ async function spin(isFree=false){
   if(Math.random()<MODES[mode].full)special={kind:"full",animal:pickAnimal()};
   else{const jp=rollJackpotSpin();if(jp)special={kind:"jp",tier:jp}}
   diagHL=!special;seedResult(mode,!!special);render(true);
-  await sleep(850);
+  await reelWait(850);            // tombol STOP boleh mempercepat berhentinya reel (hasil/animasi hadiah tetap penuh)
   SFX.land();
 
   if(special){
@@ -1584,14 +1656,15 @@ async function spin(isFree=false){
   if(scatterMode && freeSpins===0)await endScatterMode();
   if(freeSpins===0)clampBet();    // chip berubah setelah spin -> sesuaikan bet
   updateUI();
-  document.getElementById("spin").disabled=false;
-  busy=false;
+  await waitAudioIdle();          // jangan lanjut (termasuk auto spin) sebelum semua audio hadiah habis
+  busy=false;syncSpinBtn();
   if(!isAdmin()&&freeSpins===0&&balance<BET_STEP)openBroke();
   try{roomAfterSpin({win,bet:spinBet,isFree,special})}catch(e){console.warn(e)}
   return win;
 }
 let autoLeft=null,autoRunning=false;      // autoLeft: null = AUTO tanpa batas, angka = sisa spin (pilihan 10/20/50/100/200/500)
 function autoLabel(){
+  syncSpinBtn();
   document.getElementById("auto").textContent=!auto?"AUTO":(autoLeft===null?"AUTO ON":"AUTO "+autoLeft);
   const n=document.getElementById("spinN"),counted=auto&&autoLeft!==null;
   n.classList.toggle("on",counted);
@@ -1630,11 +1703,22 @@ function openSpinPick(){unlockAudio();pickEl.hidden=false}
 function closeSpinPick(){pickEl.hidden=true}
 spinBtn.addEventListener("pointerdown",()=>{
   lpFired=false;lpClear();
+  if(busy||auto)return;          // mode STOP: tidak ada long-press
   lpTimer=setTimeout(()=>{lpTimer=null;lpFired=true;try{if(navigator.vibrate)navigator.vibrate(30)}catch(e){}openSpinPick()},500);
 });
 ["pointerup","pointerleave","pointercancel"].forEach(ev=>spinBtn.addEventListener(ev,lpClear));
 spinBtn.addEventListener("contextmenu",e=>e.preventDefault());
-spinBtn.addEventListener("click",()=>{if(lpFired){lpFired=false;return}spin(freeSpins>0)});
+spinBtn.addEventListener("click",()=>{
+  if(lpFired){lpFired=false;return}
+  if(busy||auto){                 // sedang spin / auto -> tombol ini adalah STOP
+    const wasAuto=auto;
+    stopAuto();closeSpinPick();
+    if(reelSkip){reelSkip();setMsg(wasAuto?"STOP — AUTO dihentikan":"STOP")}
+    else if(!busy)setMsg("AUTO dihentikan");
+    return;
+  }
+  spin(freeSpins>0);
+});
 document.getElementById("spinN").addEventListener("click",()=>{pickEl.hidden?openSpinPick():closeSpinPick()});
 pickEl.addEventListener("click",e=>{
   if(e.target.closest("[data-close]")){closeSpinPick();return}
@@ -1646,20 +1730,66 @@ document.getElementById("auto").addEventListener("click",()=>{
   unlockAudio();
   if(auto)stopAuto();else startAuto(0);
 });
-document.getElementById("stop").addEventListener("click",()=>{
-  stopAuto();closeSpinPick();
-  document.getElementById("msg").textContent="AUTO dihentikan";
-});
 document.getElementById("speed").addEventListener("click",()=>setSpeedIdx(SPEEDS.indexOf(SPD)+1));
 document.getElementById("minus").addEventListener("click",()=>{
   if(busy)return;
   bet=Math.max(BET_STEP,bet-BET_STEP);updateUI();
+});
+document.getElementById("maxbet").addEventListener("click",()=>{
+  if(busy)return;
+  unlockAudio();
+  bet=BET_MAX;clampBet();updateUI();   // bet tertinggi yang masih terjangkau chip (admin: batas maksimum)
 });
 document.getElementById("plus").addEventListener("click",()=>{
   if(busy)return;
   bet=Math.min(BET_MAX,bet+BET_STEP);clampBet();updateUI();   // tidak bisa melebihi chip
 });
 document.getElementById("voiceTest").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||!isAdmin())return;unlockAudio();if(b.dataset.l==="alarm")SFX.scatter();else speakWin(+b.dataset.l)});
+/* ===== MENU ATAS (gabungan profil, suara, lobi, login, dll.) ===== */
+(function(){
+  const mb=document.getElementById("menuBtn"),mp=document.getElementById("menuPanel"),dot=document.getElementById("menuDot"),daily=document.getElementById("dailyBtn");
+  function setMenu(o){mp.hidden=!o;mb.setAttribute("aria-expanded",o?"true":"false")}
+  mb.addEventListener("click",e=>{e.stopPropagation();setMenu(mp.hidden)});
+  mp.addEventListener("click",e=>{if(e.target.closest("button"))setTimeout(()=>setMenu(false),0)});   // suara tetap terbuka agar bisa on/off
+  document.addEventListener("pointerdown",e=>{if(!mp.hidden&&!e.target.closest("#menuPanel,#menuBtn"))setMenu(false)});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")setMenu(false)});
+  const sync=()=>{dot.hidden=daily.hidden};sync();      // titik merah: hadiah harian siap diambil
+  new MutationObserver(sync).observe(daily,{attributes:true,attributeFilter:["hidden"]});
+})();
+/* ===== AUDIO TOMBOL (UI) ===== */
+const UISND={
+  _q(fn){const k=noTrack;noTrack=true;try{fn()}finally{noTrack=k}},   // suara UI tidak mengganggu pelacak suara hadiah
+  tick(){this._q(()=>{tone(1250,0,.045,"triangle",.09);hat(0,.03)})},
+  up(){this._q(()=>{tone(700,0,.06,"triangle",.11);tone(1050,.05,.08,"triangle",.1)})},
+  down(){this._q(()=>{tone(900,0,.06,"triangle",.11);tone(600,.05,.08,"triangle",.1)})},
+  deny(){this._q(()=>{tone(180,0,.12,"square",.07,-50)})},
+  max(){this._q(()=>{[523,659,784,1047,1319].forEach((f,i)=>{tone(f,i*.05,.14,"triangle",.11);tone(f*2,i*.05,.07,"sine",.04)});coinPing(.25,.07);coinPing(.3,.06)})},
+  auto(on){this._q(()=>{if(on){tone(660,0,.07,"square",.06);tone(990,.07,.1,"square",.06)}else{tone(990,0,.07,"square",.06);tone(660,.07,.1,"square",.06)}})},
+  speed(){this._q(()=>{tone(500,0,.05,"square",.06);tone(800,.05,.07,"square",.06)})},
+  open(){this._q(()=>{tone(600,0,.06,"sine",.1);tone(900,.06,.09,"sine",.1)})},
+  close(){this._q(()=>{tone(800,0,.06,"sine",.09);tone(500,.06,.09,"sine",.09)})}
+};
+let _uiBet=0,_uiAuto=false;
+document.addEventListener("click",e=>{_uiBet=bet;_uiAuto=auto},true);   // keadaan sebelum tombol diproses
+document.addEventListener("click",e=>{
+  const b=e.target.closest("button,#soundToggle");if(!b||!voiceOn&&b.id!=="soundToggle")return;
+  const id=b.id;
+  try{
+    if(id==="spin"||id==="jpClaim"||b.closest("#voiceTest"))return;      // sudah punya suara sendiri
+    if(id==="minus"||id==="plus"){
+      if(busy||bet===_uiBet)UISND.deny();else if(bet>_uiBet)UISND.up();else UISND.down();
+    }else if(id==="maxbet"){
+      if(busy||bet===_uiBet)UISND.deny();else UISND.max();
+    }else if(id==="auto"){UISND.auto(auto&&!_uiAuto)}
+    else if(id==="speed"){UISND.speed()}
+    else if(id==="spinN"){pickEl.hidden?UISND.close():UISND.open()}
+    else if(b.dataset&&b.dataset.n!==undefined){UISND.auto(true)}
+    else if(b.dataset&&b.dataset.close){UISND.close()}
+    else if(id==="menuBtn"){document.getElementById("menuPanel").hidden?UISND.close():UISND.open()}
+    else if(id==="soundToggle"){if(voiceOn)UISND.open()}
+    else UISND.tick();                                                  // tombol lain (login, profil, harian, modal, dll.)
+  }catch(err){}
+});
 function toggleSound(){setVoice(!voiceOn)}
 document.getElementById("soundToggle").addEventListener("click",toggleSound);
 document.getElementById("soundToggle").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();toggleSound();}});
