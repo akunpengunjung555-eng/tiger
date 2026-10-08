@@ -1853,6 +1853,28 @@ async function admLoadRemote(pid){   // baca izin tersimpan online (koleksi perm
   return null;
 }
 function tmo(p,ms,label){let t;return Promise.race([Promise.resolve(p),new Promise((_,rj)=>{t=setTimeout(()=>rj({code:"timeout",message:(label||"proses")+" terlalu lama (>"+Math.round(ms/1000)+" dtk) — cek koneksi / Rules"}),ms)})]).finally(()=>clearTimeout(t))}
+/* ----- jalur cadangan: REST API Firestore (HTTPS biasa) kalau koneksi SDK untuk menulis macet ----- */
+async function restReq(method,path,body){
+  const tok=await firebase.auth().currentUser.getIdToken();
+  const url="https://firestore.googleapis.com/v1/projects/"+FIREBASE_CONFIG.projectId+"/databases/(default)/documents/"+path;
+  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
+  try{
+    const r=await fetch(url,{method,signal:ctl.signal,headers:{"Authorization":"Bearer "+tok,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw{code:(j.error&&j.error.status)||("http-"+r.status),message:(j.error&&j.error.message)||("HTTP "+r.status)};
+    return j;
+  }catch(e){if(e&&e.name==="AbortError")throw{code:"timeout",message:"REST terlalu lama"};throw e}
+  finally{clearTimeout(tm)}
+}
+async function restSavePerm(t,perm){
+  const pid=String(t.pid);
+  await restReq("PATCH","perms/"+pid,{fields:{pid:{stringValue:pid},name:{stringValue:String(t.name).slice(0,24)},send:{booleanValue:perm.send},full:{booleanValue:perm.full},jp:{booleanValue:perm.jp},ts:{integerValue:String(Date.now())}}});
+  const j=await restReq("GET","perms/"+pid);const f=j.fields||{};
+  if(!f.send||!!f.send.booleanValue!==perm.send||!!f.full.booleanValue!==perm.full||!!f.jp.booleanValue!==perm.jp)throw{code:"verify",message:"data di server tidak cocok"};
+}
+async function restSendPerm(pid,perm){
+  await restReq("POST","profiles/"+String(pid)+"/inbox",{fields:{type:{stringValue:"perm"},from:{stringValue:"ADMIN"},ts:{integerValue:String(Date.now())},perm:{mapValue:{fields:{send:{booleanValue:perm.send},full:{booleanValue:perm.full},jp:{booleanValue:perm.jp}}}}}});
+}
 let admOnline=[],admOnlineErr="";
 function permBadge(p){return p?(p.send?"📤":"")+(p.full?"🖼️":"")+(p.jp?"🎰":""):""}
 function admOnlineHtml(){
@@ -1908,7 +1930,7 @@ async function admSave(){
   admSaving=true;
   const t=admT,perm={send:!!t.perm.send,full:!!t.perm.full,jp:!!t.perm.jp};
   const mm=document.getElementById("admMsg");if(mm){mm.style.color="#ffd978";mm.textContent="Menyimpan…"}
-  const okMsg=[],bad=[];
+  const okMsg=[],bad=[];let viaRest=false;
   const step=x=>{const e=document.getElementById("admMsg");if(e){e.style.color="#ffd978";e.textContent=x}};
   try{
     if(t.local){const rec=loadAcct(t.local.id);if(rec){rec.perm=perm;LS.set("daf_acct_"+rec.id,JSON.stringify(rec));okMsg.push("tersimpan di perangkat ini")}}
@@ -1920,9 +1942,15 @@ async function admSave(){
         const chk=await tmo(pref.get({source:"server"}),10000,"verifikasi server");
         if(!chk.exists||!!chk.data().send!==perm.send||!!chk.data().full!==perm.full||!!chk.data().jp!==perm.jp)throw{code:"verify",message:"data di server tidak cocok"};
         okMsg.push("izin tersimpan online (terverifikasi di server)");admMark(t,perm)}
-      catch(e){console.warn(e);bad.push("izin BELUM sampai server: "+esc(e.code||e.message)+" — akan hilang saat refresh")}
+      catch(e){console.warn(e);
+        step("Jalur utama macet ("+esc(e.code||e.message)+") — mencoba jalur cadangan…");
+        try{await restSavePerm(t,perm);okMsg.push("izin tersimpan online lewat jalur cadangan (terverifikasi)");admMark(t,perm);viaRest=true}
+        catch(e2){console.warn(e2);bad.push("izin BELUM sampai server: "+esc(e.code||e.message)+" / cadangan: "+esc(e2.code||e2.message)+" — akan hilang saat refresh")}}
       try{await tmo(fbSend({pid:t.pid},{type:"perm",perm,from:"ADMIN",ts:Date.now()}),10000,"kirim pesan");okMsg.push("terkirim ke pemain ☁️ (aktif saat pemain online / login)")}
-      catch(e){console.warn(e);const c=String(e.code||e.message);bad.push("gagal kirim online: "+esc(c)+(c.indexOf("permission")>=0?" — Rules Firestore belum di-Publish / pemain belum terdaftar online (suruh pemain login sekali saat online)":""))}
+      catch(e){console.warn(e);const c=String(e.code||e.message);
+        let sent=false;
+        if(viaRest||c==="timeout"){try{await restSendPerm(t.pid,perm);okMsg.push("terkirim ke pemain ☁️ (jalur cadangan)");sent=true}catch(e3){console.warn(e3)}}
+        if(!sent)bad.push("gagal kirim online: "+esc(c)+(c.indexOf("permission")>=0?" — Rules Firestore belum di-Publish / pemain belum terdaftar online (suruh pemain login sekali saat online)":""))}
     }else{bad.push("tidak bisa terhubung ke server"+(FB.err?" ("+esc(FB.err.code||FB.err.message)+")":"")+" — izin hanya tersimpan di perangkat ini")}
   }catch(e){console.warn(e);bad.push(String(e.message||e))}
   admSaving=false;
