@@ -1847,10 +1847,7 @@ function admRender(msg){
   <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
 }
 function openAdminPanel(){if(!isAdmin())return;admT=null;admRender()}
-async function admLoadRemote(pid){
-  try{if(await fbInit()&&FB.ok){const d=await FB.db.collection("perms").doc(String(pid)).get();if(d.exists)return d.data()}}catch(e){console.warn(e)}
-  return null;
-}
+async function admLoadRemote(pid){return null}   // izin pemain lain tidak bisa dibaca dari jauh; tampil default sampai disimpan
 async function admPick(id){
   const a=loadAcct(id);if(!a)return;
   let perm=permOf(a.perm);const r=await admLoadRemote(a.pid);if(r)perm=permOf(r);
@@ -1867,25 +1864,24 @@ async function admSearch(){
   admT={pid,name,perm,local:loc};admRender();
 }
 function admToggle(k){if(!admT)return;admT.perm[k]=!admT.perm[k];admRender()}
+let admSaving=false;
 async function admSave(){
-  if(!admT||!isAdmin())return;
-  const perm={send:!!admT.perm.send,full:!!admT.perm.full,jp:!!admT.perm.jp};
-  let note=[];
-  if(admT.local){const rec=loadAcct(admT.local.id);if(rec){rec.perm=perm;LS.set("daf_acct_"+rec.id,JSON.stringify(rec));note.push("tersimpan di perangkat ini")}}
+  if(!admT||!isAdmin()||admSaving)return;
+  admSaving=true;
+  const t=admT,perm={send:!!t.perm.send,full:!!t.perm.full,jp:!!t.perm.jp};
+  const mm=document.getElementById("admMsg");if(mm){mm.style.color="#ffd978";mm.textContent="Menyimpan…"}
+  const okMsg=[],bad=[];
   try{
-    if(await fbInit()&&FB.ok){await FB.db.collection("perms").doc(String(admT.pid)).set(Object.assign({},perm,{ts:Date.now()}));note.push("terkirim online ☁️")}
-    else if(!admT.local){admRender("Tidak bisa terhubung ke server, pemain ini tidak ada di perangkat ini");return}
-  }catch(e){console.warn(e);note.push("GAGAL online: "+(e.code||e.message)+" (cek Rules Firestore untuk koleksi perms)")}
-  admRender("✅ "+esc(admT.name)+": "+note.join(" • "));
-}
-/* izin dari server: dipakai akun pemain begitu login (live) */
-function fbPermWatch(a){
-  if(FB.unsubP){try{FB.unsubP()}catch(e){}FB.unsubP=null}
-  if(!FB.ok||a.admin)return;
-  FB.unsubP=FB.db.collection("perms").doc(String(a.pid)).onSnapshot(d=>{
-    if(acct!==a||!d.exists)return;
-    const x=d.data();a.perm={send:!!x.send,full:!!x.full,jp:!!x.jp};saveGame();updateUserBar();
-  },e=>console.warn("perm listener:",e));
+    if(t.local){const rec=loadAcct(t.local.id);if(rec){rec.perm=perm;LS.set("daf_acct_"+rec.id,JSON.stringify(rec));okMsg.push("tersimpan di perangkat ini")}}
+    if(await fbInit()&&FB.ok){
+      try{await fbSend({pid:t.pid},{type:"perm",perm,from:"ADMIN",ts:Date.now()});okMsg.push("terkirim ke pemain ☁️ (aktif saat pemain online / login)")}
+      catch(e){console.warn(e);bad.push("gagal kirim online: "+(e.code||e.message))}
+    }else if(!t.local){bad.push("tidak bisa terhubung ke server, dan pemain ini tidak ada di perangkat ini")}
+  }catch(e){console.warn(e);bad.push(String(e.message||e))}
+  admSaving=false;
+  admT=t;
+  admRender((okMsg.length?"✅ "+esc(t.name)+": "+okMsg.join(" • "):"")+(bad.length?(okMsg.length?"<br>":"")+"❌ "+bad.join(" • "):""));
+  const m2=document.getElementById("admMsg");if(m2&&bad.length&&!okMsg.length)m2.style.color="#ff8a8a";
 }
 /* ===== AUDIO TOMBOL (UI) ===== */
 const UISND={
@@ -2587,6 +2583,10 @@ async function fbClaim(a){   // ambil semua chip kiriman di inbox online
         if(acct!==a)break;
         let it=null;   // transaksi: hanya satu perangkat/tab yang berhasil mengambil tiap kiriman
         try{await FB.db.runTransaction(async tx=>{const s=await tx.get(d.ref);it=s.exists?s.data():null;if(it)tx.delete(d.ref)})}catch(e){it=null}
+        if(it&&it.type==="perm"&&it.perm){   // kiriman izin dari admin (bukan chip)
+          a.perm={send:!!it.perm.send,full:!!it.perm.full,jp:!!it.perm.jp};saveGame();updateUserBar();
+          setMsg("🔧 Izin akun diperbarui admin");continue;
+        }
         const net=it?Number(it.net):0;
         if(!(net>0))continue;
         creditAcct(a,net,{k:"in",amt:it.amount,tax:it.tax,net,peer:String(it.from||"?"),ts:it.ts||Date.now()});
@@ -2603,7 +2603,7 @@ function showFbNotes(){
   const html=fbNotes.join("");fbNotes=[];
   openInfo("📥 CHIP MASUK",html,"closeModal()");
 }
-function fbUnwatch(){if(FB.unsub){try{FB.unsub()}catch(e){}FB.unsub=null}if(FB.unsubP){try{FB.unsubP()}catch(e){}FB.unsubP=null}}
+function fbUnwatch(){if(FB.unsub){try{FB.unsub()}catch(e){}FB.unsub=null}}
 function fbWatch(a){   // live: chip masuk langsung diterima tanpa refresh
   fbUnwatch();
   if(!FB.ok||a.admin)return;
@@ -2617,7 +2617,7 @@ async function fbAttach(a){   // dipanggil tiap login
   if(!a.admin){
     try{await fbRegister(a)}catch(e){console.warn("Daftar profil gagal:",e);setMsg("☁️ Gagal daftar online: "+(e.code||e.message)+(String(e.code).indexOf("permission")>=0?" — cek Rules Firestore sudah di-Publish":""));return}
     if(acct!==a)return;
-    fbWatch(a);fbPermWatch(a);
+    fbWatch(a);
   }
   updateUserBar();
 }
