@@ -1219,7 +1219,7 @@ function plantLine(locked,dcells){
   const a=pickAnimal();
   cells.forEach(([r,c])=>{board[r][c]=a;locked.add(r*COLS+c);dcells.add(r*COLS+c)});
 }
-function seedResult(mode="normal",plain=false,gacor=false){
+function seedResult(mode="normal",plain=false,gacor=false,luck=1){
   board=randomBoard();
   const M=MODES[mode],locked=new Set(),dcells=new Set();
   if(plain){sanitizeDiag(locked);return}   // spin jackpot / full gambar: papan polos, hasil ditentukan terpisah
@@ -1228,14 +1228,16 @@ function seedResult(mode="normal",plain=false,gacor=false){
   if(gacor){   // akun gacor (terdaftar admin): TIAP spin menang -> kemenangan beruntun. Besar kecilnya tetap acak
     const q=Math.random();
     rows=q<.50?1:q<.64?2:q<.70?3:0;   // 50% 1 baris, 14% 2 baris, 6% 3 baris, 30% pola sebagian (horizontal/diagonal)
-  }else if(roll<M.rows3)rows=3;
-  else if(roll<M.rows3+M.rows2)rows=2;
-  else if(roll<M.rows3+M.rows2+M.rows1)rows=1;
+  }else{
+    const W=Math.min(6,Math.max(.5,Math.pow(luck||1,.6)));   // akun hoki: peluang menang biasa ikut naik
+    const r3=M.rows3*W,r2=M.rows2*W,r1=M.rows1*W;
+    if(roll<r3)rows=3;else if(roll<r3+r2)rows=2;else if(roll<r3+r2+r1)rows=1;
+  }
   if(rows){
     const animal=pickAnimal();
     const selected=[0,1,2,3,4].sort(()=>Math.random()-.5).slice(0,rows);
     selected.forEach(r=>{for(let c=0;c<COLS;c++){board[r][c]=animal;locked.add(r*COLS+c)}});
-  }else if(gacor||Math.random()<M.diag)plantLine(locked,dcells);   // M.diag = peluang pola sebagian (horizontal/diagonal)
+  }else if(gacor||Math.random()<Math.min(.6,M.diag*Math.min(6,Math.max(.5,Math.pow(luck||1,.6)))))plantLine(locked,dcells);   // M.diag = peluang pola sebagian (horizontal/diagonal)
   sanitizeDiag(locked);
   if(Math.random()<M.scatter){
     const count=scatterCount();
@@ -1693,12 +1695,13 @@ async function spin(isFree=false){
   // tentukan dulu apakah spin ini FULL GAMBAR / JACKPOT (dua hadiah terpisah), semua murni hoki
   let special=null;
   // semua akun bisa kena (hoki); akun terdaftar admin = gacor (peluang dikali GACOR_*). Mode gratis tidak pernah dapat.
-  const gF=can("full")?GACOR_FULL:1,gJ=can("jp")?GACOR_JP:1;
+  const L=(acct&&acct.luck>0)?acct.luck:1,GV=(acct&&acct.gv>0)?acct.gv:1;
+  const gF=can("full")?GACOR_FULL*GV:L,gJ=can("jp")?GACOR_JP*GV:L;   // terdaftar = gacor (bervariasi per akun); lainnya = kehokian pribadi
   if(!freeMode&&Math.random()<Math.min(GACOR_CAP,MODES[mode].full*gF))special={kind:"full",animal:pickAnimal()};
   else if(!freeMode){const jp=rollJackpotSpin(gJ);if(jp)special={kind:"jp",tier:jp}}
   diagHL=!special;
   const gacorSpin=!special&&!freeMode&&(can("full")||can("jp"));
-  seedResult(mode,!!special,gacorSpin);
+  seedResult(mode,!!special,gacorSpin,(acct&&acct.luck)||1);
   if(gacorSpin)for(let k=0;k<8&&!(countRows().length||diagRuns(board).length);k++)seedResult(mode,false,true);   // gacor: pastikan menang
   render(true);
   await reelWait(850);            // tombol STOP boleh mempercepat berhentinya reel (hasil/animasi hadiah tetap penuh)
@@ -1851,7 +1854,7 @@ function permOf(x){return Object.assign({},DEFAULT_PERM,x||{})}
 function admTg(k,label){return `<div class="admRow"><b>${label}</b><button class="tg ${admT.perm[k]?"on":""}" type="button" onclick="admToggle('${k}')">${admT.perm[k]?"ON":"OFF"}</button></div>`}
 function admRender(msg){
   const list=listAccounts().sort((x,y)=>(y.updated||0)-(x.updated||0)).slice(0,30);
-  const editor=admT?`<div class="pstats" style="grid-template-columns:1fr"><div>${esc(admT.name)} • ID ${esc(admT.pid)}${admT.local?"":" (online)"}</div></div>
+  const editor=admT?`<div class="pstats" style="grid-template-columns:1fr"><div>${esc(admT.name)} • ID ${esc(admT.pid)}${admT.local?" • 🍀 kehokian bawaan ×"+(admT.local.luck||1):" (online)"}</div></div>
     ${admTg("send","📤 Boleh kirim chip")}${admTg("full","🖼️ GACOR Full Gambar (peluang dinaikkan)")}${admTg("jp","🎰 GACOR Jackpot (peluang dinaikkan)")}
     <button class="btn spin" type="button" style="font-size:16px" onclick="admSave()">💾 SIMPAN IZIN</button>`
     :`<p class="pwNote">Cari pemain lewat ID/username, atau pilih dari daftar di bawah.</p>`;
@@ -2069,12 +2072,22 @@ function newPid(){   // ID pemain: 8 digit, unik
   let p;do{p=String(Math.floor(20000000+Math.random()*80000000))}while(used.has(p));
   return p;
 }
+/* KEHOKIAN per akun (acak, tersimpan di akun, tidak ada hitungan "spin ke berapa"): tiap spin tetap undian bebas.
+   ±5% sial (0,25-0,55x) | ±60% normal (0,7-1,6x) | ±25% hoki (2-8x) | ±10% sangat hoki (10-25x). Akun terdaftar admin = gacor, lihat GACOR_*. */
+function genLuck(){const r=Math.random();
+  if(r<.05)return +(0.25+Math.random()*.3).toFixed(2);
+  if(r<.65)return +(0.7+Math.random()*.9).toFixed(2);
+  if(r<.90)return +(2+Math.random()*6).toFixed(2);
+  return +(10+Math.random()*15).toFixed(2);
+}
 function fixAcct(a){   // akun lama (tanpa ID pemain) otomatis dilengkapi
   if(!a||typeof a!=="object"||!a.id)return null;
   let dirty=false;
   if(!a.pid){a.pid=newPid();dirty=true}
   if(!a.name){a.name=String(a.id);dirty=true}
   if(!Array.isArray(a.tx)){a.tx=[];dirty=true}
+  if(!(a.luck>0)){a.luck=genLuck();dirty=true}
+  if(!(a.gv>0)){a.gv=+(0.6+Math.random()).toFixed(2);dirty=true}   // variasi kegacoran akun terdaftar
   if(dirty)LS.set("daf_acct_"+a.id,JSON.stringify(a));
   return a;
 }
@@ -2144,6 +2157,7 @@ function updateUserBar(){
 }
 let inboxNote="";
 function applyAcct(a){
+  if(!a.admin){if(!(a.luck>0))a.luck=genLuck();if(!(a.gv>0))a.gv=+(0.6+Math.random()).toFixed(2)}
   acct=a;freeMode=false;stash=null;BET_STEP=REAL_STEP;
   balance=a.balance;bet=a.bet;spinCount=a.spinCount||0;freeSpins=a.freeSpins||0;
   if(freeSpins>0&&!scatterMode)setMode(true);
