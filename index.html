@@ -1848,13 +1848,21 @@ document.getElementById("tableBtn").addEventListener("click",()=>{
   openModal(`<h2>📖 TABEL HADIAH</h2><div class="fulltable" style="font-size:13px;justify-content:center">${document.getElementById("fullTable").innerHTML}</div><button class="btn small" type="button" style="font-size:15px" onclick="closeModal()">TUTUP</button>`);
 });
 
-/* ===== PANEL ADMIN: atur izin tiap akun (kirim chip / full gambar / jackpot) ===== */
-let admT=null;   // akun yang sedang diedit: {pid,name,perm,local}
+function tmo(p,ms,label){let t;return Promise.race([Promise.resolve(p),new Promise((_,rj)=>{t=setTimeout(()=>rj({code:"timeout",message:(label||"proses")+" terlalu lama (>"+Math.round(ms/1000)+" dtk) — cek koneksi / Rules"}),ms)})]).finally(()=>clearTimeout(t))}
+/* ===== PANEL ADMIN: atur izin tiap akun (kirim chip / full gambar / jackpot) — lewat server Cloudflare, tanpa Firebase ===== */
+let admT=null,admAcc=[],admErr="",admSaving=false;   // admT: akun yang sedang diedit {pid,name,perm,luck}
 function permOf(x){return Object.assign({},DEFAULT_PERM,x||{})}
+function permBadge(p){return p?(p.send?"📤":"")+(p.full?"🖼️":"")+(p.jp?"🎰":""):""}
 function admTg(k,label){return `<div class="admRow"><b>${label}</b><button class="tg ${admT.perm[k]?"on":""}" type="button" onclick="admToggle('${k}')">${admT.perm[k]?"ON":"OFF"}</button></div>`}
+function admListHtml(){
+  if(admErr)return `<div style="font-size:12px;color:#ff8a8a">${esc(admErr)}</div>`;
+  const btn=a=>`<button class="ubtn" type="button" data-pid="${esc(a.id)}" onclick="admPick(this.dataset.pid)">${esc(a.name)} • ${esc(a.id)} ${permBadge(a.perms)}</button>`;
+  const ok=admAcc.filter(a=>permBadge(a.perms)),rest=admAcc.filter(a=>!permBadge(a.perms));
+  return `<b style="color:#fff;font-size:12px">✅ ID yang diizinkan (semua perangkat)</b><div class="admList">${ok.map(btn).join("")||"<div style='font-size:12px;color:#ffd978'>Belum ada</div>"}</div>
+  <b style="color:#fff;font-size:12px">🌐 Semua akun</b><div class="admList">${rest.map(btn).join("")||"<div style='font-size:12px;color:#ffd978'>Belum ada / memuat…</div>"}</div>`;
+}
 function admRender(msg){
-  const list=listAccounts().sort((x,y)=>(y.updated||0)-(x.updated||0)).slice(0,30);
-  const editor=admT?`<div class="pstats" style="grid-template-columns:1fr"><div>${esc(admT.name)} • ID ${esc(admT.pid)}${admT.local?" • 🍀 kehokian bawaan ×"+(admT.local.luck||1):" (online)"}</div></div>
+  const editor=admT?`<div class="pstats" style="grid-template-columns:1fr"><div>${esc(admT.name)} • ID ${esc(admT.pid)} • 🍀 kehokian ×${esc(admT.luck||1)}</div></div>
     ${admTg("send","📤 Boleh kirim chip")}${admTg("full","🖼️ GACOR Full Gambar (peluang dinaikkan)")}${admTg("jp","🎰 GACOR Jackpot (peluang dinaikkan)")}
     <button class="btn spin" type="button" style="font-size:16px" onclick="admSave()">💾 SIMPAN IZIN</button>`
     :`<p class="pwNote">Cari pemain lewat ID/username, atau pilih dari daftar di bawah.</p>`;
@@ -1862,124 +1870,54 @@ function admRender(msg){
   <div class="rowin"><input id="admQ" type="text" placeholder="ID pemain / username" autocapitalize="off" autocomplete="off" onkeydown="if(event.key==='Enter')admSearch()"><button class="ubtn gold" type="button" onclick="admSearch()">CARI</button></div>
   <div id="admMsg" class="pwErr" style="color:#ffd978">${msg||""}</div>
   ${editor}
-  <div class="admList"><b style="color:#fff;font-size:12px">Akun di perangkat ini</b>${list.map(a=>{const pm=permOf(a.perm);return `<button class="ubtn" type="button" data-id="${esc(a.id)}" onclick="admPick(this.dataset.id)">${esc(a.name)} • ${esc(a.pid)} ${pm.send?"📤":""}${pm.full?"🖼️":""}${pm.jp?"🎰":""}</button>`}).join("")||"<div style='font-size:12px;color:#ffd978'>Belum ada akun</div>"}</div>
-  <div id="admOnl">${admOnlineHtml()}</div>
+  <div id="admOnl">${admListHtml()}</div>
   <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
 }
-function openAdminPanel(){if(!isAdmin())return;admT=null;admRender();admLoadOnline()}
-async function admLoadRemote(pid){   // baca izin tersimpan online (koleksi perms)
-  try{if(await tmo(fbInit(),8000,"koneksi")&&FB.ok){const d=await tmo(FB.db.collection("perms").doc(String(pid)).get(),8000,"baca izin");if(d.exists){const x=d.data();return{send:!!x.send,full:!!x.full,jp:!!x.jp}}}}catch(e){console.warn(e)}
-  return null;
+function openAdminPanel(){if(!isAdmin())return;admT=null;admRender();admLoad()}
+async function admApi(path,body){
+  if(!admToken)return{ok:false,status:401,j:{error:"Sesi admin habis — login admin lagi"}};
+  const r=await apiCall(path,body,admToken);
+  if(r.status===401||r.status===403)r.j={error:"Sesi admin habis — login admin lagi"};
+  return r;
 }
-function tmo(p,ms,label){let t;return Promise.race([Promise.resolve(p),new Promise((_,rj)=>{t=setTimeout(()=>rj({code:"timeout",message:(label||"proses")+" terlalu lama (>"+Math.round(ms/1000)+" dtk) — cek koneksi / Rules"}),ms)})]).finally(()=>clearTimeout(t))}
-/* ----- jalur cadangan: REST API Firestore (HTTPS biasa) kalau koneksi SDK untuk menulis macet ----- */
-async function restReq(method,path,body){
-  const tok=await firebase.auth().currentUser.getIdToken();
-  const url="https://firestore.googleapis.com/v1/projects/"+FIREBASE_CONFIG.projectId+"/databases/(default)/documents/"+path;
-  const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
-  try{
-    const r=await fetch(url,{method,signal:ctl.signal,headers:{"Authorization":"Bearer "+tok,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
-    const j=await r.json().catch(()=>({}));
-    if(!r.ok)throw{code:(j.error&&j.error.status)||("http-"+r.status),message:(j.error&&j.error.message)||("HTTP "+r.status)};
-    return j;
-  }catch(e){if(e&&e.name==="AbortError")throw{code:"timeout",message:"REST terlalu lama"};throw e}
-  finally{clearTimeout(tm)}
+async function admLoad(){
+  const r=await admApi("/admin/accounts");
+  if(r.ok){admErr="";admAcc=Array.isArray(r.j.accounts)?r.j.accounts:[]}
+  else admErr="Gagal memuat daftar akun: "+(r.j.error||("HTTP "+r.status));
+  const el=document.getElementById("admOnl");if(el)el.innerHTML=admListHtml();
+  return r.ok;
 }
-async function restSavePerm(t,perm){
-  const pid=String(t.pid);
-  await restReq("PATCH","perms/"+pid,{fields:{pid:{stringValue:pid},name:{stringValue:String(t.name).slice(0,24)},send:{booleanValue:perm.send},full:{booleanValue:perm.full},jp:{booleanValue:perm.jp},ts:{integerValue:String(Date.now())}}});
-  const j=await restReq("GET","perms/"+pid);const f=j.fields||{};
-  if(!f.send||!!f.send.booleanValue!==perm.send||!!f.full.booleanValue!==perm.full||!!f.jp.booleanValue!==perm.jp)throw{code:"verify",message:"data di server tidak cocok"};
-}
-async function restSendPerm(pid,perm){
-  await restReq("POST","profiles/"+String(pid)+"/inbox",{fields:{type:{stringValue:"perm"},from:{stringValue:"ADMIN"},ts:{integerValue:String(Date.now())},perm:{mapValue:{fields:{send:{booleanValue:perm.send},full:{booleanValue:perm.full},jp:{booleanValue:perm.jp}}}}}});
-}
-let admOnline=[],admOnlineErr="";
-function permBadge(p){return p?(p.send?"📤":"")+(p.full?"🖼️":"")+(p.jp?"🎰":""):""}
-function admOnlineHtml(){
-  if(admOnlineErr)return `<div style="font-size:12px;color:#ff8a8a">${esc(admOnlineErr)}</div>`;
-  const btn=a=>`<button class="ubtn" type="button" data-pid="${esc(a.pid)}" data-name="${esc(a.name)}" onclick="admPickOnline(this.dataset.pid,this.dataset.name)">${esc(a.name)} • ${esc(a.pid)} ${permBadge(a.perm)}</button>`;
-  const ok=admOnline.filter(a=>permBadge(a.perm)),rest=admOnline.filter(a=>!permBadge(a.perm));
-  return `<b style="color:#fff;font-size:12px">✅ ID yang diizinkan (semua perangkat)</b><div class="admList">${ok.map(btn).join("")||"<div style='font-size:12px;color:#ffd978'>Belum ada</div>"}</div>
-  <b style="color:#fff;font-size:12px">🌐 Semua akun online</b><div class="admList">${rest.map(btn).join("")||"<div style='font-size:12px;color:#ffd978'>Belum ada / memuat…</div>"}</div>`;
-}
-async function admLoadOnline(){
-  admOnlineErr="";
-  try{
-    if(!(await tmo(fbInit(),8000,"koneksi")&&FB.ok)){admOnlineErr="Server online tidak terhubung";}
-    else{
-      const SV={source:"server"};
-      const [ps,pm]=await tmo(Promise.all([FB.db.collection("profiles").orderBy("updated","desc").limit(60).get(SV),FB.db.collection("perms").get(SV)]),12000,"muat daftar dari server");
-      const pmap={},pname={};pm.forEach(d=>{const x=d.data();pmap[d.id]={send:!!x.send,full:!!x.full,jp:!!x.jp};pname[d.id]=x.name});
-      const seen=new Set();
-      admOnline=ps.docs.map(d=>{const x=d.data();seen.add(String(x.pid));return{pid:String(x.pid),name:x.name,perm:pmap[String(x.pid)]||null}});
-      Object.keys(pmap).forEach(id=>{if(!seen.has(id))admOnline.push({pid:id,name:pname[id]||id,perm:pmap[id]})});   // akun berizin yang belum terdaftar online tetap tampil
-    }
-  }catch(e){console.warn(e);admOnlineErr="Gagal memuat daftar online: "+(e.code||e.message)+(String(e.code).indexOf("permission")>=0?" — Rules baru (profiles list + perms) belum di-Publish":"")}
-  const el=document.getElementById("admOnl");if(el)el.innerHTML=admOnlineHtml();
-}
-async function admPickOnline(pid,name){
-  const loc=findAccount(pid);
-  let perm=permOf(loc&&loc.perm);const r=await admLoadRemote(pid);if(r)perm=permOf(r);
-  admT={pid,name,perm,local:loc};admRender();
-}
-async function admPick(id){
-  const a=loadAcct(id);if(!a)return;
-  let perm=permOf(a.perm);const r=await admLoadRemote(a.pid);if(r)perm=permOf(r);
-  admT={pid:a.pid,name:a.name,perm,local:a};admRender();
+function admPick(pid){
+  const a=admAcc.find(x=>String(x.id)===String(pid));if(!a)return;
+  admT={pid:a.id,name:a.name,perm:permOf(a.perms),luck:a.luck};admRender();
 }
 async function admSearch(){
-  const q=document.getElementById("admQ").value.trim();if(!q)return;
+  const q=document.getElementById("admQ").value.trim().replace(/^#/,"");if(!q)return;
   document.getElementById("admMsg").textContent="Mencari…";
-  let loc=findAccount(q),rem=null;
-  try{if(await fbInit()&&FB.ok)rem=await fbFind(q)}catch(e){console.warn(e)}
-  if(!loc&&!rem){admT=null;admRender("Pemain tidak ditemukan");return}
-  const pid=(loc||rem).pid,name=(loc||rem).name;
-  let perm=permOf(loc&&loc.perm);const r=await admLoadRemote(pid);if(r)perm=permOf(r);
-  admT={pid,name,perm,local:loc};admRender();
+  await admLoad();
+  const lq=q.toLowerCase();
+  const a=admAcc.find(x=>String(x.id)===q||String(x.name).toLowerCase()===lq);
+  if(!a){admT=null;admRender(admErr?"":"Pemain tidak ditemukan");return}
+  admT={pid:a.id,name:a.name,perm:permOf(a.perms),luck:a.luck};admRender();
 }
 function admToggle(k){if(!admT)return;admT.perm[k]=!admT.perm[k];admRender()}
-function admMark(t,perm){   // langsung tampil di daftar tanpa menunggu muat ulang
-  const i=admOnline.findIndex(a=>String(a.pid)===String(t.pid));
-  if(i>=0)admOnline[i].perm=perm;else admOnline.unshift({pid:String(t.pid),name:t.name,perm});
-}
-let admSaving=false;
 async function admSave(){
   if(!admT||!isAdmin()||admSaving)return;
   admSaving=true;
   const t=admT,perm={send:!!t.perm.send,full:!!t.perm.full,jp:!!t.perm.jp};
   const mm=document.getElementById("admMsg");if(mm){mm.style.color="#ffd978";mm.textContent="Menyimpan…"}
-  const okMsg=[],bad=[];let viaRest=false,quota=false,sdkDead=false;
-  const step=x=>{const e=document.getElementById("admMsg");if(e){e.style.color="#ffd978";e.textContent=x}};
-  try{
-    if(t.local){const rec=loadAcct(t.local.id);if(rec){rec.perm=perm;LS.set("daf_acct_"+rec.id,JSON.stringify(rec));okMsg.push("tersimpan di perangkat ini")}}
-    step("Menyimpan… (1/3) menghubungi server");
-    if(await tmo(fbInit(),8000,"koneksi")&&FB.ok){
-      step("Menyimpan… (2/3) menulis izin online");
-      try{const pref=FB.db.collection("perms").doc(String(t.pid));await tmo(pref.set({pid:String(t.pid),name:String(t.name).slice(0,24),send:perm.send,full:perm.full,jp:perm.jp,ts:Date.now()}),6000,"simpan izin");
-        step("Menyimpan… (3/3) memastikan sampai server");
-        const chk=await tmo(pref.get({source:"server"}),6000,"verifikasi server");
-        if(!chk.exists||!!chk.data().send!==perm.send||!!chk.data().full!==perm.full||!!chk.data().jp!==perm.jp)throw{code:"verify",message:"data di server tidak cocok"};
-        okMsg.push("izin tersimpan online (terverifikasi di server)");admMark(t,perm)}
-      catch(e){console.warn(e);
-        step("Jalur utama macet ("+esc(e.code||e.message)+") — mencoba jalur cadangan…");
-        sdkDead=true;
-        try{await restSavePerm(t,perm);okMsg.push("izin tersimpan online lewat jalur cadangan (terverifikasi)");admMark(t,perm);viaRest=true}
-        catch(e2){console.warn(e2);
-          if(e2&&e2.code==="RESOURCE_EXHAUSTED"){quota=true;bad.push("⛔ KUOTA FIREBASE HARIAN HABIS — semua tulis data ke server ditolak. Izin hanya tersimpan di perangkat ini. Kuota reset otomatis tiap hari (± pukul 15.00 WITA), atau upgrade paket Blaze di Firebase.")}
-          else bad.push("izin BELUM sampai server: "+esc(e.code||e.message)+" / cadangan: "+esc(e2.code||e2.message)+" — akan hilang saat refresh")}}
-      if(!quota)try{if(sdkDead&&!viaRest)throw{code:"timeout"};await tmo(fbSend({pid:t.pid},{type:"perm",perm,from:"ADMIN",ts:Date.now()}),10000,"kirim pesan");okMsg.push("terkirim ke pemain ☁️ (aktif saat pemain online / login)")}
-      catch(e){console.warn(e);const c=String(e.code||e.message);
-        let sent=false;
-        if(viaRest||c==="timeout"){try{await restSendPerm(t.pid,perm);okMsg.push("terkirim ke pemain ☁️ (jalur cadangan)");sent=true}catch(e3){console.warn(e3)}}
-        if(!sent)bad.push("gagal kirim online: "+esc(c)+(c.indexOf("permission")>=0?" — Rules Firestore belum di-Publish / pemain belum terdaftar online (suruh pemain login sekali saat online)":""))}
-    }else{bad.push("tidak bisa terhubung ke server"+(FB.err?" ("+esc(FB.err.code||FB.err.message)+")":"")+" — izin hanya tersimpan di perangkat ini")}
-  }catch(e){console.warn(e);bad.push(String(e.message||e))}
+  const r=await admApi("/admin/perms",{id:t.pid,send:perm.send,full:perm.full,jp:perm.jp});
   admSaving=false;
+  const p=r.ok&&r.j&&r.j.perms;
+  if(!p||!!p.send!==perm.send||!!p.full!==perm.full||!!p.jp!==perm.jp){
+    admT=t;admRender();
+    const m=document.getElementById("admMsg");if(m){m.style.color="#ff8a8a";m.textContent="❌ Izin BELUM tersimpan: "+((r.j&&r.j.error)||"respons server tidak cocok")}
+    return;
+  }
+  const i=admAcc.findIndex(x=>String(x.id)===String(t.pid));if(i>=0)admAcc[i].perms=perm;
   admT=t;
-  admRender((okMsg.length?"✅ "+esc(t.name)+": "+okMsg.join(" • "):"")+(bad.length?(okMsg.length?"<br>":"")+"❌ "+bad.join(" • "):""));
-  const m2=document.getElementById("admMsg");if(m2&&bad.length&&!okMsg.length)m2.style.color="#ff8a8a";
-  admLoadOnline();
+  admRender("✅ "+esc(t.name)+": izin tersimpan di server (aktif di pemain dalam ±2 menit atau saat login)");
+  admLoad();
 }
 /* ===== AUDIO TOMBOL (UI) ===== */
 const UISND={
@@ -2102,7 +2040,7 @@ function findAccount(q){   // cari lewat ID pemain (8 digit) atau username
   return all.find(a=>String(a.name).toLowerCase()===lq)||null;
 }
 function saveGame(){
-  if(!acct||acct.admin)return;
+  if(!acct||acct.admin||acct.server)return;   // akun server tidak disimpan di browser
   const real=(freeMode&&stash)?stash:{balance,bet};
   try{const cur=JSON.parse(LS.get("daf_acct_"+acct.id));if(cur&&cur.perm)acct.perm=cur.perm}catch(e){}   // izin dari admin selalu menang atas salinan di memori
   acct.balance=real.balance;acct.bet=real.bet;acct.spinCount=spinCount;acct.freeSpins=freeMode?0:freeSpins;acct.updated=Date.now();
@@ -2149,7 +2087,7 @@ function updateUserBar(){
     :"👤 Belum login — data tidak tersimpan"+tag;
   document.getElementById("loginBtn").hidden=on;
   document.getElementById("adminBtn").hidden=on;
-  document.getElementById("dailyBtn").hidden=!on||adm;
+  document.getElementById("dailyBtn").hidden=!on||adm||(on&&!!acct.server);
   document.getElementById("profileBtn").hidden=!on;
   document.getElementById("logoutBtn").hidden=!on;
   document.getElementById("freeExitBtn").hidden=!freeMode;
@@ -2175,16 +2113,10 @@ function openInfo(title,html,nextJs){
   openModal(`<h2>${title}</h2><p>${html}</p><button class="btn spin" type="button" style="font-size:18px" onclick="${nextJs}">OK</button>`);
 }
 function openWelcome(){
-  const list=listAccounts().sort((x,y)=>(y.updated||0)-(x.updated||0));
-  const many=list.length>=1?`<p style="margin:10px 0 2px">Akun tersimpan di perangkat ini:</p>`
-    +list.slice(0,8).map(a=>`<button class="btn small" type="button" style="font-size:14px;min-height:40px" data-id="${esc(a.id)}" onclick="loginAs(this.dataset.id)">${a.pw?"🔒":avatarOf(a)} ${esc(a.name)} • ID ${esc(a.pid)}</button>`).join(""):"";
   openModal(`<h2>🐉 DRAGON ANIMAL FORTUNE</h2>
-  <p>Daftar dengan <b>kata sandi</b> supaya akun (chip, bet, profil) aman dan tidak bisa dipakai orang lain.</p>
+  <p>Daftar dengan <b>kata sandi</b> supaya akun (chip, bet, profil) tersimpan di server dan tidak bisa dipakai orang lain.</p>
   <button class="btn spin" type="button" style="font-size:20px" onclick="openRegister()">➕ DAFTAR AKUN</button>
   <button class="btn small" type="button" style="font-size:15px" onclick="openLogin()">🔐 MASUK DENGAN KATA SANDI</button>
-  <button class="btn small" type="button" style="font-size:14px" onclick="loginGuest()">👤 LOGIN PENGUNJUNG (tanpa sandi)</button>
-  ${list.length?`<button class="btn small" type="button" style="font-size:13px" onclick="loginNew()">➕ Pengunjung baru tanpa sandi (sisa ${createsLeft()} hari ini)</button>`:""}
-  ${many}
   <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">MAIN TANPA SIMPAN</button>
   <button class="btn small" type="button" style="font-size:14px" onclick="openAdminLogin()">👑 LOGIN ADMIN</button>`);
 }
@@ -2192,6 +2124,8 @@ function openWelcome(){
 /* ----- admin: satu-satunya akun dengan chip tidak terbatas ----- */
 const ADMIN_USER="admin",ADMIN_CHIPS=999999999999;   // ADMIN_USER hanya nama yang dicadangkan; username/password admin sekarang diperiksa server
 const API_URL="https://daf-api.akunpengunjung555.workers.dev";let admToken=null;
+async function apiCall(path,body,tok){const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);try{const r=await fetch(API_URL+path,{method:body?"POST":"GET",signal:ctl.signal,headers:Object.assign({"Content-Type":"application/json"},tok?{Authorization:"Bearer "+tok}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));return{ok:r.ok,status:r.status,j}}catch(e){return{ok:false,status:0,j:{error:"Server tidak terjangkau, coba lagi"}}}finally{clearTimeout(tm)}}
+function srvAcct(x){const p=x.perms||{};return{id:x.id,pid:x.id,name:x.name,balance:x.balance,bet:DEFAULTS.bet,spinCount:0,freeSpins:0,streak:0,lastDaily:"",created:Date.now(),tx:[],luck:x.luck,gv:x.gv,perm:{send:!!p.send,full:!!p.full,jp:!!p.jp},server:true}}
 function openAdminLogin(){
   openModal(`<h2>👑 LOGIN ADMIN</h2>
   <input id="admUser" type="text" placeholder="Username" autocomplete="off" autocapitalize="off">
@@ -2268,7 +2202,7 @@ function enterAcct(a){
   afterLogin(a);
 }
 function afterLogin(a){
-  const daily=a.lastDaily!==dateKey();
+  const daily=!a.server&&a.lastDaily!==dateKey();
   if(inboxNote){openInfo("📥 CHIP MASUK",inboxNote,daily?"openDaily()":"closeModal()");inboxNote=""}
   else if(daily)openDaily();
 }
@@ -2330,17 +2264,18 @@ function openLogin(){
   <button class="btn small" type="button" style="font-size:14px" onclick="openWelcome()">KEMBALI</button>`);
   setTimeout(()=>{const x=document.getElementById("lgUser");if(x)x.focus()},50);
 }
-function doLogin(){
-  const lk=pwLocked();if(lk){pwErr(`Terlalu banyak salah. Coba lagi ${lk} detik`);return}
+async function doLogin(){
   const q=document.getElementById("lgUser").value.trim(),pw=document.getElementById("lgPass").value;
-  const a=q?findAccount(q):null;
-  const ok=!!a&&checkAcctPw(a,pw);pwTry(ok);
-  if(!ok){pwErr(pwFail.until?"Terlalu banyak salah. Tunggu 30 detik":"Username/ID atau kata sandi salah (akun hanya ada di perangkat tempat dibuat)");return}
-  enterAcct(a);
+  if(!q||!pw){pwErr("Isi username/ID dan kata sandi");return}
+  pwErr("Memeriksa…");
+  const r=await apiCall("/login",{user:q,pass:pw});
+  if(!r.ok||!r.j.token){pwErr(r.j.error||"Gagal masuk");return}
+  LS.set("daf_token",r.j.token);
+  enterAcct(srvAcct(r.j.account));
 }
 function openRegister(){
   openModal(`<h2>➕ DAFTAR AKUN</h2>
-  <p class="pwNote">Buat username &amp; kata sandi supaya akun tidak mudah dipakai orang lain. Sisa pembuatan akun hari ini: ${createsLeft()}.</p>
+  <p class="pwNote">Buat username &amp; kata sandi supaya akun tidak mudah dipakai orang lain. Akun disimpan di server.</p>
   <input id="rgUser" type="text" maxlength="12" placeholder="Username (3–12: huruf/angka/_)" autocomplete="username" autocapitalize="off">
   <input id="rgPass" type="password" placeholder="Kata sandi (min. 4 karakter)" autocomplete="new-password">
   <input id="rgPass2" type="password" placeholder="Ulangi kata sandi" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
@@ -2349,18 +2284,20 @@ function openRegister(){
   <button class="btn small" type="button" style="font-size:14px" onclick="openWelcome()">KEMBALI</button>`);
   setTimeout(()=>{const x=document.getElementById("rgUser");if(x)x.focus()},50);
 }
-function doRegister(){
+async function doRegister(){
   const u=document.getElementById("rgUser").value.trim(),p1=document.getElementById("rgPass").value,p2=document.getElementById("rgPass2").value;
   if(!NAME_RE.test(u)||/^\d{8}$/.test(u)){pwErr("Username 3–12 karakter: huruf, angka, atau _ (bukan 8 digit angka)");return}
-  if(u.toLowerCase()===ADMIN_USER.toLowerCase()||rawAccounts().some(x=>String(x.name).toLowerCase()===u.toLowerCase())){pwErr("Username sudah dipakai");return}
   if(p1.length<4){pwErr("Kata sandi minimal 4 karakter");return}
   if(p1!==p2){pwErr("Ulangi kata sandi tidak sama");return}
-  if(createsLeft()<=0){newAcctOrLimit();return}
-  const a=createGuest();a.name=u;setAcctPw(a,p1);noteCreated();
-  enterAcct(a);
+  pwErr("Mendaftar…");
+  const r=await apiCall("/register",{name:u,pass:p1});
+  if(!r.ok||!r.j.token){pwErr(r.j.error||"Gagal mendaftar");return}
+  LS.set("daf_token",r.j.token);
+  enterAcct(srvAcct(r.j.account));
 }
 function openSetPw(){
   if(!acct||isAdmin())return;
+  if(acct.server){openInfo("🔑 KATA SANDI","Ganti kata sandi akun server belum tersedia (segera).","openProfile()");return}
   const has=!!acct.pw;
   openModal(`<h2>🔑 ${has?"GANTI":"BUAT"} KATA SANDI</h2>
   <p class="pwNote">${has?"Masukkan kata sandi lama, lalu yang baru.":"Pasang kata sandi supaya akun ini terkunci. Ingat baik-baik — kata sandi tidak bisa dipulihkan."}</p>
@@ -2400,6 +2337,7 @@ function resetSession(text){
 }
 function logout(){
   if(busy){setMsg("Tunggu spin selesai dulu");return}
+  LS.del("daf_token");
   resetSession("Keluar dari akun");
   openWelcome();
 }
@@ -2738,7 +2676,7 @@ async function fbAttach(a){   // dipanggil tiap login
   if(!a.admin){
     try{await fbRegister(a)}catch(e){console.warn("Daftar profil gagal:",e);setMsg("☁️ Gagal daftar online: "+(e.code||e.message)+(String(e.code).indexOf("permission")>=0?" — cek Rules Firestore sudah di-Publish":""));return}
     if(acct!==a)return;
-    try{   // izin dari admin (koleksi perms) selalu disamakan saat login
+    if(!a.server)try{   // izin dari admin (koleksi perms Firebase) — akun server memakai izin dari Worker, bukan Firebase
       const pd=await tmo(FB.db.collection("perms").doc(String(a.pid)).get(),8000,"baca izin");
       if(acct!==a)return;
       if(pd.exists){const x=pd.data();a.perm={send:!!x.send,full:!!x.full,jp:!!x.jp};const r=loadAcct(a.id);if(r){r.perm=a.perm;LS.set("daf_acct_"+r.id,JSON.stringify(r))}saveGame();updateUserBar()}
@@ -2790,15 +2728,26 @@ function claimDaily(){
   setMsg(`Login harian hari ke-${st.idx+1}: +${money(reward)} chip`);
   try{burstCoins(false)}catch(e){}
 }
-function initAccount(){
-  const id=LS.get("daf_guest_id");
-  if(LS.get("daf_session")==="1"&&id){
-    const a=loadAcct(id);
-    if(a){applyAcct(a);afterLogin(a);return}
+async function initAccount(){
+  const tok=LS.get("daf_token");
+  if(LS.get("daf_session")==="1"&&tok){
+    const r=await apiCall("/me",null,tok);
+    if(r.ok&&r.j&&!r.j.admin&&r.j.id){const a=srvAcct(r.j);applyAcct(a);afterLogin(a);return}
+    if(r.status===401||r.status===404)LS.del("daf_token");
   }
   updateUserBar();openWelcome();
 }
-document.getElementById("loginBtn").addEventListener("click",loginGuest);
+async function refreshPerms(){   // izin dari admin diambil dari server (tanpa Firebase)
+  if(!acct||!acct.server||document.hidden)return;
+  const tok=LS.get("daf_token");if(!tok)return;
+  const r=await apiCall("/me",null,tok);
+  if(r.ok&&r.j&&r.j.perms&&acct&&acct.server&&String(acct.id)===String(r.j.id)){
+    const p=r.j.perms;acct.perm={send:!!p.send,full:!!p.full,jp:!!p.jp};updateUserBar();
+  }
+}
+setInterval(refreshPerms,120000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshPerms()});
+document.getElementById("loginBtn").addEventListener("click",openWelcome);
 document.getElementById("adminBtn").addEventListener("click",openAdminLogin);
 document.getElementById("freeExitBtn").addEventListener("click",exitFreeMode);
 document.getElementById("dailyBtn").addEventListener("click",openDaily);
