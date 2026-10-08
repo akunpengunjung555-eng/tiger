@@ -2190,7 +2190,8 @@ function openWelcome(){
 }
 
 /* ----- admin: satu-satunya akun dengan chip tidak terbatas ----- */
-const ADMIN_USER="abay0268",ADMIN_PASS="000000",ADMIN_CHIPS=999999999999;
+const ADMIN_USER="admin",ADMIN_CHIPS=999999999999;   // ADMIN_USER hanya nama yang dicadangkan; username/password admin sekarang diperiksa server
+const API_URL="https://daf-api.akunpengunjung555.workers.dev";let admToken=null;
 function openAdminLogin(){
   openModal(`<h2>👑 LOGIN ADMIN</h2>
   <input id="admUser" type="text" placeholder="Username" autocomplete="off" autocapitalize="off">
@@ -2200,14 +2201,24 @@ function openAdminLogin(){
   <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">BATAL</button>`);
   setTimeout(()=>{const u=document.getElementById("admUser");if(u)u.focus()},50);
 }
-function loginAdmin(){
-  const u=document.getElementById("admUser").value.trim(),p=document.getElementById("admPass").value;
-  if(u!==ADMIN_USER||p!==ADMIN_PASS){document.getElementById("admErr").textContent="Username atau password salah";return}
-  if(busy){document.getElementById("admErr").textContent="Tunggu spin selesai dulu";return}
+async function loginAdmin(){
+  const u=document.getElementById("admUser").value.trim(),p=document.getElementById("admPass").value,er=document.getElementById("admErr");
+  if(!u||!p){er.textContent="Isi username dan password";return}
+  if(busy){er.textContent="Tunggu spin selesai dulu";return}
+  er.textContent="Memeriksa…";
+  let r,j={};
+  try{
+    const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
+    r=await fetch(API_URL+"/admin/login",{method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json"},body:JSON.stringify({user:u,pass:p})});
+    clearTimeout(tm);
+    j=await r.json().catch(()=>({}));
+  }catch(e){er.textContent="Server tidak terjangkau, coba lagi";return}
+  if(!r.ok||!j.token){er.textContent=j.error||"Username atau password salah";return}
+  admToken=j.token;
   unlockAudio();
   stopAuto();
   saveGame();LS.del("daf_session");     // akun pengunjung sebelumnya disimpan; sesi admin tidak dipulihkan otomatis
-  applyAcct({id:"ADMIN",pid:"ADMIN",name:ADMIN_USER,admin:true,balance:ADMIN_CHIPS,bet:DEFAULTS.bet,spinCount:0,freeSpins:0,tx:[]});
+  applyAcct({id:"ADMIN",pid:"ADMIN",name:u,admin:true,balance:ADMIN_CHIPS,bet:DEFAULTS.bet,spinCount:0,freeSpins:0,tx:[]});
   closeModal();
   setMsg("Login admin — chip tidak terbatas");
 }
