@@ -511,6 +511,67 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .menuPanel .ubtn{width:100%;text-align:left;padding:8px 10px;font-size:12px;box-sizing:border-box}
 .menuSound{cursor:pointer;background:linear-gradient(#1fb6d6,#0b5f86)}
 .menuVoice{font-size:10px;color:#ffd978;text-align:center;opacity:.8}
+
+/* ===== REVISI: SATU LAYAR PENUH TANPA SCROLL ===== */
+html,body{height:100%;overflow:hidden}
+body{padding:5px}
+.game{width:min(1180px,100%);height:calc(100dvh - 10px);display:flex;flex-direction:column;min-height:0}
+.top{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:4px;align-items:stretch}
+.top .pot{display:none}
+.jack{min-height:0;padding:2px 4px;border-width:2px;border-radius:10px;min-width:0}
+.jack b{font-size:9px;line-height:1.2;white-space:nowrap}
+.jack strong{font-size:clamp(11px,3.4vw,19px);line-height:1.2;white-space:nowrap}
+.userbar{flex:none}
+.cabinet{flex:1 1 0;min-height:0;display:flex;flex-direction:column;border-width:4px;padding:5px;border-radius:14px 14px 8px 8px}
+.screen{flex:1 1 0;min-height:0;display:flex;flex-direction:column;border-width:3px;padding:3px}
+.reels{flex:1 1 0;min-height:0;height:auto;padding:2px;gap:3px;width:100%}
+.cell{min-height:0;min-width:0;font-size:clamp(22px,7vh,48px)}
+@media(min-width:761px){.reels{aspect-ratio:6/5;width:auto;max-width:100%;align-self:center}}
+.modeBanner{position:absolute;left:8px;right:8px;top:4px;z-index:20;margin:0;padding:2px 8px;font-size:12px;pointer-events:none}
+.info{flex:none;display:flex;flex-wrap:nowrap;gap:4px;margin:5px 0 0}
+.info>div{flex:1 1 0;min-width:0;padding:2px 4px;border-width:1.5px;border-radius:8px;text-align:center;font-size:9px;line-height:1.15;
+  font-weight:900;letter-spacing:.3px;color:#ffd978;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none}
+.info>div strong{display:block;font-size:clamp(11px,3.3vw,16px);color:#fff;overflow:hidden;text-overflow:ellipsis}
+.info>.cb{flex:2.6 1 0}.info>.cb strong{color:#ffe26a}
+.info>.wb{flex:1.7 1 0}
+.info .freebox strong{color:#6dff9a}
+.meter{flex:none;height:5px;margin-top:4px}
+.status{flex:none;margin-top:4px;padding:3px 8px;font-size:11px;flex-wrap:nowrap;overflow:hidden;white-space:nowrap}
+.status #msg{overflow:hidden;text-overflow:ellipsis}
+.fulltable[hidden]{display:none}
+@media(max-width:760px){.top{grid-template-columns:1fr 1fr}.reels{min-height:0}.cell{min-height:0}}
+.info>div strong,.info>div #lastWin{font-size:clamp(11px,3.3vw,16px)}
+#lastWin{font-size:clamp(11px,3.3vw,16px)}
+.info>.modebox{flex:1.3 1 0}.info>.modebox strong{font-size:clamp(9px,2.6vw,14px)}
+@media(min-width:761px){.game{width:min(1180px,100%,max(560px,calc((100dvh - 250px)*1.2 + 50px)))}}
+@media(min-width:761px){.jack strong{font-size:13px}}
+.info>.cb{flex:2.2 1 0}.info>.modebox{flex:1.6 1 0}.info>.modebox strong{font-size:clamp(8px,2.3vw,13px);letter-spacing:0}
+
+/* ===== REVISI: NOTIF FULL GAMBAR (nama + foto) ===== */
+.winPic{display:none;justify-content:center;margin:0 0 4px}
+.winPic.show{display:flex}
+.winPic img,.winPic{--pc:#ffd34d}
+.winPic img{height:min(24vh,170px);width:auto;max-width:70vw;object-fit:cover;border-radius:12px;border:3px solid var(--pc);
+  box-shadow:0 0 22px var(--pc),0 6px 18px #000a;animation:picPop .6s cubic-bezier(.2,1.4,.4,1)}
+@keyframes picPop{from{transform:scale(.3) rotate(-8deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.winText.t-FULL{font-size:clamp(22px,7vw,70px);line-height:1.05;padding:0 6px}
+/* ===== PASSWORD & PANEL ADMIN ===== */
+.pwNote{font-size:12px;color:#ffd978;margin:2px 0 6px;text-align:left}
+.pwErr{color:#ff8a8a;font-size:13px;font-weight:900;min-height:18px;text-align:left}
+.admRow{display:flex;gap:6px;align-items:center;justify-content:space-between;padding:6px 8px;margin:4px 0;border:2px solid #d98a1b;border-radius:8px;background:#39040b;text-align:left;font-size:13px}
+.admRow b{color:#fff}
+.tg{border:2px solid #f6bf45;border-radius:8px;padding:5px 10px;font-weight:900;font-size:12px;cursor:pointer;color:#fff;background:linear-gradient(#5a1a24,#2d0a10);min-width:64px}
+.tg.on{background:linear-gradient(#2fe36b,#0c7a35)}
+.admList{max-height:150px;overflow:auto;margin:6px 0}
+.admList button{display:block;width:100%;text-align:left;margin:3px 0}
+.info>.cb{flex:2.3 1 0}.info>.wb{flex:2.3 1 0}.info>.wb strong,.info>.cb strong{font-size:clamp(10px,3vw,15px)}
+.screen{container-type:inline-size}
+.overlay .winText:not(.diag):not(.t-FULL){font-size:clamp(28px,11cqw,100px)}
+.overlay .winText.t-FULL{font-size:clamp(18px,7.5cqw,60px)}
+.overlay .winText.diag{font-size:clamp(24px,8cqw,70px)}
+.overlay .winAmt{font-size:clamp(22px,8.4cqw,100px)}
+.overlay .winSub{font-size:clamp(11px,3.4cqw,21px)}
+.winPic img{height:min(22vh,150px)}
 </style>
 </head>
 <body>
@@ -562,11 +623,12 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
   <div class="userbar" id="userbar">
     <span id="userName">👤 Belum login</span>
     <button id="freeExitBtn" class="ubtn gold" type="button" hidden>KELUAR MODE GRATIS</button>
-    <button id="menuBtn" class="ubtn menuBtn" type="button" aria-haspopup="true" aria-expanded="false">☰ MENU<i class="mdot" id="menuDot" hidden></i></button>
+    <button id="menuBtn" class="ubtn menuBtn" type="button" aria-haspopup="true" aria-expanded="false">⚙ SETTING<i class="mdot" id="menuDot" hidden></i></button>
     <div id="menuPanel" class="menuPanel" hidden>
       <button id="profileBtn" class="ubtn" type="button" hidden>🪪 PROFIL</button>
       <button id="dailyBtn" class="ubtn gold" type="button" hidden>🎁 HARIAN</button>
       <button id="loginBtn" class="ubtn gold" type="button">👤 LOGIN PENGUNJUNG</button>
+      <button id="tableBtn" class="ubtn" type="button">📖 TABEL HADIAH</button>
       <button id="adminBtn" class="ubtn" type="button">👑 ADMIN</button>
       <span id="soundToggle" class="ubtn menuSound" role="button" tabindex="0">🔊 SUARA ON</span>
       <span id="voiceState" class="menuVoice">VOICE: READY</span>
@@ -575,15 +637,8 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
     </div>
   </div>
 
-  <div class="info">
-    <div class="chipbox"><span id="chipLabel">CHIP</span> <strong id="balance">500,000,000</strong></div>
-    <div class="freebox">FREE SPIN <strong id="free">0</strong></div>
-    <div class="chipbox">JUMLAH SPIN <strong id="spinCount">0</strong></div>
-    <div class="chipbox">WIN <strong id="lastWin">0</strong></div>
-    <div class="modebox">MODE <strong id="mode">NORMAL</strong></div>
-  </div>
 
-  <div class="fulltable" id="fullTable"></div>
+  <div class="fulltable" id="fullTable" hidden></div>
 
   <section class="cabinet" id="cabinet">
     <div class="screen">
@@ -594,11 +649,19 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
       <div id="particles"></div>
       <div id="overlay" class="overlay">
         <div>
+          <div id="winPic" class="winPic"></div>
           <div id="winText" class="winText">BIG WIN</div>
           <div id="winAmt" class="winAmt"></div>
           <div id="winSub" class="winSub"></div>
         </div>
       </div>
+    </div>
+    <div class="info">
+      <div class="chipbox cb"><span id="chipLabel">CHIP</span> <strong id="balance">500,000,000</strong></div>
+      <div class="chipbox wb">WIN <strong id="lastWin">0</strong></div>
+      <div class="freebox">FREE <strong id="free">0</strong></div>
+      <div class="chipbox">SPIN <strong id="spinCount">0</strong></div>
+      <div class="modebox">MODE <strong id="mode">NORMAL</strong></div>
     </div>
     <div class="meter"><i id="meter"></i></div>
     <div class="controls">
@@ -673,7 +736,9 @@ const SCATTER="🎁";
 const JP_MULT={MINI:40,MINOR:100,MAJOR:250,GRAND:1000};
 function jpAmount(t){return bet*JP_MULT[t]}
 // Peluang jackpot PER SPIN, tiap tier diundi sendiri (tier tertinggi yang kena dipakai)
-const JP_CHANCE={MINI:0.004,MINOR:0.001,MAJOR:0.0003,GRAND:0.00005}; // jarang banget, murni hoki
+const JP_CHANCE={MINI:0.0008,MINOR:0.0002,MAJOR:0.00006,GRAND:0.00001}; // dibuat lebih sulit (±5x lebih jarang), hanya untuk akun yang diizinkan admin
+// IZIN AKUN (diatur admin): send = boleh kirim chip, jp = boleh dapat jackpot, full = boleh dapat full gambar. Ubah true/false di sini kalau mau default berbeda
+const DEFAULT_PERM={send:false,jp:false,full:false};
 const SCATTER_COUNT_W=[[3,70],[4,22],[5,8]];  // jumlah scatter: 3 paling sering, 5 paling jarang
 function pickAnimal(){
   let r=Math.random()*animals.reduce((a,x)=>a+x.w,0);
@@ -708,9 +773,9 @@ const SCATTER_SPINS_RETRIGGER={3:3,4:5,5:8};
 // Peluang tiap spin diundi sendiri (tidak tergantung jumlah spin). Kosong jauh lebih sering.
 const MODES={
   // normal : SUPER 0,2% | MEGA 1% | BIG 6% | scatter 1,2%  -> ±92% kosong
-  normal :{rows3:0.002,rows2:0.010,rows1:0.060,scatter:0.012,full:0.004,diag:0.08,mult:1},
+  normal :{rows3:0.002,rows2:0.010,rows1:0.060,scatter:0.012,full:0.0007,diag:0.08,mult:1},
   // scatter: SUPER 0,6% | MEGA 3% | BIG 17% | scatter di dalam scatter (tambah spin) 3%
-  scatter:{rows3:0.006,rows2:0.030,rows1:0.170,scatter:0.030,full:0.008,diag:0.18,mult:2}
+  scatter:{rows3:0.006,rows2:0.030,rows1:0.170,scatter:0.030,full:0.0015,diag:0.18,mult:2}
 };
 // Hadiah juga acak dalam rentang (bukan angka tetap)
 const PRIZE_RANGE={3:[20,40],2:[8,16],1:[2,6]};
@@ -724,7 +789,7 @@ let SPD=SPEEDS[0];
 let scatterMode=false,scatterTotal=0;
 let board=[],busy=false,auto=false,balance=500000000,bet=17600000,freeSpins=0,voiceOn=true;
 let spinCount=0,acct=null,modalOpen=false;
-const REAL_STEP=1000000,FREE_STEP=10000,FREE_CHIPS=500000,BET_MAX=100000000;
+const REAL_STEP=1000000,FREE_STEP=10000,FREE_CHIPS=500000,BET_MAX=2000000000;
 let BET_STEP=REAL_STEP,freeMode=false,stash=null;
 let audioUnlocked=false;
 const VOICE_SRCS=[
@@ -1478,15 +1543,16 @@ async function awardFull(a,reason){
   render(true);
   const reels=document.getElementById("reels");
   reels.classList.add("jpFull");
-  document.getElementById("msg").textContent=`FULL GAMBAR ${P.tier} — ${a.e} ${a.n.toUpperCase()}!`;
+  document.getElementById("msg").textContent=`FULL GAMBAR ${a.n.toUpperCase()} ${a.e} — ${P.tier}!`;
   await sleepRaw(1100);
   balance+=amt;
   if(scatterMode)scatterTotal+=amt;
   updateUI();updateBanner();
   const wt=document.getElementById("winText");
   wt.className="winText t-FULL";wt.style.color=P.color;
-  document.getElementById("winText").textContent="FULL "+P.tier;
-  document.getElementById("winSub").textContent=`${a.e}×30 • ${reason} • ×${mult} • +${money(amt)}`;
+  document.getElementById("winText").textContent="FULL GAMBAR "+a.n.toUpperCase();
+  const wp=document.getElementById("winPic");wp.innerHTML="";wp.appendChild(picNode(a.e,a.n));wp.style.setProperty("--pc",P.color);wp.classList.add("show");
+  document.getElementById("winSub").textContent=`${P.tier} • ${reason} • ×${mult} • +${money(amt)}`;
   document.getElementById("meter").style.width=(40+P.lv*12)+"%";
   showAmt("F"+P.lv,amt);
   document.getElementById("overlay").classList.add("show");
@@ -1500,6 +1566,7 @@ async function awardFull(a,reason){
   document.getElementById("overlay").classList.remove("show");
   document.getElementById("cabinet").classList.remove("shake");
   wt.className="winText";wt.style.color="";
+  const wp2=document.getElementById("winPic");wp2.classList.remove("show");wp2.innerHTML="";
   clearAmt();
   reels.classList.remove("jpFull");
   return amt;
@@ -1614,8 +1681,9 @@ async function spin(isFree=false){
   document.getElementById("msg").textContent=isFree?"SCATTER MODE — FREE SPIN…":"REELS BERPUTAR…";
   // tentukan dulu apakah spin ini FULL GAMBAR / JACKPOT (dua hadiah terpisah), semua murni hoki
   let special=null;
-  if(Math.random()<MODES[mode].full)special={kind:"full",animal:pickAnimal()};
-  else{const jp=rollJackpotSpin();if(jp)special={kind:"jp",tier:jp}}
+  const okFull=!freeMode&&can("full"),okJp=!freeMode&&can("jp");   // hanya akun yang diizinkan admin
+  if(okFull&&Math.random()<MODES[mode].full)special={kind:"full",animal:pickAnimal()};
+  else if(okJp){const jp=rollJackpotSpin();if(jp)special={kind:"jp",tier:jp}}
   diagHL=!special;seedResult(mode,!!special);render(true);
   await reelWait(850);            // tombol STOP boleh mempercepat berhentinya reel (hasil/animasi hadiah tetap penuh)
   SFX.land();
@@ -1745,7 +1813,7 @@ document.getElementById("plus").addEventListener("click",()=>{
   bet=Math.min(BET_MAX,bet+BET_STEP);clampBet();updateUI();   // tidak bisa melebihi chip
 });
 document.getElementById("voiceTest").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||!isAdmin())return;unlockAudio();if(b.dataset.l==="alarm")SFX.scatter();else speakWin(+b.dataset.l)});
-/* ===== MENU ATAS (gabungan profil, suara, lobi, login, dll.) ===== */
+/* ===== SETTING ATAS (gabungan profil, suara, lobi, login, dll.) ===== */
 (function(){
   const mb=document.getElementById("menuBtn"),mp=document.getElementById("menuPanel"),dot=document.getElementById("menuDot"),daily=document.getElementById("dailyBtn");
   function setMenu(o){mp.hidden=!o;mb.setAttribute("aria-expanded",o?"true":"false")}
@@ -1756,6 +1824,69 @@ document.getElementById("voiceTest").addEventListener("click",e=>{const b=e.targ
   const sync=()=>{dot.hidden=daily.hidden};sync();      // titik merah: hadiah harian siap diambil
   new MutationObserver(sync).observe(daily,{attributes:true,attributeFilter:["hidden"]});
 })();
+/* ===== TABEL HADIAH (dipindah ke menu) ===== */
+document.getElementById("tableBtn").addEventListener("click",()=>{
+  openModal(`<h2>📖 TABEL HADIAH</h2><div class="fulltable" style="font-size:13px;justify-content:center">${document.getElementById("fullTable").innerHTML}</div><button class="btn small" type="button" style="font-size:15px" onclick="closeModal()">TUTUP</button>`);
+});
+
+/* ===== PANEL ADMIN: atur izin tiap akun (kirim chip / full gambar / jackpot) ===== */
+let admT=null;   // akun yang sedang diedit: {pid,name,perm,local}
+function permOf(x){return Object.assign({},DEFAULT_PERM,x||{})}
+function admTg(k,label){return `<div class="admRow"><b>${label}</b><button class="tg ${admT.perm[k]?"on":""}" type="button" onclick="admToggle('${k}')">${admT.perm[k]?"ON":"OFF"}</button></div>`}
+function admRender(msg){
+  const list=listAccounts().sort((x,y)=>(y.updated||0)-(x.updated||0)).slice(0,30);
+  const editor=admT?`<div class="pstats" style="grid-template-columns:1fr"><div>${esc(admT.name)} • ID ${esc(admT.pid)}${admT.local?"":" (online)"}</div></div>
+    ${admTg("send","📤 Boleh kirim chip")}${admTg("full","🖼️ Boleh dapat FULL GAMBAR")}${admTg("jp","🎰 Boleh dapat JACKPOT")}
+    <button class="btn spin" type="button" style="font-size:16px" onclick="admSave()">💾 SIMPAN IZIN</button>`
+    :`<p class="pwNote">Cari pemain lewat ID/username, atau pilih dari daftar di bawah.</p>`;
+  openModal(`<h2>🛠 PANEL ADMIN</h2>
+  <div class="rowin"><input id="admQ" type="text" placeholder="ID pemain / username" autocapitalize="off" autocomplete="off" onkeydown="if(event.key==='Enter')admSearch()"><button class="ubtn gold" type="button" onclick="admSearch()">CARI</button></div>
+  <div id="admMsg" class="pwErr" style="color:#ffd978">${msg||""}</div>
+  ${editor}
+  <div class="admList"><b style="color:#fff;font-size:12px">Akun di perangkat ini</b>${list.map(a=>{const pm=permOf(a.perm);return `<button class="ubtn" type="button" data-id="${esc(a.id)}" onclick="admPick(this.dataset.id)">${esc(a.name)} • ${esc(a.pid)} ${pm.send?"📤":""}${pm.full?"🖼️":""}${pm.jp?"🎰":""}</button>`}).join("")||"<div style='font-size:12px;color:#ffd978'>Belum ada akun</div>"}</div>
+  <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
+}
+function openAdminPanel(){if(!isAdmin())return;admT=null;admRender()}
+async function admLoadRemote(pid){
+  try{if(await fbInit()&&FB.ok){const d=await FB.db.collection("perms").doc(String(pid)).get();if(d.exists)return d.data()}}catch(e){console.warn(e)}
+  return null;
+}
+async function admPick(id){
+  const a=loadAcct(id);if(!a)return;
+  let perm=permOf(a.perm);const r=await admLoadRemote(a.pid);if(r)perm=permOf(r);
+  admT={pid:a.pid,name:a.name,perm,local:a};admRender();
+}
+async function admSearch(){
+  const q=document.getElementById("admQ").value.trim();if(!q)return;
+  document.getElementById("admMsg").textContent="Mencari…";
+  let loc=findAccount(q),rem=null;
+  try{if(await fbInit()&&FB.ok)rem=await fbFind(q)}catch(e){console.warn(e)}
+  if(!loc&&!rem){admT=null;admRender("Pemain tidak ditemukan");return}
+  const pid=(loc||rem).pid,name=(loc||rem).name;
+  let perm=permOf(loc&&loc.perm);const r=await admLoadRemote(pid);if(r)perm=permOf(r);
+  admT={pid,name,perm,local:loc};admRender();
+}
+function admToggle(k){if(!admT)return;admT.perm[k]=!admT.perm[k];admRender()}
+async function admSave(){
+  if(!admT||!isAdmin())return;
+  const perm={send:!!admT.perm.send,full:!!admT.perm.full,jp:!!admT.perm.jp};
+  let note=[];
+  if(admT.local){const rec=loadAcct(admT.local.id);if(rec){rec.perm=perm;LS.set("daf_acct_"+rec.id,JSON.stringify(rec));note.push("tersimpan di perangkat ini")}}
+  try{
+    if(await fbInit()&&FB.ok){await FB.db.collection("perms").doc(String(admT.pid)).set(Object.assign({},perm,{ts:Date.now()}));note.push("terkirim online ☁️")}
+    else if(!admT.local){admRender("Tidak bisa terhubung ke server, pemain ini tidak ada di perangkat ini");return}
+  }catch(e){console.warn(e);note.push("GAGAL online: "+(e.code||e.message)+" (cek Rules Firestore untuk koleksi perms)")}
+  admRender("✅ "+esc(admT.name)+": "+note.join(" • "));
+}
+/* izin dari server: dipakai akun pemain begitu login (live) */
+function fbPermWatch(a){
+  if(FB.unsubP){try{FB.unsubP()}catch(e){}FB.unsubP=null}
+  if(!FB.ok||a.admin)return;
+  FB.unsubP=FB.db.collection("perms").doc(String(a.pid)).onSnapshot(d=>{
+    if(acct!==a||!d.exists)return;
+    const x=d.data();a.perm={send:!!x.send,full:!!x.full,jp:!!x.jp};saveGame();updateUserBar();
+  },e=>console.warn("perm listener:",e));
+}
 /* ===== AUDIO TOMBOL (UI) ===== */
 const UISND={
   _q(fn){const k=noTrack;noTrack=true;try{fn()}finally{noTrack=k}},   // suara UI tidak mengganggu pelacak suara hadiah
@@ -1814,6 +1945,8 @@ function yesterdayKey(){const d=new Date();d.setDate(d.getDate()-1);return dateK
 function maxAffordableBet(){return balance>=BET_STEP?Math.floor(balance/BET_STEP)*BET_STEP:BET_STEP}
 let betNoteTimer=null;
 function isAdmin(){return !!(acct&&acct.admin)}
+function can(k){return !!acct&&(!!acct.admin||!!(acct.perm?acct.perm:DEFAULT_PERM)[k])}   // izin: send / jp / full
+function canSend(){return can("send")}
 function clampBet(){
   const before=bet;
   const cap=isAdmin()?BET_MAX:Math.min(BET_MAX,maxAffordableBet());
@@ -1937,12 +2070,14 @@ function openInfo(title,html,nextJs){
 }
 function openWelcome(){
   const list=listAccounts().sort((x,y)=>(y.updated||0)-(x.updated||0));
-  const many=list.length>=2?`<p style="margin:10px 0 2px">Akun tersimpan di perangkat ini:</p>`
-    +list.slice(0,8).map(a=>`<button class="btn small" type="button" style="font-size:14px;min-height:44px" data-id="${esc(a.id)}" onclick="loginAs(this.dataset.id)">${avatarOf(a)} ${esc(a.name)} • ID ${esc(a.pid)}</button>`).join(""):"";
+  const many=list.length>=1?`<p style="margin:10px 0 2px">Akun tersimpan di perangkat ini:</p>`
+    +list.slice(0,8).map(a=>`<button class="btn small" type="button" style="font-size:14px;min-height:40px" data-id="${esc(a.id)}" onclick="loginAs(this.dataset.id)">${a.pw?"🔒":avatarOf(a)} ${esc(a.name)} • ID ${esc(a.pid)}</button>`).join(""):"";
   openModal(`<h2>🐉 DRAGON ANIMAL FORTUNE</h2>
-  <p>Masuk sebagai <b>pengunjung</b> supaya chip, bet, jumlah spin, dan profil (ID pemain) tersimpan di browser ini, plus dapat hadiah login harian.</p>
-  <button class="btn spin" type="button" onclick="loginGuest()">👤 LOGIN PENGUNJUNG</button>
-  ${list.length?`<button class="btn small" type="button" style="font-size:14px" onclick="loginNew()">➕ BUAT AKUN PENGUNJUNG BARU (sisa ${createsLeft()} hari ini)</button>`:""}
+  <p>Daftar dengan <b>kata sandi</b> supaya akun (chip, bet, profil) aman dan tidak bisa dipakai orang lain.</p>
+  <button class="btn spin" type="button" style="font-size:20px" onclick="openRegister()">➕ DAFTAR AKUN</button>
+  <button class="btn small" type="button" style="font-size:15px" onclick="openLogin()">🔐 MASUK DENGAN KATA SANDI</button>
+  <button class="btn small" type="button" style="font-size:14px" onclick="loginGuest()">👤 LOGIN PENGUNJUNG (tanpa sandi)</button>
+  ${list.length?`<button class="btn small" type="button" style="font-size:13px" onclick="loginNew()">➕ Pengunjung baru tanpa sandi (sisa ${createsLeft()} hari ini)</button>`:""}
   ${many}
   <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">MAIN TANPA SIMPAN</button>
   <button class="btn small" type="button" style="font-size:14px" onclick="openAdminLogin()">👑 LOGIN ADMIN</button>`);
@@ -2020,13 +2155,121 @@ function afterLogin(a){
   if(inboxNote){openInfo("📥 CHIP MASUK",inboxNote,daily?"openDaily()":"closeModal()");inboxNote=""}
   else if(daily)openDaily();
 }
+
+/* ===== KATA SANDI AKUN (disimpan sebagai hash SHA-256 + salt, bukan teks asli) ===== */
+const SHA_K=(()=>{const k=[];for(let n=2;k.length<64;n++){let p=true;for(let d=2;d*d<=n;d++)if(n%d===0){p=false;break}if(p)k.push(Math.floor((Math.pow(n,1/3)%1)*4294967296))}return k})();
+const SHA_H=(()=>{const h=[];for(let n=2;h.length<8;n++){let p=true;for(let d=2;d*d<=n;d++)if(n%d===0){p=false;break}if(p)h.push(Math.floor((Math.sqrt(n)%1)*4294967296))}return h})();
+function sha256(str){
+  const b=unescape(encodeURIComponent(str)),l=b.length,w=[];
+  for(let i=0;i<l;i++)w[i>>2]|=b.charCodeAt(i)<<(24-(i%4)*8);
+  w[l>>2]|=0x80<<(24-(l%4)*8);w[(((l+8)>>6)+1)*16-1]=l*8;
+  const H=SHA_H.slice(),K=SHA_K,rot=(x,n)=>(x>>>n)|(x<<(32-n));
+  for(let o=0;o<w.length;o+=16){
+    const W=[];let [a,b2,c,d,e,f,g,h]=H;
+    for(let t=0;t<64;t++){
+      if(t<16)W[t]=w[o+t]|0;
+      else{const s0=rot(W[t-15],7)^rot(W[t-15],18)^(W[t-15]>>>3),s1=rot(W[t-2],17)^rot(W[t-2],19)^(W[t-2]>>>10);W[t]=(W[t-16]+s0+W[t-7]+s1)|0}
+      const S1=rot(e,6)^rot(e,11)^rot(e,25),ch=(e&f)^(~e&g),t1=(h+S1+ch+K[t]+W[t])|0;
+      const S0=rot(a,2)^rot(a,13)^rot(a,22),mj=(a&b2)^(a&c)^(b2&c),t2=(S0+mj)|0;
+      h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b2;b2=a;a=(t1+t2)|0;
+    }
+    H[0]=(H[0]+a)|0;H[1]=(H[1]+b2)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+  }
+  return H.map(x=>(x>>>0).toString(16).padStart(8,"0")).join("");
+}
+function hashPw(salt,pw){let h=sha256(salt+":"+pw);for(let i=0;i<2000;i++)h=sha256(h+salt);return h}   // diulang supaya lebih sulit ditebak
+function newSalt(){let s="";for(let i=0;i<4;i++)s+=Math.floor(Math.random()*4294967296).toString(16).padStart(8,"0");return s}
+function setAcctPw(a,pw){a.salt=newSalt();a.pw=hashPw(a.salt,pw)}
+function checkAcctPw(a,pw){return !a.pw||hashPw(a.salt||"",pw)===a.pw}
+let pwFail={n:0,until:0};
+function pwLocked(){const r=Math.ceil((pwFail.until-Date.now())/1000);return r>0?r:0}
+function pwTry(ok){if(ok){pwFail={n:0,until:0};return}pwFail.n++;if(pwFail.n>=5){pwFail={n:0,until:Date.now()+30000}}}
+const NAME_RE=/^[A-Za-z0-9_]{3,12}$/;
+function pwErr(m){const e=document.getElementById("pwErr");if(e)e.textContent=m}
+function tryEnter(a){if(a.pw)openPwPrompt(a.id);else enterAcct(a)}
+function openPwPrompt(id){
+  const a=loadAcct(id);if(!a){openWelcome();return}
+  openModal(`<h2>🔐 MASUK</h2>
+  <p>Akun <b>${esc(a.name)}</b> (ID ${esc(a.pid)}) memakai kata sandi.</p>
+  <input id="pwIn" type="password" placeholder="Kata sandi" autocomplete="current-password" onkeydown="if(event.key==='Enter')doPwEnter('${esc(a.id)}')">
+  <div id="pwErr" class="pwErr"></div>
+  <button class="btn spin" type="button" style="font-size:18px" onclick="doPwEnter('${esc(a.id)}')">MASUK</button>
+  <button class="btn small" type="button" style="font-size:14px" onclick="openWelcome()">KEMBALI</button>`);
+  setTimeout(()=>{const x=document.getElementById("pwIn");if(x)x.focus()},50);
+}
+function doPwEnter(id){
+  const a=loadAcct(id);if(!a)return;
+  const lk=pwLocked();if(lk){pwErr(`Terlalu banyak salah. Coba lagi ${lk} detik`);return}
+  const ok=checkAcctPw(a,document.getElementById("pwIn").value);pwTry(ok);
+  if(!ok){pwErr(pwFail.until?"Terlalu banyak salah. Tunggu 30 detik":"Kata sandi salah");return}
+  enterAcct(a);
+}
+function openLogin(){
+  openModal(`<h2>🔐 MASUK AKUN</h2>
+  <input id="lgUser" type="text" placeholder="Username atau ID pemain" autocomplete="username" autocapitalize="off">
+  <input id="lgPass" type="password" placeholder="Kata sandi" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+  <div id="pwErr" class="pwErr"></div>
+  <button class="btn spin" type="button" style="font-size:18px" onclick="doLogin()">MASUK</button>
+  <button class="btn small" type="button" style="font-size:14px" onclick="openWelcome()">KEMBALI</button>`);
+  setTimeout(()=>{const x=document.getElementById("lgUser");if(x)x.focus()},50);
+}
+function doLogin(){
+  const lk=pwLocked();if(lk){pwErr(`Terlalu banyak salah. Coba lagi ${lk} detik`);return}
+  const q=document.getElementById("lgUser").value.trim(),pw=document.getElementById("lgPass").value;
+  const a=q?findAccount(q):null;
+  const ok=!!a&&checkAcctPw(a,pw);pwTry(ok);
+  if(!ok){pwErr(pwFail.until?"Terlalu banyak salah. Tunggu 30 detik":"Username/ID atau kata sandi salah (akun hanya ada di perangkat tempat dibuat)");return}
+  enterAcct(a);
+}
+function openRegister(){
+  openModal(`<h2>➕ DAFTAR AKUN</h2>
+  <p class="pwNote">Buat username &amp; kata sandi supaya akun tidak mudah dipakai orang lain. Sisa pembuatan akun hari ini: ${createsLeft()}.</p>
+  <input id="rgUser" type="text" maxlength="12" placeholder="Username (3–12: huruf/angka/_)" autocomplete="username" autocapitalize="off">
+  <input id="rgPass" type="password" placeholder="Kata sandi (min. 4 karakter)" autocomplete="new-password">
+  <input id="rgPass2" type="password" placeholder="Ulangi kata sandi" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+  <div id="pwErr" class="pwErr"></div>
+  <button class="btn spin" type="button" style="font-size:18px" onclick="doRegister()">DAFTAR &amp; MASUK</button>
+  <button class="btn small" type="button" style="font-size:14px" onclick="openWelcome()">KEMBALI</button>`);
+  setTimeout(()=>{const x=document.getElementById("rgUser");if(x)x.focus()},50);
+}
+function doRegister(){
+  const u=document.getElementById("rgUser").value.trim(),p1=document.getElementById("rgPass").value,p2=document.getElementById("rgPass2").value;
+  if(!NAME_RE.test(u)||/^\d{8}$/.test(u)){pwErr("Username 3–12 karakter: huruf, angka, atau _ (bukan 8 digit angka)");return}
+  if(u.toLowerCase()===ADMIN_USER.toLowerCase()||rawAccounts().some(x=>String(x.name).toLowerCase()===u.toLowerCase())){pwErr("Username sudah dipakai");return}
+  if(p1.length<4){pwErr("Kata sandi minimal 4 karakter");return}
+  if(p1!==p2){pwErr("Ulangi kata sandi tidak sama");return}
+  if(createsLeft()<=0){newAcctOrLimit();return}
+  const a=createGuest();a.name=u;setAcctPw(a,p1);noteCreated();
+  enterAcct(a);
+}
+function openSetPw(){
+  if(!acct||isAdmin())return;
+  const has=!!acct.pw;
+  openModal(`<h2>🔑 ${has?"GANTI":"BUAT"} KATA SANDI</h2>
+  <p class="pwNote">${has?"Masukkan kata sandi lama, lalu yang baru.":"Pasang kata sandi supaya akun ini terkunci. Ingat baik-baik — kata sandi tidak bisa dipulihkan."}</p>
+  ${has?`<input id="spOld" type="password" placeholder="Kata sandi lama" autocomplete="current-password">`:""}
+  <input id="spNew" type="password" placeholder="Kata sandi baru (min. 4 karakter)" autocomplete="new-password">
+  <input id="spNew2" type="password" placeholder="Ulangi kata sandi baru" autocomplete="new-password" onkeydown="if(event.key==='Enter')doSetPw()">
+  <div id="pwErr" class="pwErr"></div>
+  <button class="btn spin" type="button" style="font-size:18px" onclick="doSetPw()">SIMPAN</button>
+  <button class="btn small" type="button" style="font-size:14px" onclick="openProfile()">BATAL</button>`);
+}
+function doSetPw(){
+  const a=acct;if(!a||a.admin)return;
+  const o=document.getElementById("spOld"),n1=document.getElementById("spNew").value,n2=document.getElementById("spNew2").value;
+  if(a.pw){const lk=pwLocked();if(lk){pwErr(`Terlalu banyak salah. Coba lagi ${lk} detik`);return}const ok=checkAcctPw(a,o.value);pwTry(ok);if(!ok){pwErr("Kata sandi lama salah");return}}
+  if(n1.length<4){pwErr("Kata sandi minimal 4 karakter");return}
+  if(n1!==n2){pwErr("Ulangi kata sandi tidak sama");return}
+  setAcctPw(a,n1);saveGame();
+  openInfo("✅ TERSIMPAN","Kata sandi akun sudah dipasang. Saat login lewat daftar akun, kata sandi akan diminta.","openProfile()");
+}
 function loginGuest(){
   const id=LS.get("daf_guest_id");
   let a=id?loadAcct(id):null;
   if(!a){const all=listAccounts().sort((x,y)=>(y.updated||0)-(x.updated||0));a=all[0]||newAcctOrLimit();if(!a)return}
-  enterAcct(a);
+  tryEnter(a);
 }
-function loginAs(id){const a=loadAcct(id);if(a)enterAcct(a);else{setMsg("Akun tidak ditemukan");openWelcome()}}
+function loginAs(id){const a=loadAcct(id);if(a)tryEnter(a);else{setMsg("Akun tidak ditemukan");openWelcome()}}
 function loginNew(){const a=newAcctOrLimit();if(a)enterAcct(a)}
 function resetSession(text){
   fbUnwatch();
@@ -2086,7 +2329,8 @@ function openProfile(){
   </div>
   ${adm?"":`<div class="rowin"><input id="pfName" type="text" maxlength="12" value="${esc(acct.name)}" autocomplete="off" autocapitalize="off"><button class="ubtn gold" type="button" onclick="renameUser()">GANTI NAMA</button></div>
   <div id="pfErr" class="hint" style="color:#ff8a8a;font-weight:900"></div>`}
-  <button class="btn spin" type="button" style="font-size:18px" onclick="openTransfer()">📤 KIRIM CHIP</button>
+  ${canSend()?`<button class="btn spin" type="button" style="font-size:18px" onclick="openTransfer()">📤 KIRIM CHIP</button>`:`<p class="pwNote" style="text-align:center">📤 Kirim chip hanya untuk admin &amp; akun yang didaftarkan admin.</p>`}
+  ${adm?"":`<button class="btn small" type="button" style="font-size:14px" onclick="openSetPw()">${acct.pw?"🔒 GANTI KATA SANDI":"🔑 BUAT KATA SANDI"}</button>`}
   <div class="txlist"><b style="color:#fff">Riwayat terakhir</b>${tx}</div>
   ${adm?"":`<button class="btn small" type="button" style="font-size:14px;background:linear-gradient(#7d1729,#430713)" onclick="openDeleteConfirm()">🗑️ HAPUS AKUN</button>`}
   <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
@@ -2129,6 +2373,7 @@ function parseChips(s){   // 1b / 2.5b / 1,5b / 500m / 1.000.000.000
 }
 function trBasic(q,amt){   // cek yang tidak butuh jaringan; "" = lolos
   if(!acct)return"Login dulu";
+  if(!canSend())return"Kirim chip hanya untuk admin dan akun yang didaftarkan admin";
   if(busy)return"Tunggu spin selesai dulu";
   if(freeMode)return"Keluar dari mode gratis dulu — chip gratis tidak bisa dikirim";
   if(!q)return"Isi ID pemain atau username penerima";
@@ -2154,6 +2399,7 @@ async function trCheck(q,amt){
 }
 function openTransfer(){
   if(!acct)return;
+  if(!canSend()){openInfo("📤 KIRIM CHIP","Kirim chip diatur oleh admin. Hanya <b>admin</b> dan akun yang <b>didaftarkan admin</b> yang bisa mengirim chip. Menerima chip tetap bisa untuk semua akun.","closeModal()");return}
   openModal(`<h2>📤 KIRIM CHIP</h2>
   <p>Minimal kirim <b>${money(TRANSFER_MIN)}</b> (1B). Pajak <b>${TAX_PCT}%</b> dipotong dari jumlah yang dikirim. Chip kamu: <b>${isAdmin()?"∞":money(balance)}</b></p>
   <input id="trTo" type="text" placeholder="ID pemain atau username penerima" autocomplete="off" autocapitalize="off" value="${trDraft?esc(trDraft.q):""}">
@@ -2357,7 +2603,7 @@ function showFbNotes(){
   const html=fbNotes.join("");fbNotes=[];
   openInfo("📥 CHIP MASUK",html,"closeModal()");
 }
-function fbUnwatch(){if(FB.unsub){try{FB.unsub()}catch(e){}FB.unsub=null}}
+function fbUnwatch(){if(FB.unsub){try{FB.unsub()}catch(e){}FB.unsub=null}if(FB.unsubP){try{FB.unsubP()}catch(e){}FB.unsubP=null}}
 function fbWatch(a){   // live: chip masuk langsung diterima tanpa refresh
   fbUnwatch();
   if(!FB.ok||a.admin)return;
@@ -2371,7 +2617,7 @@ async function fbAttach(a){   // dipanggil tiap login
   if(!a.admin){
     try{await fbRegister(a)}catch(e){console.warn("Daftar profil gagal:",e);setMsg("☁️ Gagal daftar online: "+(e.code||e.message)+(String(e.code).indexOf("permission")>=0?" — cek Rules Firestore sudah di-Publish":""));return}
     if(acct!==a)return;
-    fbWatch(a);
+    fbWatch(a);fbPermWatch(a);
   }
   updateUserBar();
 }
@@ -2559,6 +2805,7 @@ function openSettings(){
   <div class="setRow"><span><b>Kecepatan spin</b></span><button class="ubtn gold" type="button" onclick="setSpeedIdx(SPEEDS.indexOf(SPD)+1);openSettings()">⚡ ${SPD.n}</button></div>
   ${on?`<div class="setRow"><span><b>Akun</b><br><small>${isAdmin()?"Admin":esc(acct.name)}</small></span><button class="ubtn" type="button" onclick="openProfile()">🪪 PROFIL</button></div>`
       :`<div class="setRow"><span><b>Akun</b><br><small>Belum login</small></span><button class="ubtn gold" type="button" onclick="openWelcome()">LOGIN</button></div>`}
+  ${isAdmin()?`<div class="setRow"><span><b>Panel admin</b><br><small>Atur izin kirim chip, full gambar &amp; jackpot</small></span><button class="ubtn gold" type="button" onclick="openAdminPanel()">🛠 BUKA</button></div>`:""}
   <div class="setRow"><span><b>Cara main</b></span><button class="ubtn" type="button" onclick="openHowTo()">📖 LIHAT</button></div>
   ${on?`<button class="btn small" type="button" style="font-size:14px;background:linear-gradient(#7d1729,#430713)" onclick="closeModal();logout()">🚪 KELUAR AKUN</button>`:""}
   <p style="font-size:11px;color:#ffe9a699;margin:10px 0 0">Permainan hiburan dengan chip virtual, tanpa uang sungguhan.</p>
@@ -2737,7 +2984,7 @@ function evText(e){
     case"join":return `${a} ${n} masuk room`;
     case"leave":return `${a} ${n} keluar room`;
     case"win":return `🏆 ${n} menang <b>+${amt}</b> (×${Number(e.mult)||0})`;
-    case"full":return `🖼️ ${n} FULL GAMBAR <b>+${amt}</b>`;
+    case"full":return `🖼️ ${n} FULL GAMBAR ${e.an?esc(String(e.an).slice(0,10).toUpperCase())+" ":""}<b>+${amt}</b>`;
     case"jp":return `👑 ${n} JACKPOT ${esc(String(e.tier||"").slice(0,6))} <b>+${amt}</b>`;
     case"chat":return `${n}: ${esc(String(e.text||"").slice(0,60))}`;
     case"react":return `${n} ${esc(String(e.text||"").slice(0,4))}`;
@@ -2784,7 +3031,7 @@ function roomAfterSpin(i){   // dipanggil di akhir tiap spin
   roomPutSelf();
   const sp=i.special;
   if(sp&&sp.kind==="jp")roomEvent({k:"jp",tier:sp.tier,amt:i.win});
-  else if(sp&&sp.kind==="full")roomEvent({k:"full",amt:i.win});
+  else if(sp&&sp.kind==="full")roomEvent({k:"full",amt:i.win,an:sp.animal.n});
   else if(i.bet>0&&i.win>=10*i.bet)roomEvent({k:"win",amt:i.win,mult:Math.round(i.win/i.bet*10)/10});
   roomRender();
 }
