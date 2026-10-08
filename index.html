@@ -1867,9 +1867,12 @@ async function admLoadOnline(){
   try{
     if(!(await tmo(fbInit(),8000,"koneksi")&&FB.ok)){admOnlineErr="Server online tidak terhubung";}
     else{
-      const [ps,pm]=await tmo(Promise.all([FB.db.collection("profiles").orderBy("updated","desc").limit(60).get(),FB.db.collection("perms").get()]),10000,"muat daftar");
-      const pmap={};pm.forEach(d=>{const x=d.data();pmap[d.id]={send:!!x.send,full:!!x.full,jp:!!x.jp}});
-      admOnline=ps.docs.map(d=>{const x=d.data();return{pid:String(x.pid),name:x.name,perm:pmap[String(x.pid)]||null}});
+      const SV={source:"server"};
+      const [ps,pm]=await tmo(Promise.all([FB.db.collection("profiles").orderBy("updated","desc").limit(60).get(SV),FB.db.collection("perms").get(SV)]),12000,"muat daftar dari server");
+      const pmap={},pname={};pm.forEach(d=>{const x=d.data();pmap[d.id]={send:!!x.send,full:!!x.full,jp:!!x.jp};pname[d.id]=x.name});
+      const seen=new Set();
+      admOnline=ps.docs.map(d=>{const x=d.data();seen.add(String(x.pid));return{pid:String(x.pid),name:x.name,perm:pmap[String(x.pid)]||null}});
+      Object.keys(pmap).forEach(id=>{if(!seen.has(id))admOnline.push({pid:id,name:pname[id]||id,perm:pmap[id]})});   // akun berizin yang belum terdaftar online tetap tampil
     }
   }catch(e){console.warn(e);admOnlineErr="Gagal memuat daftar online: "+(e.code||e.message)+(String(e.code).indexOf("permission")>=0?" — Rules baru (profiles list + perms) belum di-Publish":"")}
   const el=document.getElementById("admOnl");if(el)el.innerHTML=admOnlineHtml();
@@ -1906,11 +1909,18 @@ async function admSave(){
   const t=admT,perm={send:!!t.perm.send,full:!!t.perm.full,jp:!!t.perm.jp};
   const mm=document.getElementById("admMsg");if(mm){mm.style.color="#ffd978";mm.textContent="Menyimpan…"}
   const okMsg=[],bad=[];
+  const step=x=>{const e=document.getElementById("admMsg");if(e){e.style.color="#ffd978";e.textContent=x}};
   try{
     if(t.local){const rec=loadAcct(t.local.id);if(rec){rec.perm=perm;LS.set("daf_acct_"+rec.id,JSON.stringify(rec));okMsg.push("tersimpan di perangkat ini")}}
+    step("Menyimpan… (1/3) menghubungi server");
     if(await tmo(fbInit(),8000,"koneksi")&&FB.ok){
-      try{await tmo(FB.db.collection("perms").doc(String(t.pid)).set({pid:String(t.pid),name:String(t.name).slice(0,24),send:perm.send,full:perm.full,jp:perm.jp,ts:Date.now()}),10000,"simpan izin");okMsg.push("izin tersimpan online");admMark(t,perm)}
-      catch(e){console.warn(e);bad.push("gagal simpan izin online: "+esc(e.code||e.message))}
+      step("Menyimpan… (2/3) menulis izin online");
+      try{const pref=FB.db.collection("perms").doc(String(t.pid));await tmo(pref.set({pid:String(t.pid),name:String(t.name).slice(0,24),send:perm.send,full:perm.full,jp:perm.jp,ts:Date.now()}),10000,"simpan izin");
+        step("Menyimpan… (3/3) memastikan sampai server");
+        const chk=await tmo(pref.get({source:"server"}),10000,"verifikasi server");
+        if(!chk.exists||!!chk.data().send!==perm.send||!!chk.data().full!==perm.full||!!chk.data().jp!==perm.jp)throw{code:"verify",message:"data di server tidak cocok"};
+        okMsg.push("izin tersimpan online (terverifikasi di server)");admMark(t,perm)}
+      catch(e){console.warn(e);bad.push("izin BELUM sampai server: "+esc(e.code||e.message)+" — akan hilang saat refresh")}
       try{await tmo(fbSend({pid:t.pid},{type:"perm",perm,from:"ADMIN",ts:Date.now()}),10000,"kirim pesan");okMsg.push("terkirim ke pemain ☁️ (aktif saat pemain online / login)")}
       catch(e){console.warn(e);const c=String(e.code||e.message);bad.push("gagal kirim online: "+esc(c)+(c.indexOf("permission")>=0?" — Rules Firestore belum di-Publish / pemain belum terdaftar online (suruh pemain login sekali saat online)":""))}
     }else{bad.push("tidak bisa terhubung ke server"+(FB.err?" ("+esc(FB.err.code||FB.err.message)+")":"")+" — izin hanya tersimpan di perangkat ini")}
@@ -2543,7 +2553,7 @@ function fbInit(){
     if(typeof firebase==="undefined"){console.warn("SDK Firebase gagal dimuat (offline?)");return false}
     try{
       firebase.initializeApp(FIREBASE_CONFIG);
-      FB.db=firebase.firestore();try{FB.db.settings({experimentalAutoDetectLongPolling:true,merge:true})}catch(e){console.warn(e)}
+      FB.db=firebase.firestore();try{FB.db.settings({experimentalForceLongPolling:true,merge:true})}catch(e){console.warn(e)}
       const au=firebase.auth();
       const cur=await new Promise(res=>{const u=au.onAuthStateChanged(x=>{u();res(x)})});
       FB.uid=(cur||(await au.signInAnonymously()).user).uid;
