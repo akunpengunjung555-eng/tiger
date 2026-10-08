@@ -1875,8 +1875,8 @@ async function admSave(){
     if(t.local){const rec=loadAcct(t.local.id);if(rec){rec.perm=perm;LS.set("daf_acct_"+rec.id,JSON.stringify(rec));okMsg.push("tersimpan di perangkat ini")}}
     if(await fbInit()&&FB.ok){
       try{await fbSend({pid:t.pid},{type:"perm",perm,from:"ADMIN",ts:Date.now()});okMsg.push("terkirim ke pemain ☁️ (aktif saat pemain online / login)")}
-      catch(e){console.warn(e);bad.push("gagal kirim online: "+(e.code||e.message))}
-    }else if(!t.local){bad.push("tidak bisa terhubung ke server, dan pemain ini tidak ada di perangkat ini")}
+      catch(e){console.warn(e);const c=String(e.code||e.message);bad.push("gagal kirim online: "+esc(c)+(c.indexOf("permission")>=0?" — Rules Firestore belum di-Publish / pemain belum terdaftar online (suruh pemain login sekali saat online)":""))}
+    }else{bad.push("tidak bisa terhubung ke server"+(FB.err?" ("+esc(FB.err.code||FB.err.message)+")":"")+" — izin hanya tersimpan di perangkat ini")}
   }catch(e){console.warn(e);bad.push(String(e.message||e))}
   admSaving=false;
   admT=t;
@@ -1996,6 +1996,7 @@ function findAccount(q){   // cari lewat ID pemain (8 digit) atau username
 function saveGame(){
   if(!acct||acct.admin)return;
   const real=(freeMode&&stash)?stash:{balance,bet};
+  try{const cur=JSON.parse(LS.get("daf_acct_"+acct.id));if(cur&&cur.perm)acct.perm=cur.perm}catch(e){}   // izin dari admin selalu menang atas salinan di memori
   acct.balance=real.balance;acct.bet=real.bet;acct.spinCount=spinCount;acct.freeSpins=freeMode?0:freeSpins;acct.updated=Date.now();
   LS.set("daf_acct_"+acct.id,JSON.stringify(acct));
 }
@@ -2584,7 +2585,7 @@ async function fbClaim(a){   // ambil semua chip kiriman di inbox online
         let it=null;   // transaksi: hanya satu perangkat/tab yang berhasil mengambil tiap kiriman
         try{await FB.db.runTransaction(async tx=>{const s=await tx.get(d.ref);it=s.exists?s.data():null;if(it)tx.delete(d.ref)})}catch(e){it=null}
         if(it&&it.type==="perm"&&it.perm){   // kiriman izin dari admin (bukan chip)
-          a.perm={send:!!it.perm.send,full:!!it.perm.full,jp:!!it.perm.jp};saveGame();updateUserBar();
+          a.perm={send:!!it.perm.send,full:!!it.perm.full,jp:!!it.perm.jp};try{const r=loadAcct(a.id);if(r){r.perm=a.perm;LS.set("daf_acct_"+r.id,JSON.stringify(r))}}catch(e){}saveGame();updateUserBar();
           setMsg("🔧 Izin akun diperbarui admin");continue;
         }
         const net=it?Number(it.net):0;
@@ -2680,7 +2681,9 @@ document.getElementById("profileBtn").addEventListener("click",openProfile);
 document.getElementById("logoutBtn").addEventListener("click",logout);
 window.addEventListener("beforeunload",saveGame);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)saveGame()});
-window.addEventListener("storage",e=>{   // chip masuk saat akun ini juga terbuka di tab lain
+window.addEventListener("storage",e=>{   // izin diubah admin di tab lain
+  if(acct&&!acct.admin&&e.key==="daf_acct_"+acct.id&&e.newValue){try{const n=JSON.parse(e.newValue);if(n&&n.perm){acct.perm=n.perm;updateUserBar()}}catch(_){}}
+     // chip masuk saat akun ini juga terbuka di tab lain
   if(acct&&!acct.admin&&e.key==="daf_inbox_"+acct.id){
     const n=claimInbox();
     if(n){setMsg("📥 Chip kiriman diterima");if(!modalOpen)openInfo("📥 CHIP MASUK",n,"closeModal()")}
