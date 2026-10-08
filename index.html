@@ -1930,23 +1930,26 @@ async function admSave(){
   admSaving=true;
   const t=admT,perm={send:!!t.perm.send,full:!!t.perm.full,jp:!!t.perm.jp};
   const mm=document.getElementById("admMsg");if(mm){mm.style.color="#ffd978";mm.textContent="Menyimpan…"}
-  const okMsg=[],bad=[];let viaRest=false;
+  const okMsg=[],bad=[];let viaRest=false,quota=false,sdkDead=false;
   const step=x=>{const e=document.getElementById("admMsg");if(e){e.style.color="#ffd978";e.textContent=x}};
   try{
     if(t.local){const rec=loadAcct(t.local.id);if(rec){rec.perm=perm;LS.set("daf_acct_"+rec.id,JSON.stringify(rec));okMsg.push("tersimpan di perangkat ini")}}
     step("Menyimpan… (1/3) menghubungi server");
     if(await tmo(fbInit(),8000,"koneksi")&&FB.ok){
       step("Menyimpan… (2/3) menulis izin online");
-      try{const pref=FB.db.collection("perms").doc(String(t.pid));await tmo(pref.set({pid:String(t.pid),name:String(t.name).slice(0,24),send:perm.send,full:perm.full,jp:perm.jp,ts:Date.now()}),10000,"simpan izin");
+      try{const pref=FB.db.collection("perms").doc(String(t.pid));await tmo(pref.set({pid:String(t.pid),name:String(t.name).slice(0,24),send:perm.send,full:perm.full,jp:perm.jp,ts:Date.now()}),6000,"simpan izin");
         step("Menyimpan… (3/3) memastikan sampai server");
-        const chk=await tmo(pref.get({source:"server"}),10000,"verifikasi server");
+        const chk=await tmo(pref.get({source:"server"}),6000,"verifikasi server");
         if(!chk.exists||!!chk.data().send!==perm.send||!!chk.data().full!==perm.full||!!chk.data().jp!==perm.jp)throw{code:"verify",message:"data di server tidak cocok"};
         okMsg.push("izin tersimpan online (terverifikasi di server)");admMark(t,perm)}
       catch(e){console.warn(e);
         step("Jalur utama macet ("+esc(e.code||e.message)+") — mencoba jalur cadangan…");
+        sdkDead=true;
         try{await restSavePerm(t,perm);okMsg.push("izin tersimpan online lewat jalur cadangan (terverifikasi)");admMark(t,perm);viaRest=true}
-        catch(e2){console.warn(e2);bad.push("izin BELUM sampai server: "+esc(e.code||e.message)+" / cadangan: "+esc(e2.code||e2.message)+" — akan hilang saat refresh")}}
-      try{await tmo(fbSend({pid:t.pid},{type:"perm",perm,from:"ADMIN",ts:Date.now()}),10000,"kirim pesan");okMsg.push("terkirim ke pemain ☁️ (aktif saat pemain online / login)")}
+        catch(e2){console.warn(e2);
+          if(e2&&e2.code==="RESOURCE_EXHAUSTED"){quota=true;bad.push("⛔ KUOTA FIREBASE HARIAN HABIS — semua tulis data ke server ditolak. Izin hanya tersimpan di perangkat ini. Kuota reset otomatis tiap hari (± pukul 15.00 WITA), atau upgrade paket Blaze di Firebase.")}
+          else bad.push("izin BELUM sampai server: "+esc(e.code||e.message)+" / cadangan: "+esc(e2.code||e2.message)+" — akan hilang saat refresh")}}
+      if(!quota)try{if(sdkDead&&!viaRest)throw{code:"timeout"};await tmo(fbSend({pid:t.pid},{type:"perm",perm,from:"ADMIN",ts:Date.now()}),10000,"kirim pesan");okMsg.push("terkirim ke pemain ☁️ (aktif saat pemain online / login)")}
       catch(e){console.warn(e);const c=String(e.code||e.message);
         let sent=false;
         if(viaRest||c==="timeout"){try{await restSendPerm(t.pid,perm);okMsg.push("terkirim ke pemain ☁️ (jalur cadangan)");sent=true}catch(e3){console.warn(e3)}}
@@ -2924,7 +2927,7 @@ renderGames();
    Mabar = beberapa pemain di satu room (kode 5 huruf), tiap pemain putar slot sendiri dengan chip sendiri,
    tapi saling lihat: papan peringkat sesi, kemenangan besar/jackpot, reaksi & chat.
    Online lewat Firebase Firestore (rooms/{kode}/players & feed). Kalau Firebase tidak tersambung -> room LOKAL (antar tab browser yang sama). */
-const ROOM_MAX=6,ROOM_STALE=45000,ROOM_CHARS="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const ROOM_MAX=6,ROOM_STALE=100000,ROOM_CHARS="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 let R=null,roomBusy=false,lastChat=0;
 function genCode(){let c="";for(let i=0;i<5;i++)c+=ROOM_CHARS[Math.floor(Math.random()*ROOM_CHARS.length)];return c}
 function cleanCode(v){return String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5)}
@@ -3029,7 +3032,7 @@ async function roomConnect(code,create){
     rt.listen(roomOnPlayers,roomOnFeed,roomOnErr);
     await roomPutSelf();
     await roomEvent({k:"join"});
-    R.hb=setInterval(roomBeat,10000);
+    R.hb=setInterval(roomBeat,30000);
     closeModal();
     if(inGame!=="daf")openGame("daf");
     roomUI(true);
