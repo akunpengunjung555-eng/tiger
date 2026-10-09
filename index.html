@@ -448,9 +448,11 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .gToast div{padding:9px 14px;border-radius:14px;border:2px solid var(--c,#ffd34d);background:linear-gradient(#3a0a52ee,#1a0230ee);color:#fff;font-size:14px;text-align:center;
   box-shadow:0 0 22px var(--c,#ffd34d),inset 0 0 12px #0008;animation:rtIn .3s ease,rtOut .5s ease 6s forwards}
 .gToast div b{color:var(--c,#ffd34d)}
-.gFly{position:fixed;left:0;top:calc(90px + env(safe-area-inset-top,0px));z-index:260;white-space:nowrap;pointer-events:none;padding:10px 20px;border-radius:30px;border:3px solid #ffd34d;background:linear-gradient(#5a0a7aee,#220338ee);color:#fff;font-size:17px;font-weight:800;box-shadow:0 0 28px #ffd34d,inset 0 0 14px #0008;animation:gFlyX 7s linear forwards}
-.gFly b{color:#ffd34d}
-@keyframes gFlyX{from{transform:translateX(100vw)}to{transform:translateX(-110%)}}
+.gAnn{position:fixed;left:0;right:0;top:0;z-index:260;display:flex;justify-content:center;pointer-events:none;padding-top:env(safe-area-inset-top,0px);opacity:0;transform:translateY(-100%);transition:opacity .25s,transform .25s}
+.gAnn.on{opacity:1;transform:none}
+.gAnn div{width:min(480px,100%);box-sizing:border-box;padding:7px 12px;border-bottom:3px solid var(--c,#ffd34d);background:#240335;color:#fff;text-align:center;font-size:15px;line-height:1.3}
+.gAnn b{color:var(--c,#ffd34d)}
+.gAnn small{display:block;font-size:12px;color:#ddd}
 .roomToast div{padding:7px 12px;border-radius:12px;border:2px solid var(--gold);background:#35040dee;color:#fff;font-size:13px;text-align:center;
   animation:rtIn .25s ease,rtOut .4s ease 3.6s forwards}
 @keyframes rtIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
@@ -1238,7 +1240,7 @@ function plantLine(locked,dcells){
     const rs=dr===1?Math.floor(Math.random()*(ROWS-L+1)):(L-1)+Math.floor(Math.random()*(ROWS-L+1));
     for(let i=0;i<L;i++)cells.push([rs+dr*i,c0+dc*i]);
   }
-  const a=pickAnimal();
+  const a=(an!=null&&animals[an])?animals[an]:pickAnimal();
   cells.forEach(([r,c])=>{board[r][c]=a;locked.add(r*COLS+c);dcells.add(r*COLS+c)});
 }
 function seedResult(mode="normal",plain=false,gacor=false,luck=1){
@@ -1270,7 +1272,7 @@ function seedResult(mode="normal",plain=false,gacor=false,luck=1){
     }
   }
 }
-function plantLineSpec(kind,L,locked,dcells){
+function plantLineSpec(kind,L,locked,dcells,an){
   const cells=[];
   if(kind==="H"){const r=Math.floor(Math.random()*ROWS);for(let i=0;i<L;i++)cells.push([r,i])}
   else{const dr=Math.random()<.5?1:-1,rs=dr===1?Math.floor(Math.random()*(ROWS-L+1)):(L-1)+Math.floor(Math.random()*(ROWS-L+1));for(let i=0;i<L;i++)cells.push([rs+dr*i,i])}
@@ -1282,9 +1284,9 @@ function seedFromPlan(p){
   board=randomBoard();
   const locked=new Set(),dcells=new Set();
   if(p.rows){
-    const animal=pickAnimal();
+    const animal=(p.an!=null&&animals[p.an])?animals[p.an]:pickAnimal();
     [0,1,2,3,4].sort(()=>Math.random()-.5).slice(0,p.rows).forEach(r=>{for(let c=0;c<COLS;c++){board[r][c]=animal;locked.add(r*COLS+c)}});
-  }else if(p.line)plantLineSpec(p.line.kind,p.line.L,locked,dcells);
+  }else if(p.line)plantLineSpec(p.line.kind,p.line.L,locked,dcells,p.an);
   sanitizeDiag(locked);
   if(p.scatter>=3){
     let placed=0,guard=0;
@@ -3374,14 +3376,35 @@ function roomTogglePanel(force){
 }
 /* ===== NOTIF JACKPOT GLOBAL: semua pemain online (bukan hanya satu room) ===== */
 const G={un:null,ch:null,seen:0,start:0,tm:null,seq:-1};
-function gFly(e){
-  const d=document.createElement("div");d.className="gFly";d.style.top=`calc(${80+Math.floor(Math.random()*4)*46}px + env(safe-area-inset-top,0px))`;
-  d.innerHTML=`🚀 ${esc(String(e.av||"👤").slice(0,4))} <b>${esc(String(e.name||"?").slice(0,12))}</b> MENANG BESAR <b>+${money(Number(e.amt)||0)}</b> 💰`;
-  document.body.appendChild(d);setTimeout(()=>d.remove(),7200);
+const GQ=[];let gBusy=false,gEl=null;
+function gParse(e){
+  const t=String(e.tier||"").split("|"),k=t[0],a=animals[+t[1]],fr=t[2]==="1";
+  const an=a?` ${a.e} <b>${esc(a.n.toUpperCase())}</b>`:"";
+  const amt=money(Number(e.amt)||0),nm=`<b>${esc(String(e.name||"?").slice(0,12))}</b>`;
+  const col={MINI:"#2fe36b",MINOR:"#29a8ff",MAJOR:"#d84dff",GRAND:"#ffd34d",FULL:"#ff7a3d",SUPER:"#ff4d6d",MEGA:"#ffb02e",BIG:"#ffd34d",LINE:"#7dffa0"}[k]||"#ffd34d";
+  const mode=fr?"🎁 di SCATTER MODE":"di spin biasa";
+  let l1;
+  if(k==="FULL")l1=`🖼️ ${nm} FULL GAMBAR${an}`;
+  else if(k==="SUPER"||k==="MEGA"||k==="BIG")l1=`🏆 ${nm} ${k} WIN${an}`;
+  else if(k==="LINE")l1=`🏆 ${nm} MENANG BESAR${an}`;
+  else l1=`👑 ${nm} JACKPOT KARTU <b>${esc(k.slice(0,6))}</b>`;
+  return{col,html:`${l1}<small>+${amt} • ${mode}</small>`};
+}
+function gAnnShow(e){
+  GQ.push(e);if(GQ.length>4)GQ.shift();
+  if(!gBusy)gAnnNext();
+}
+function gAnnNext(){
+  const e=GQ.shift();if(!e){gBusy=false;return}
+  gBusy=true;
+  if(!gEl){gEl=document.createElement("div");gEl.className="gAnn";gEl.innerHTML="<div></div>";document.body.appendChild(gEl)}
+  const p=gParse(e),d=gEl.firstChild;d.style.setProperty("--c",p.col);d.innerHTML=p.html;
+  requestAnimationFrame(()=>gEl.classList.add("on"));
   try{coinPing(.05,.09)}catch(_){}
+  setTimeout(()=>{gEl.classList.remove("on");setTimeout(gAnnNext,350)},4200);
 }
 function gToast(e){
-  if(e&&e.tier==="BIG")return gFly(e);
+  if(e&&String(e.tier||"").includes("|"))return gAnnShow(e);
   const box=document.getElementById("gToast");if(!box||!e)return;
   const col={MINI:"#2fe36b",MINOR:"#29a8ff",MAJOR:"#d84dff",GRAND:"#ffd34d"}[e.tier]||"#ffd34d";
   const d=document.createElement("div");d.style.setProperty("--c",col);
