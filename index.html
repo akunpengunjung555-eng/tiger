@@ -241,6 +241,20 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .ubtn.gold{background:linear-gradient(#ffc238,#df6d07);text-shadow:0 1px #6d2b00}
 .ubtn[hidden]{display:none}
 .betbox small{color:#6dff9a;font-size:11px;margin-left:4px}
+.betbox{cursor:pointer}
+#betPanel{position:fixed;inset:0;z-index:120;display:flex;align-items:flex-end;justify-content:center;background:#000a}
+#betPanel[hidden]{display:none}
+#betPanel .bpBox{width:min(440px,100%);padding:14px 14px 18px;border:3px solid #ffd34d;border-bottom:0;border-radius:18px 18px 0 0;background:linear-gradient(#7a0c1e,#2a0309);color:#fff}
+#betPanel .bpHead{display:flex;justify-content:space-between;align-items:center;color:#ffe36a;font-size:15px}
+#betPanel .bpHead button{border:0;background:none;color:#fff;font-size:20px;padding:0 4px}
+#betPanel .bpVal{text-align:center;font-size:clamp(24px,8vw,34px);font-weight:900;color:#fff;margin:6px 0}
+#betPanel input[type=range]{width:100%;height:34px;accent-color:#ffd34d}
+#betPanel .bpMM{display:flex;justify-content:space-between;font-size:11px;color:#ffe9a6aa;margin-top:-6px}
+#betPanel .bpGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:10px 0}
+#betPanel button[data-v],#betPanel .bpRow button{min-height:44px;border:2px solid #f6bf45;border-radius:10px;color:#fff;font-weight:900;font-size:15px;background:linear-gradient(#ffc238,#df6d07);text-shadow:0 2px #6d2b00}
+#betPanel button[data-v].on{background:linear-gradient(#41d96b,#12853a);border-color:#fff}
+#betPanel .bpRow{display:grid;grid-template-columns:1fr 1fr 1fr 1.4fr;gap:6px}
+#betPanel .bpRow .ok{background:linear-gradient(#7b27a1,#3f0b62);text-shadow:none}
 .modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:#000b;padding:14px}
 .modal.show{display:flex}
 .mbox{width:min(480px,100%);border:4px solid var(--gold);border-radius:16px;padding:18px;text-align:center;background:linear-gradient(#8d1021,#35040d);box-shadow:0 0 40px #ffb000aa}
@@ -1874,7 +1888,7 @@ document.getElementById("auto").addEventListener("click",()=>{
 document.getElementById("speed").addEventListener("click",()=>setSpeedIdx(SPEEDS.indexOf(SPD)+1));
 document.getElementById("minus").addEventListener("click",()=>{
   if(busy)return;
-  bet=Math.max(BET_STEP,bet-BET_STEP);updateUI();
+  bet=freeMode?Math.max(BET_STEP,bet-BET_STEP):betLadderStep(-1);clampBet();updateUI();   // mode asli: loncat sesuai tangga bet (1M…2B)
 });
 document.getElementById("maxbet").addEventListener("click",()=>{
   if(busy)return;
@@ -1883,7 +1897,50 @@ document.getElementById("maxbet").addEventListener("click",()=>{
 });
 document.getElementById("plus").addEventListener("click",()=>{
   if(busy)return;
-  bet=Math.min(BET_MAX,bet+BET_STEP);clampBet();updateUI();   // tidak bisa melebihi chip
+  bet=freeMode?Math.min(BET_MAX,bet+BET_STEP):betLadderStep(1);clampBet();updateUI();   // tidak bisa melebihi chip
+});
+/* ===== BET CEPAT: tangga 1M–2B untuk tombol −/+, dan panel pilih bet (ketuk kotak BET) ===== */
+const BET_LADDER=[1,2,3,5,10,20,30,50,100,200,300,500,1000,1500,2000].map(x=>x*1e6);
+function betLadderStep(d){
+  const L=BET_LADDER;
+  if(d>0){for(const v of L)if(v>bet)return Math.min(v,BET_MAX);return BET_MAX}
+  for(let i=L.length-1;i>=0;i--)if(L[i]<bet)return L[i];
+  return L[0];
+}
+const betShort=n=>n>=1e9?(n/1e9)+"B":(n/1e6)+"M";
+function betPanelEnsure(){
+  let el=document.getElementById("betPanel");if(el)return el;
+  el=document.createElement("div");el.id="betPanel";el.hidden=true;
+  el.innerHTML=`<div class="bpBox"><div class="bpHead"><b>💰 PILIH BET</b><button type="button" data-x="1" aria-label="Tutup">✕</button></div>
+  <div class="bpVal" id="bpVal"></div>
+  <input id="bpRange" type="range" min="0" max="1000" step="1" aria-label="Geser bet">
+  <div class="bpMM"><span>1M</span><span>2B</span></div>
+  <div class="bpGrid" id="bpGrid">${BET_LADDER.map(v=>`<button type="button" data-v="${v}">${betShort(v)}</button>`).join("")}</div>
+  <div class="bpRow"><button type="button" data-a="half">½</button><button type="button" data-a="dbl">×2</button><button type="button" data-a="max">MAX</button><button type="button" data-a="ok" class="ok">OK</button></div></div>`;
+  document.body.appendChild(el);
+  const val=el.querySelector("#bpVal"),rg=el.querySelector("#bpRange");
+  const lo=Math.log(1e6),hi=Math.log(2e9);
+  const toPos=b=>Math.round((Math.log(Math.max(1e6,b))-lo)/(hi-lo)*1000);
+  const fromPos=p=>{const raw=Math.exp(lo+(hi-lo)*p/1000);const mag=Math.pow(10,Math.floor(Math.log10(raw))-1);return Math.min(2e9,Math.max(1e6,Math.round(raw/mag)*mag))};   // dibulatkan 2 angka penting
+  const apply=v=>{bet=Math.max(1e6,Math.min(BET_MAX,Math.round(v/1e6)*1e6));clampBet();updateUI();sync()};
+  const sync=()=>{val.textContent=money(bet);rg.value=toPos(bet);el.querySelectorAll("#bpGrid button").forEach(b=>b.classList.toggle("on",+b.dataset.v===bet))};
+  rg.addEventListener("input",()=>apply(fromPos(+rg.value)));
+  el.addEventListener("click",e=>{
+    const b=e.target.closest("button");
+    if(e.target===el||(b&&b.dataset.x)){el.hidden=true;return}
+    if(!b)return;
+    if(b.dataset.v)apply(+b.dataset.v);
+    else if(b.dataset.a==="half")apply(bet/2);
+    else if(b.dataset.a==="dbl")apply(bet*2);
+    else if(b.dataset.a==="max"){bet=BET_MAX;clampBet();updateUI();sync()}
+    else if(b.dataset.a==="ok")el.hidden=true;
+    try{UISND.tick()}catch(_){}
+  });
+  el._sync=sync;return el;
+}
+document.querySelector(".betbox").addEventListener("click",()=>{
+  if(busy||freeMode||auto)return;
+  const el=betPanelEnsure();el._sync();el.hidden=false;
 });
 document.getElementById("voiceTest").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||!isAdmin())return;unlockAudio();if(b.dataset.l==="alarm")SFX.scatter();else speakWin(+b.dataset.l)});
 /* ===== SETTING ATAS (gabungan profil, suara, lobi, login, dll.) ===== */
