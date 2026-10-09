@@ -776,9 +776,9 @@ const SCATTER_SPINS_RETRIGGER={3:3,4:5,5:8};
 // Peluang tiap spin diundi sendiri (tidak tergantung jumlah spin). Kosong jauh lebih sering.
 const MODES={
   // normal : SUPER 0,2% | MEGA 1% | BIG 6% | scatter 1,2%  -> ±92% kosong
-  normal :{rows3:0.002,rows2:0.010,rows1:0.060,scatter:0.012,full:0.0007,diag:0.08,mult:1},
+  normal :{rows3:0.002,rows2:0.010,rows1:0.052,scatter:0.012,full:0.0007,diag:0.08,mult:1},
   // scatter: SUPER 0,6% | MEGA 3% | BIG 17% | scatter di dalam scatter (tambah spin) 3%
-  scatter:{rows3:0.006,rows2:0.030,rows1:0.170,scatter:0.030,full:0.0015,diag:0.18,mult:2}
+  scatter:{rows3:0.006,rows2:0.030,rows1:0.150,scatter:0.030,full:0.0015,diag:0.18,mult:2}
 };
 // Hadiah juga acak dalam rentang (bukan angka tetap)
 const PRIZE_RANGE={3:[20,40],2:[8,16],1:[2,6]};
@@ -1477,7 +1477,7 @@ function jpPlan(tier){
   }
   return [tier,tier,tier];
 }
-async function jpCards(tier,amt,reason){
+async function jpCards(tier,amt,reason,onWin){
   const g=id=>document.getElementById(id);
   const root=g("jpGame"),grid=g("jpGrid"),sub=g("jpSub"),title=g("jpTitle"),prize=g("jpPrize"),claim=g("jpClaim"),frame=g("jpFrame"),tallyEl=g("jpTally");
   const col=JP_COL[tier];
@@ -1516,18 +1516,26 @@ async function jpCards(tier,amt,reason){
       const t=plan[n];n++;cnt[t]++;
       show(c,t,false);
       tone(NT(8+Math.min(n,6)*2),0,.28,"triangle",.14);coinPing(.05,.09);
-      tally();
+      const nOpen=n;
+      // tally & teks "tinggal 1 lagi" baru muncul SETELAH kartu selesai berbalik (flip .75s), supaya hasil tidak bocor duluan
+      setTimeout(()=>{
+        tally();
+        if(cnt[tier]>=3&&nOpen===plan.length)return;
+        if(nOpen!==n)return;
+        const hot=JP_LIST.filter(x=>cnt[x]===2);
+        sub.textContent=hot.length?`🔥 ${hot.join(" & ")} tinggal 1 lagi! (${nOpen} kartu terbuka)`:`Buka kartu satu per satu — 3 simbol sama = JACKPOT! (${nOpen} kartu terbuka)`;
+      },780);
       if(cnt[tier]>=3){done=true;clearTimeout(idle);res();return}
-      const hot=JP_LIST.filter(x=>cnt[x]===2);
-      sub.textContent=hot.length?`🔥 ${hot.join(" & ")} tinggal 1 lagi! (${n} kartu terbuka)`:`Buka kartu satu per satu — 3 simbol sama = JACKPOT! (${n} kartu terbuka)`;
       arm();
     };
     cards.forEach(c=>{c.el.onclick=()=>{unlockAudio();arm();pick(c)}});
     arm();
   });
   cards.forEach(c=>c.el.onclick=null);
-  await sleepRaw(800);
+  await sleepRaw(1000);   // tunggu flip kartu ke-3 selesai dulu
+  tally();
   // 3 kartu sama -> JACKPOT
+  if(onWin)onWin();
   root.style.setProperty("--jc",col);frame.style.setProperty("--jc",col);root.classList.add("won");
   cards.filter(c=>c.opened&&c.tier===tier).forEach(c=>c.el.classList.add("match"));
   cards.filter(c=>c.opened&&c.tier!==tier).forEach(c=>c.el.classList.add("dim"));
@@ -1560,13 +1568,13 @@ async function jpCards(tier,amt,reason){
 async function awardJackpot(tier,reason){
   const amt=jpAmount(tier);
   const jb=document.getElementById("jp-"+tier);
-  document.getElementById("msg").textContent=`JACKPOT ${tier}!`;
-  jb.classList.add("hit");
-  await sleepRaw(700);              // kotak jackpot berkedip dulu
-  balance+=amt;
-  if(scatterMode)scatterTotal+=amt;
-  updateUI();
-  await jpCards(tier,amt,reason);
+  document.getElementById("msg").textContent="JACKPOT BONUS — buka kartunya!";   // tier TIDAK dibocorkan sebelum kartu terbuka
+  await jpCards(tier,amt,reason,()=>{   // dipanggil saat 3 kartu sama sudah terbuka: baru kotak tier menyala & chip masuk
+    jb.classList.add("hit");
+    balance+=amt;
+    if(scatterMode)scatterTotal+=amt;
+    updateUI();
+  });
   await sleepRaw(300);
   jb.classList.remove("hit");
   return amt;
@@ -1739,12 +1747,13 @@ async function spin(isFree=false){
   }else{
   // semua akun bisa kena (hoki); akun terdaftar admin = gacor (peluang dikali GACOR_*). Mode gratis tidak pernah dapat.
   const L=(acct&&acct.luck>0)?acct.luck:1,GV=(acct&&acct.gv>0)?acct.gv:1;
-  const gF=can("full")?GACOR_FULL*GV:L,gJ=can("jp")?GACOR_JP*GV:L;   // terdaftar = gacor (bervariasi per akun); lainnya = kehokian pribadi
+  const gF=can("full")?GACOR_FULL*GV:1,gJ=can("jp")?GACOR_JP*GV:1;   // gacor hanya untuk akun yang diizinkan admin; pemain biasa murni acak (tanpa hoki permanen)
+     // terdaftar = gacor (bervariasi per akun); lainnya = kehokian pribadi
   if(!freeMode&&Math.random()<Math.min(GACOR_CAP,MODES[mode].full*gF))special={kind:"full",animal:pickAnimal()};
   else if(!freeMode){const jp=rollJackpotSpin(gJ);if(jp)special={kind:"jp",tier:jp}}
   diagHL=!special;
-  const gacorSpin=!special&&!freeMode&&(can("full")||can("jp"));
-  seedResult(mode,!!special,gacorSpin,(acct&&acct.luck)||1);
+  const gacorSpin=!special&&!freeMode&&(can("full")||can("jp"));   // gacor: hanya akun yang diizinkan admin
+  seedResult(mode,!!special,gacorSpin,1);
   if(gacorSpin)for(let k=0;k<8&&!(countRows().length||diagRuns(board).length);k++)seedResult(mode,false,true);   // gacor: pastikan menang
   }
   render(true);
@@ -1898,6 +1907,9 @@ function tmo(p,ms,label){let t;return Promise.race([Promise.resolve(p),new Promi
 let admT=null,admAcc=[],admErr="",admSaving=false;   // admT: akun yang sedang diedit {pid,name,perm,luck}
 function permOf(x){return Object.assign({},DEFAULT_PERM,x||{})}
 function permBadge(p){return p?(p.send?"📤":"")+(p.full?"🖼️":"")+(p.jp?"🎰":""):""}
+function admLeft(u){if(!u)return"tanpa batas waktu";const m=Math.ceil((u-Date.now())/60000);return m<=0?"habis":m>=1440?Math.floor(m/1440)+" hari "+Math.floor(m%1440/60)+" jam":m>=60?Math.floor(m/60)+" jam "+m%60+" mnt":m+" mnt"}
+function admMinsRow(){const o=[[30,"30 mnt"],[60,"1 jam"],[180,"3 jam"],[1440,"24 jam"],[0,"Tanpa batas"]];
+  return `<div class="admRow" style="flex-wrap:wrap;gap:6px"><b style="width:100%">⏱ Durasi gacor (mulai dari tombol SIMPAN)</b>${o.map(([m,l])=>`<button type="button" class="tg ${admT.mins===m?"on":""}" onclick="admT.mins=${m};admRender()">${l}</button>`).join("")}</div>`}
 function admTg(k,label){return `<div class="admRow"><b>${label}</b><button class="tg ${admT.perm[k]?"on":""}" type="button" onclick="admToggle('${k}')">${admT.perm[k]?"ON":"OFF"}</button></div>`}
 function admListHtml(){
   if(admErr)return `<div style="font-size:12px;color:#ff8a8a">${esc(admErr)}</div>`;
@@ -1907,8 +1919,8 @@ function admListHtml(){
   <b style="color:#fff;font-size:12px">🌐 Semua akun</b><div class="admList">${rest.map(btn).join("")||"<div style='font-size:12px;color:#ffd978'>Belum ada / memuat…</div>"}</div>`;
 }
 function admRender(msg){
-  const editor=admT?`<div class="pstats" style="grid-template-columns:1fr"><div>${esc(admT.name)} • ID ${esc(admT.pid)} • 🍀 kehokian ×${esc(admT.luck||1)}</div></div>
-    ${admTg("send","📤 Boleh kirim chip")}${admTg("full","🖼️ GACOR Full Gambar (peluang dinaikkan)")}${admTg("jp","🎰 GACOR Jackpot (peluang dinaikkan)")}
+  const editor=admT?`<div class="pstats" style="grid-template-columns:1fr"><div>${esc(admT.name)} • ID ${esc(admT.pid)}${(admT.perm.full||admT.perm.jp)?" • gacor sisa: "+admLeft(admT.until):""}</div></div>
+    ${admTg("send","📤 Boleh kirim chip")}${admTg("full","🖼️ GACOR Full Gambar (peluang dinaikkan)")}${admTg("jp","🎰 GACOR Jackpot (peluang dinaikkan)")}${admMinsRow()}
     <button class="btn spin" type="button" style="font-size:16px" onclick="admSave()">💾 SIMPAN IZIN</button>
     <div class="rowin"><input id="admNewPw" type="text" placeholder="Sandi baru untuk pemain ini" autocomplete="off" autocapitalize="off"><button class="ubtn gold" type="button" onclick="admReset()">RESET SANDI</button></div>`
     :`<p class="pwNote">Cari pemain lewat ID/username, atau pilih dari daftar di bawah.</p>`;
@@ -1935,7 +1947,7 @@ async function admLoad(){
 }
 function admPick(pid){
   const a=admAcc.find(x=>String(x.id)===String(pid));if(!a)return;
-  admT={pid:a.id,name:a.name,perm:permOf(a.perms),luck:a.luck};admRender();
+  admT={pid:a.id,name:a.name,perm:permOf(a.perms),until:a.gacorUntil|0,mins:60};admRender();
 }
 async function admSearch(){
   const q=document.getElementById("admQ").value.trim().replace(/^#/,"");if(!q)return;
@@ -1944,7 +1956,7 @@ async function admSearch(){
   const lq=q.toLowerCase();
   const a=admAcc.find(x=>String(x.id)===q||String(x.name).toLowerCase()===lq);
   if(!a){admT=null;admRender(admErr?"":"Pemain tidak ditemukan");return}
-  admT={pid:a.id,name:a.name,perm:permOf(a.perms),luck:a.luck};admRender();
+  admT={pid:a.id,name:a.name,perm:permOf(a.perms),until:a.gacorUntil|0,mins:60};admRender();
 }
 function admToggle(k){if(!admT)return;admT.perm[k]=!admT.perm[k];admRender()}
 async function admReset(){
@@ -1962,7 +1974,7 @@ async function admSave(){
   admSaving=true;
   const t=admT,perm={send:!!t.perm.send,full:!!t.perm.full,jp:!!t.perm.jp};
   const mm=document.getElementById("admMsg");if(mm){mm.style.color="#ffd978";mm.textContent="Menyimpan…"}
-  const r=await admApi("/admin/perms",{id:t.pid,send:perm.send,full:perm.full,jp:perm.jp});
+  const r=await admApi("/admin/perms",{id:t.pid,send:perm.send,full:perm.full,jp:perm.jp,mins:t.mins|0});
   admSaving=false;
   const p=r.ok&&r.j&&r.j.perms;
   if(!p||!!p.send!==perm.send||!!p.full!==perm.full||!!p.jp!==perm.jp){
@@ -1970,7 +1982,7 @@ async function admSave(){
     const m=document.getElementById("admMsg");if(m){m.style.color="#ff8a8a";m.textContent="❌ Izin BELUM tersimpan: "+((r.j&&r.j.error)||"respons server tidak cocok")}
     return;
   }
-  const i=admAcc.findIndex(x=>String(x.id)===String(t.pid));if(i>=0)admAcc[i].perms=perm;
+  const i=admAcc.findIndex(x=>String(x.id)===String(t.pid));if(i>=0){admAcc[i].perms=perm;admAcc[i].gacorUntil=r.j.gacorUntil|0;t.until=r.j.gacorUntil|0}
   admT=t;
   admRender("✅ "+esc(t.name)+": izin tersimpan di server (aktif di pemain dalam ±2 menit atau saat login)");
   admLoad();
@@ -2068,7 +2080,7 @@ function newPid(){   // ID pemain: 8 digit, unik
 }
 /* KEHOKIAN per akun (acak, tersimpan di akun, tidak ada hitungan "spin ke berapa"): tiap spin tetap undian bebas.
    ±5% sial (0,25-0,55x) | ±60% normal (0,7-1,6x) | ±25% hoki (2-8x) | ±10% sangat hoki (10-25x). Akun terdaftar admin = gacor, lihat GACOR_*. */
-function genLuck(){const r=Math.random();
+function genLuck(){return 1;const r=Math.random();
   if(r<.05)return +(0.25+Math.random()*.3).toFixed(2);
   if(r<.65)return +(0.7+Math.random()*.9).toFixed(2);
   if(r<.90)return +(2+Math.random()*6).toFixed(2);
