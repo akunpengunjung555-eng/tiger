@@ -448,6 +448,9 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .gToast div{padding:9px 14px;border-radius:14px;border:2px solid var(--c,#ffd34d);background:linear-gradient(#3a0a52ee,#1a0230ee);color:#fff;font-size:14px;text-align:center;
   box-shadow:0 0 22px var(--c,#ffd34d),inset 0 0 12px #0008;animation:rtIn .3s ease,rtOut .5s ease 6s forwards}
 .gToast div b{color:var(--c,#ffd34d)}
+.gFly{position:fixed;left:0;top:calc(90px + env(safe-area-inset-top,0px));z-index:260;white-space:nowrap;pointer-events:none;padding:10px 20px;border-radius:30px;border:3px solid #ffd34d;background:linear-gradient(#5a0a7aee,#220338ee);color:#fff;font-size:17px;font-weight:800;box-shadow:0 0 28px #ffd34d,inset 0 0 14px #0008;animation:gFlyX 7s linear forwards}
+.gFly b{color:#ffd34d}
+@keyframes gFlyX{from{transform:translateX(100vw)}to{transform:translateX(-110%)}}
 .roomToast div{padding:7px 12px;border-radius:12px;border:2px solid var(--gold);background:#35040dee;color:#fff;font-size:13px;text-align:center;
   animation:rtIn .25s ease,rtOut .4s ease 3.6s forwards}
 @keyframes rtIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
@@ -3371,7 +3374,14 @@ function roomTogglePanel(force){
 }
 /* ===== NOTIF JACKPOT GLOBAL: semua pemain online (bukan hanya satu room) ===== */
 const G={un:null,ch:null,seen:0,start:0,tm:null,seq:-1};
+function gFly(e){
+  const d=document.createElement("div");d.className="gFly";d.style.top=`calc(${80+Math.floor(Math.random()*4)*46}px + env(safe-area-inset-top,0px))`;
+  d.innerHTML=`🚀 ${esc(String(e.av||"👤").slice(0,4))} <b>${esc(String(e.name||"?").slice(0,12))}</b> MENANG BESAR <b>+${money(Number(e.amt)||0)}</b> 💰`;
+  document.body.appendChild(d);setTimeout(()=>d.remove(),7200);
+  try{coinPing(.05,.09)}catch(_){}
+}
 function gToast(e){
+  if(e&&e.tier==="BIG")return gFly(e);
   const box=document.getElementById("gToast");if(!box||!e)return;
   const col={MINI:"#2fe36b",MINOR:"#29a8ff",MAJOR:"#d84dff",GRAND:"#ffd34d"}[e.tier]||"#ffd34d";
   const d=document.createElement("div");d.style.setProperty("--c",col);
@@ -3395,13 +3405,13 @@ async function gPoll(){
   const r=await apiCall("/feed?since="+G.seq,null,tok);
   if(!(r.ok&&r.j))return;
   const first=G.seq<0;
-  if(typeof r.j.last==="number")G.seq=r.j.last;
+  if(typeof r.j.last==="number")G.seq=r.j.last;   // server menjamin nomor tidak mundur
   if(first)return;   // panggilan pertama hanya menandai posisi: jackpot lama tidak ditampilkan
   (r.j.items||[]).forEach(it=>{if(String(it.uid)!==String(acct.id))gToast({name:it.name,tier:it.tier,amt:it.amt,av:animals[(parseInt(it.uid,10)||0)%animals.length].e})});
 }
 async function globalStart(){
   if(acct&&acct.server){
-    if(!G.tm){G.seq=-1;G.tm=setInterval(gPoll,5000)}
+    if(!G.tm){G.seq=-1;G.tm=setInterval(gPoll,3000)}
     gPoll();return;
   }
   if(G.un||G.ch)return;
