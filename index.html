@@ -791,7 +791,7 @@ const SPEEDS=[{n:"NORMAL",f:1},{n:"TURBO",f:.5},{n:"SUPER",f:.22}];
 let SPD=SPEEDS[0];
 let scatterMode=false,scatterTotal=0;
 let board=[],busy=false,auto=false,balance=500000000,bet=17600000,freeSpins=0,voiceOn=true;
-let spinCount=0,acct=null,modalOpen=false;
+let spinCount=0,acct=null,modalOpen=false,stateRev=0;
 const REAL_STEP=1000000,FREE_STEP=10000,FREE_CHIPS=500000,BET_MAX=2000000000;
 let BET_STEP=REAL_STEP,freeMode=false,stash=null;
 let audioUnlocked=false;
@@ -1699,7 +1699,7 @@ async function spin(isFree=false){
   if(!isFree)clampBet();          // bet otomatis turun kalau chip tidak cukup
   if(!isFree&&!isAdmin()&&balance<BET_STEP){openBroke();return 0}   // chip habis -> tawarkan mode gratis
   busy=true;syncSpinBtn();
-  spinCount++;
+  spinCount++;stateRev++;
   const spinBet=bet;
   unlockAudio();
   document.getElementById("meter").style.width="0%";
@@ -1711,7 +1711,7 @@ async function spin(isFree=false){
     if(!(r.ok&&r.j&&r.j.plan)){
       spinCount--;
       if(r.j&&typeof r.j.balance==="number"){balance=r.j.balance;clampBet()}
-      if(r.status===401)LS.del("daf_token");
+      if(r.status===401){LS.del("daf_token");busy=false;syncSpinBtn();resetSession("Sesi habis, silakan login lagi");openWelcome();return 0}
       stopAuto();busy=false;syncSpinBtn();updateUI();
       setMsg((r.j&&r.j.error)||"Spin gagal, coba lagi");
       return 0;
@@ -1784,7 +1784,7 @@ async function spin(isFree=false){
     document.getElementById("lastWin").textContent=money(win);
   }
 
-  if(sp){balance=sp.balance;freeSpins=sp.fsEnd;updateUI()}
+  if(sp){balance=sp.balance;freeSpins=sp.fsEnd;stateRev++;updateUI()}
   if(scatterMode && freeSpins===0)await endScatterMode();
   if(freeSpins===0)clampBet();    // chip berubah setelah spin -> sesuaikan bet
   updateUI();
@@ -1909,7 +1909,8 @@ function admListHtml(){
 function admRender(msg){
   const editor=admT?`<div class="pstats" style="grid-template-columns:1fr"><div>${esc(admT.name)} • ID ${esc(admT.pid)} • 🍀 kehokian ×${esc(admT.luck||1)}</div></div>
     ${admTg("send","📤 Boleh kirim chip")}${admTg("full","🖼️ GACOR Full Gambar (peluang dinaikkan)")}${admTg("jp","🎰 GACOR Jackpot (peluang dinaikkan)")}
-    <button class="btn spin" type="button" style="font-size:16px" onclick="admSave()">💾 SIMPAN IZIN</button>`
+    <button class="btn spin" type="button" style="font-size:16px" onclick="admSave()">💾 SIMPAN IZIN</button>
+    <div class="rowin"><input id="admNewPw" type="text" placeholder="Sandi baru untuk pemain ini" autocomplete="off" autocapitalize="off"><button class="ubtn gold" type="button" onclick="admReset()">RESET SANDI</button></div>`
     :`<p class="pwNote">Cari pemain lewat ID/username, atau pilih dari daftar di bawah.</p>`;
   openModal(`<h2>🛠 PANEL ADMIN</h2>
   <div class="rowin"><input id="admQ" type="text" placeholder="ID pemain / username" autocapitalize="off" autocomplete="off" onkeydown="if(event.key==='Enter')admSearch()"><button class="ubtn gold" type="button" onclick="admSearch()">CARI</button></div>
@@ -1946,6 +1947,16 @@ async function admSearch(){
   admT={pid:a.id,name:a.name,perm:permOf(a.perms),luck:a.luck};admRender();
 }
 function admToggle(k){if(!admT)return;admT.perm[k]=!admT.perm[k];admRender()}
+async function admReset(){
+  if(!admT||!isAdmin())return;
+  const el=document.getElementById("admNewPw"),m=document.getElementById("admMsg"),p=el?el.value:"";
+  const say=(t,c)=>{if(m){m.style.color=c;m.textContent=t}};
+  if(p.length<4||p.length>72){say("Sandi baru 4–72 karakter","#ff8a8a");return}
+  say("Menyimpan…","#ffd978");
+  const r=await admApi("/admin/resetpw",{id:admT.pid,pass:p});
+  if(r.ok&&r.j&&r.j.ok){if(el)el.value="";say("✅ Sandi "+admT.name+" direset. Beri tahu pemain sandi barunya.","#9dffb0")}
+  else say("❌ "+((r.j&&r.j.error)||"Gagal"),"#ff8a8a");
+}
 async function admSave(){
   if(!admT||!isAdmin()||admSaving)return;
   admSaving=true;
@@ -2132,7 +2143,7 @@ function updateUserBar(){
     :"👤 Belum login — data tidak tersimpan"+tag;
   document.getElementById("loginBtn").hidden=on;
   document.getElementById("adminBtn").hidden=on;
-  document.getElementById("dailyBtn").hidden=!on||adm||(on&&!!acct.server);
+  document.getElementById("dailyBtn").hidden=!on||adm;
   document.getElementById("profileBtn").hidden=!on;
   document.getElementById("logoutBtn").hidden=!on;
   document.getElementById("freeExitBtn").hidden=!freeMode;
@@ -2152,7 +2163,19 @@ function applyAcct(a){
 }
 
 /* ----- modal ----- */
-function openModal(html){modalOpen=true;document.getElementById("mbox").innerHTML=html;document.getElementById("modal").classList.add("show")}
+function addEyes(){   // tombol 👁 untuk melihat / menyembunyikan sandi
+  document.querySelectorAll("#mbox input[type=password]").forEach(inp=>{
+    if(inp.dataset.eye)return;inp.dataset.eye="1";
+    const w=document.createElement("div");w.style.cssText="position:relative;display:block;flex:1 1 auto;min-width:0";
+    inp.parentNode.insertBefore(w,inp);w.appendChild(inp);
+    inp.style.paddingRight="54px";inp.style.boxSizing="border-box";inp.style.width="100%";
+    const b=document.createElement("button");b.type="button";b.textContent="👁";b.setAttribute("aria-label","Lihat sandi");
+    b.style.cssText="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:0;font-size:22px;padding:8px;line-height:1;cursor:pointer";
+    b.addEventListener("click",ev=>{ev.preventDefault();const hide=inp.type==="password";inp.type=hide?"text":"password";b.textContent=hide?"🙈":"👁"});
+    w.appendChild(b);
+  });
+}
+function openModal(html){modalOpen=true;document.getElementById("mbox").innerHTML=html;try{addEyes()}catch(e){}document.getElementById("modal").classList.add("show")}
 function closeModal(){modalOpen=false;document.getElementById("modal").classList.remove("show");if(fbNotes.length)setTimeout(showFbNotes,60)}
 function openInfo(title,html,nextJs){
   openModal(`<h2>${title}</h2><p>${html}</p><button class="btn spin" type="button" style="font-size:18px" onclick="${nextJs}">OK</button>`);
@@ -2170,7 +2193,7 @@ function openWelcome(){
 const ADMIN_USER="admin",ADMIN_CHIPS=999999999999;   // ADMIN_USER hanya nama yang dicadangkan; username/password admin sekarang diperiksa server
 const API_URL="https://daf-api.akunpengunjung555.workers.dev";let admToken=null;
 async function apiCall(path,body,tok){const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);try{const r=await fetch(API_URL+path,{method:body?"POST":"GET",signal:ctl.signal,headers:Object.assign({"Content-Type":"application/json"},tok?{Authorization:"Bearer "+tok}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));return{ok:r.ok,status:r.status,j}}catch(e){return{ok:false,status:0,j:{error:"Server tidak terjangkau, coba lagi"}}}finally{clearTimeout(tm)}}
-function srvAcct(x){const p=x.perms||{};return{id:x.id,pid:x.id,name:x.name,balance:x.balance,bet:DEFAULTS.bet,spinCount:0,freeSpins:x.freeSpins|0,streak:0,lastDaily:"",created:Date.now(),tx:[],luck:x.luck,gv:x.gv,perm:{send:!!p.send,full:!!p.full,jp:!!p.jp},server:true}}
+function srvAcct(x){const p=x.perms||{};return{id:x.id,pid:x.id,name:x.name,balance:x.balance,bet:DEFAULTS.bet,spinCount:x.spins|0,freeSpins:x.freeSpins|0,streak:x.streak|0,lastDaily:x.lastDaily||"",today:x.today,yesterday:x.yesterday,created:x.created||Date.now(),tx:[],luck:x.luck,gv:x.gv,perm:{send:!!p.send,full:!!p.full,jp:!!p.jp},server:true}}
 function openAdminLogin(){
   openModal(`<h2>👑 LOGIN ADMIN</h2>
   <input id="admUser" type="text" placeholder="Username" autocomplete="off" autocapitalize="off">
@@ -2247,7 +2270,7 @@ function enterAcct(a){
   afterLogin(a);
 }
 function afterLogin(a){
-  const daily=!a.server&&a.lastDaily!==dateKey();
+  const daily=a.lastDaily!==((a.server&&a.today)||dateKey());
   if(inboxNote){openInfo("📥 CHIP MASUK",inboxNote,daily?"openDaily()":"closeModal()");inboxNote=""}
   else if(daily)openDaily();
 }
@@ -2342,7 +2365,7 @@ async function doRegister(){
 }
 function openSetPw(){
   if(!acct||isAdmin())return;
-  if(acct.server){openInfo("🔑 KATA SANDI","Ganti kata sandi akun server belum tersedia (segera).","openProfile()");return}
+  if(acct.server){openServerPw();return}
   const has=!!acct.pw;
   openModal(`<h2>🔑 ${has?"GANTI":"BUAT"} KATA SANDI</h2>
   <p class="pwNote">${has?"Masukkan kata sandi lama, lalu yang baru.":"Pasang kata sandi supaya akun ini terkunci. Ingat baik-baik — kata sandi tidak bisa dipulihkan."}</p>
@@ -2429,6 +2452,7 @@ function openProfile(){
   </div>
   ${adm?"":`<div class="rowin"><input id="pfName" type="text" maxlength="12" value="${esc(acct.name)}" autocomplete="off" autocapitalize="off"><button class="ubtn gold" type="button" onclick="renameUser()">GANTI NAMA</button></div>
   <div id="pfErr" class="hint" style="color:#ff8a8a;font-weight:900"></div>`}
+  <button class="btn small" type="button" style="font-size:16px" onclick="openLeaderboard()">🏆 PERINGKAT CHIP</button>
   ${canSend()?`<button class="btn spin" type="button" style="font-size:18px" onclick="openTransfer()">📤 KIRIM CHIP</button>`:`<p class="pwNote" style="text-align:center">📤 Kirim chip hanya untuk admin &amp; akun yang didaftarkan admin.</p>`}
   ${adm?"":`<button class="btn small" type="button" style="font-size:14px" onclick="openSetPw()">${acct.pw?"🔒 GANTI KATA SANDI":"🔑 BUAT KATA SANDI"}</button>`}
   <div class="txlist"><b style="color:#fff">Riwayat terakhir</b>${tx}</div>
@@ -2439,10 +2463,46 @@ function copyPid(){
   const t=String(acct.pid);
   try{navigator.clipboard.writeText(t).then(()=>setMsg("ID disalin: "+t),()=>setMsg("ID kamu: "+t))}catch(e){setMsg("ID kamu: "+t)}
 }
+function openServerPw(){
+  openModal(`<h2>🔑 GANTI KATA SANDI</h2>
+  <input id="spOld" type="password" placeholder="Kata sandi lama" autocomplete="current-password">
+  <input id="spNew" type="password" placeholder="Kata sandi baru (min. 4 karakter)" autocomplete="new-password">
+  <input id="spNew2" type="password" placeholder="Ulangi kata sandi baru" autocomplete="new-password" onkeydown="if(event.key==='Enter')doServerPw()">
+  <div id="pwErr" class="pwErr"></div>
+  <button class="btn spin" type="button" style="font-size:18px" onclick="doServerPw()">SIMPAN</button>
+  <button class="btn small" type="button" style="font-size:14px" onclick="openProfile()">BATAL</button>`);
+}
+async function doServerPw(){
+  const o=document.getElementById("spOld").value,n=document.getElementById("spNew").value,n2=document.getElementById("spNew2").value;
+  if(!o){pwErr("Isi kata sandi lama");return}
+  if(n.length<4||n.length>72){pwErr("Kata sandi baru 4–72 karakter");return}
+  if(n!==n2){pwErr("Ulangi kata sandi tidak sama");return}
+  pwErr("Menyimpan…");
+  const r=await apiCall("/passwd",{old:o,pass:n},LS.get("daf_token"));
+  if(!(r.ok&&r.j&&r.j.ok)){pwErr((r.j&&r.j.error)||"Gagal, coba lagi");return}
+  openInfo("✅ BERHASIL","Kata sandi sudah diganti.","openProfile()");
+}
+async function openLeaderboard(){
+  openModal(`<h2>🏆 PERINGKAT CHIP</h2><div id="lbBox" class="hint">Memuat…</div>
+  <button class="btn small" type="button" style="font-size:14px" onclick="openProfile()">KEMBALI</button>`);
+  const r=await apiCall("/leaderboard",null);
+  const box=document.getElementById("lbBox");if(!box)return;
+  if(!(r.ok&&r.j&&Array.isArray(r.j.top))){box.textContent=(r.j&&r.j.error)||"Gagal memuat peringkat";return}
+  if(!r.j.top.length){box.textContent="Belum ada pemain";return}
+  const me=acct?String(acct.name).toLowerCase():"";
+  box.innerHTML=r.j.top.map((x,i)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.12);${String(x.name).toLowerCase()===me?"color:#ffd978;font-weight:900":""}"><span>${["🥇","🥈","🥉"][i]||(i+1)+"."} ${esc(x.name)}</span><b>${money(x.balance)}</b></div>`).join("");
+}
 async function renameUser(){
   const v=document.getElementById("pfName").value.trim(),err=document.getElementById("pfErr");
   if(!/^[A-Za-z0-9_]{3,12}$/.test(v)||/^\d{8}$/.test(v)){err.textContent="Username 3–12 karakter: huruf, angka, atau _ (bukan 8 digit angka)";return}
   const lv=v.toLowerCase(),a=acct;
+  if(a.server){   // akun server: ganti nama di Worker
+    err.textContent="Memeriksa…";
+    const r=await apiCall("/rename",{name:v},LS.get("daf_token"));
+    if(acct!==a)return;
+    if(!(r.ok&&r.j&&r.j.ok)){err.textContent=(r.j&&r.j.error)||"Gagal, coba lagi";return}
+    a.name=r.j.name;updateUserBar();openProfile();setMsg("Username diganti menjadi "+a.name);return;
+  }
   if(lv===ADMIN_USER.toLowerCase()||rawAccounts().some(x=>x.id!==a.id&&String(x.name).toLowerCase()===lv)){err.textContent="Username sudah dipakai";return}
   if(FB.ok){
     err.textContent="Memeriksa…";
@@ -2577,7 +2637,7 @@ async function confirmTransfer(){
     if(to.srv){   // penerima akun server: kirim lewat Worker (saldo tersimpan di server)
       const rr=adm?await admApi("/admin/chips",{id:to.id,amount:net}):await apiCall("/send",{to:to.id,amount:amt},LS.get("daf_token"));
       if(!(rr.ok&&rr.j&&rr.j.ok)){openInfo("❌ GAGAL",esc((rr.j&&rr.j.error)||"Chip tidak terkirim"),"openTransfer()");return}
-      if(!adm){balance=rr.j.balance;clampBet()}
+      if(!adm){balance=rr.j.balance;stateRev++;clampBet()}
       txStored(a,{k:"out",amt,tax,net,peer:`${to.name} (ID ${to.pid})`,ts:Date.now()});
       trDraft=null;updateUI();updateUserBar();
       openInfo("✅ CHIP TERKIRIM",`Dikirim <b>${money(amt)}</b> ke <b>${esc(to.name)}</b> (ID ${esc(to.pid)}).<br>Pajak ${TAX_PCT}%: ${money(tax)} • Diterima: ${money(net)}`,"closeModal()");
@@ -2762,10 +2822,11 @@ async function fbDeleteProfile(a){   // hapus akun: bersihkan juga data online (
 }
 
 /* ----- login harian: 7 hari berulang, streak putus kalau ada hari terlewat ----- */
+const TD=()=>(acct&&acct.server&&acct.today)||dateKey(),YD=()=>(acct&&acct.server&&acct.yesterday)||yesterdayKey();
 function dailyState(){
   if(!acct)return null;
-  if(acct.lastDaily===dateKey()){const s=acct.streak||1;return{claimed:true,streak:s,idx:(s-1)%7}}
-  const cont=acct.lastDaily===yesterdayKey();
+  if(acct.lastDaily===TD()){const s=acct.streak||1;return{claimed:true,streak:s,idx:(s-1)%7}}
+  const cont=acct.lastDaily===YD();
   const s=cont?(acct.streak||0)+1:1;
   return{claimed:false,streak:s,idx:(s-1)%7,broken:!cont&&!!acct.lastDaily};
 }
@@ -2784,9 +2845,19 @@ function openDaily(){
       <button class="btn spin" type="button" style="font-size:20px" onclick="claimDaily()">🎁 KLAIM +${money(reward)} CHIP</button>`;
   openModal(`<h2>🎁 LOGIN HARIAN</h2><div class="days">${cells}</div>${body}`);
 }
-function claimDaily(){
+async function claimDaily(){
   const st=dailyState();if(!st||st.claimed)return;
   if(freeMode){exitFreeMode();if(freeMode)return}   // hadiah masuk ke chip asli
+  if(acct.server&&!isAdmin()){   // hadiah harian dicatat di SERVER supaya saldo tidak ditimpa
+    if(busy){setMsg("Tunggu spin selesai dulu");return}
+    const r=await apiCall("/daily",{},LS.get("daf_token"));
+    if(!(r.ok&&r.j&&r.j.ok)){openInfo("❌ GAGAL",esc((r.j&&r.j.error)||"Klaim gagal, coba lagi"),"closeModal()");return}
+    balance=r.j.balance;stateRev++;acct.streak=r.j.streak;acct.lastDaily=r.j.today;
+    updateUserBar();updateUI();closeModal();
+    setMsg(`Login harian hari ke-${r.j.idx+1}: +${money(r.j.reward)} chip`);
+    try{burstCoins(false)}catch(e){}
+    return;
+  }
   const reward=DAILY_REWARD[st.idx];
   balance+=reward;acct.streak=st.streak;acct.lastDaily=dateKey();
   updateUserBar();updateUI();
@@ -2806,10 +2877,12 @@ async function initAccount(){
 async function refreshPerms(){   // izin dari admin diambil dari server (tanpa Firebase)
   if(!acct||!acct.server||document.hidden)return;
   const tok=LS.get("daf_token");if(!tok)return;
+  const rev0=stateRev;
   const r=await apiCall("/me",null,tok);
   if(r.ok&&r.j&&r.j.perms&&acct&&acct.server&&String(acct.id)===String(r.j.id)){
     const p=r.j.perms;acct.perm={send:!!p.send,full:!!p.full,jp:!!p.jp};updateUserBar();
-    if(!busy&&!modalOpen&&!freeMode&&typeof r.j.balance==="number"&&r.j.balance!==balance){balance=r.j.balance;clampBet();updateUI()}
+    if(rev0===stateRev){acct.streak=r.j.streak|0;acct.lastDaily=r.j.lastDaily||"";acct.today=r.j.today;acct.yesterday=r.j.yesterday}
+    if(!busy&&!modalOpen&&!freeMode&&rev0===stateRev&&typeof r.j.balance==="number"&&r.j.balance!==balance){balance=r.j.balance;clampBet();updateUI()}
   }
 }
 setInterval(refreshPerms,30000);
