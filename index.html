@@ -2193,7 +2193,7 @@ function openWelcome(){
 const ADMIN_USER="admin",ADMIN_CHIPS=999999999999;   // ADMIN_USER hanya nama yang dicadangkan; username/password admin sekarang diperiksa server
 const API_URL="https://daf-api.akunpengunjung555.workers.dev";let admToken=null;
 async function apiCall(path,body,tok){const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);try{const r=await fetch(API_URL+path,{method:body?"POST":"GET",signal:ctl.signal,headers:Object.assign({"Content-Type":"application/json"},tok?{Authorization:"Bearer "+tok}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));return{ok:r.ok,status:r.status,j}}catch(e){return{ok:false,status:0,j:{error:"Server tidak terjangkau, coba lagi"}}}finally{clearTimeout(tm)}}
-function srvAcct(x){const p=x.perms||{};return{id:x.id,pid:x.id,name:x.name,balance:x.balance,bet:DEFAULTS.bet,spinCount:x.spins|0,freeSpins:x.freeSpins|0,streak:x.streak|0,lastDaily:x.lastDaily||"",today:x.today,yesterday:x.yesterday,created:x.created||Date.now(),tx:[],luck:x.luck,gv:x.gv,perm:{send:!!p.send,full:!!p.full,jp:!!p.jp},server:true}}
+function srvAcct(x){const p=x.perms||{};return{id:x.id,pid:x.id,name:x.name,balance:x.balance,bet:DEFAULTS.bet,spinCount:x.spins|0,freeSpins:x.freeSpins|0,streak:x.streak|0,inboxPending:x.inbox|0,lastDaily:x.lastDaily||"",today:x.today,yesterday:x.yesterday,created:x.created||Date.now(),tx:[],luck:x.luck,gv:x.gv,perm:{send:!!p.send,full:!!p.full,jp:!!p.jp},server:true}}
 function openAdminLogin(){
   openModal(`<h2>👑 LOGIN ADMIN</h2>
   <input id="admUser" type="text" placeholder="Username" autocomplete="off" autocapitalize="off">
@@ -2270,6 +2270,7 @@ function enterAcct(a){
   afterLogin(a);
 }
 function afterLogin(a){
+  if(a.server&&a.inboxPending>0&&!inboxNote)inboxNote=`Ada <b>${a.inboxPending}</b> kiriman chip menunggu di INBOX. Buka INBOX lalu tap AMBIL.`;
   const daily=a.lastDaily!==((a.server&&a.today)||dateKey());
   if(inboxNote){openInfo("📥 CHIP MASUK",inboxNote,daily?"openDaily()":"closeModal()");inboxNote=""}
   else if(daily)openDaily();
@@ -2635,12 +2636,12 @@ async function confirmTransfer(){
     if(m||acct!==a){openInfo("❌ GAGAL",esc(m||"Akun berubah"),"openTransfer()");return}
     const to=r.to,amt=t.amt,tax=Math.floor(amt*TAX_PCT/100),net=amt-tax;
     if(to.srv){   // penerima akun server: kirim lewat Worker (saldo tersimpan di server)
-      const rr=adm?await admApi("/admin/chips",{id:to.id,amount:net}):await apiCall("/send",{to:to.id,amount:amt},LS.get("daf_token"));
+      const rr=adm?await admApi("/admin/send",{id:to.id,amount:amt}):await apiCall("/send",{to:to.id,amount:amt},LS.get("daf_token"));
       if(!(rr.ok&&rr.j&&rr.j.ok)){openInfo("❌ GAGAL",esc((rr.j&&rr.j.error)||"Chip tidak terkirim"),"openTransfer()");return}
       if(!adm){balance=rr.j.balance;stateRev++;clampBet()}
       txStored(a,{k:"out",amt,tax,net,peer:`${to.name} (ID ${to.pid})`,ts:Date.now()});
       trDraft=null;updateUI();updateUserBar();
-      openInfo("✅ CHIP TERKIRIM",`Dikirim <b>${money(amt)}</b> ke <b>${esc(to.name)}</b> (ID ${esc(to.pid)}).<br>Pajak ${TAX_PCT}%: ${money(tax)} • Diterima: ${money(net)}`,"closeModal()");
+      openInfo("✅ CHIP TERKIRIM",`Dikirim <b>${money(amt)}</b> ke <b>${esc(to.name)}</b> (ID ${esc(to.pid)}).<br>Pajak ${TAX_PCT}%: ${money(tax)} • Diterima: ${money(net)}<br>Chip masuk ke INBOX penerima — penerima perlu mengambilnya.`,"closeModal()");
       setMsg(`Chip terkirim ke ${to.name}`);
       return;
     }
@@ -2881,11 +2882,12 @@ async function refreshPerms(){   // izin dari admin diambil dari server (tanpa F
   const r=await apiCall("/me",null,tok);
   if(r.ok&&r.j&&r.j.perms&&acct&&acct.server&&String(acct.id)===String(r.j.id)){
     const p=r.j.perms;acct.perm={send:!!p.send,full:!!p.full,jp:!!p.jp};updateUserBar();
+    const np=r.j.inbox|0;if(np>(acct.inboxPending|0)&&!busy)setMsg("📥 Ada chip masuk! Buka INBOX untuk mengambilnya");acct.inboxPending=np;
     if(rev0===stateRev){acct.streak=r.j.streak|0;acct.lastDaily=r.j.lastDaily||"";acct.today=r.j.today;acct.yesterday=r.j.yesterday}
     if(!busy&&!modalOpen&&!freeMode&&rev0===stateRev&&typeof r.j.balance==="number"&&r.j.balance!==balance){balance=r.j.balance;clampBet();updateUI()}
   }
 }
-setInterval(refreshPerms,30000);
+setInterval(refreshPerms,20000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshPerms()});
 document.getElementById("loginBtn").addEventListener("click",openWelcome);
 document.getElementById("adminBtn").addEventListener("click",openAdminLogin);
@@ -2953,7 +2955,7 @@ function lobbySync(){
   d.classList.toggle("ready",ready);dot.hidden=!ready;
   // inbox: jumlah chip masuk yang belum dilihat
   let n=0;
-  if(on&&!adm){if(acct.inboxSeen===undefined)acct.inboxSeen=Date.now();n=(acct.tx||[]).filter(t=>t.k==="in"&&t.ts>acct.inboxSeen).length}
+  if(on&&!adm){if(acct.inboxSeen===undefined)acct.inboxSeen=Date.now();n=acct.server?(acct.inboxPending|0):(acct.tx||[]).filter(t=>t.k==="in"&&t.ts>acct.inboxSeen).length}
   const ib=document.getElementById("nvInboxDot");ib.hidden=!n;ib.textContent=n>9?"9+":n;
   // ticker jackpot di kartu game
   GAMES.forEach(g=>{if(g.ticker){const e=document.querySelector(`[data-tick="${g.id}"]`);if(e)e.textContent=g.ticker()}});
@@ -2969,10 +2971,48 @@ function hideLobby(){
 function needAcct(fn){if(!acct){openWelcome();return}fn()}
 
 /* ----- inbox: riwayat chip masuk & keluar ----- */
+async function openInboxSrv(f){
+  f=f||"all";
+  openModal(`<h2>📥 INBOX CHIP</h2><div class="hint">Memuat…</div>`);
+  const r=await apiCall("/inbox",null,LS.get("daf_token"));
+  if(!(r.ok&&r.j&&Array.isArray(r.j.pending))){openInfo("❌ GAGAL",esc((r.j&&r.j.error)||"Gagal memuat inbox"),"closeModal()");return}
+  const pend=r.j.pending,hist=r.j.history||[];
+  acct.inboxPending=pend.length;
+  const tot=pend.reduce((a,t)=>a+t.net,0);
+  const d=ts=>new Date(ts).toLocaleString("id-ID",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+  const pRow=t=>`<div>📥 <b style="color:#7dffa0">+${money(t.net)}</b> dari ${esc(t.from)}<small>pajak ${money(t.tax)} • ${d(t.at)}</small></div>`;
+  const hRow=t=>t.dir==="out"
+    ?`<div>📤 <b>−${money(t.amount)}</b> ke ${esc(t.peer)}<small>pajak ${money(t.tax)} • ${d(t.at)} • ${t.claimed?"sudah diambil":"belum diambil"}</small></div>`
+    :`<div>📥 <b style="color:#7dffa0">+${money(t.net)}</b> dari ${esc(t.peer)}<small>${d(t.at)} • sudah diambil</small></div>`;
+  const list=hist.filter(t=>f==="all"||t.dir===f);
+  const tin=hist.filter(t=>t.dir==="in").reduce((a,t)=>a+t.net,0),tout=hist.filter(t=>t.dir==="out").reduce((a,t)=>a+t.amount,0);
+  const tab=(k,l)=>`<button class="ubtn ${f===k?"on":""}" type="button" onclick="openInbox('${k}')">${l}</button>`;
+  openModal(`<h2>📥 INBOX CHIP</h2>
+    ${pend.length?`<div class="inbSum"><div>MENUNGGU DIAMBIL (${pend.length})<strong>+${money(tot)}</strong></div></div>
+      <div class="inbList">${pend.map(pRow).join("")}</div>
+      <button class="btn spin" type="button" style="font-size:18px" onclick="claimInboxSrv()">💰 AMBIL +${money(tot)}</button>`
+      :`<p class="pwNote" style="text-align:center">Tidak ada chip yang menunggu diambil.</p>`}
+    <div class="inbSum"><div>DITERIMA<strong>+${money(tin)}</strong></div><div>DIKIRIM<strong>−${money(tout)}</strong></div></div>
+    <div class="inbTabs">${tab("all","SEMUA")}${tab("in","MASUK")}${tab("out","KELUAR")}</div>
+    <div class="inbList">${list.map(hRow).join("")||"<div>Belum ada transaksi</div>"}</div>
+    <button class="btn small" type="button" style="font-size:16px" onclick="openTransfer()">📤 KIRIM CHIP</button>
+    <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
+  lobbySync();
+}
+async function claimInboxSrv(){
+  if(freeMode){exitFreeMode();if(freeMode)return}   // chip masuk ke saldo asli
+  if(busy){setMsg("Tunggu spin selesai dulu");return}
+  const r=await apiCall("/inbox/claim",{},LS.get("daf_token"));
+  if(!(r.ok&&r.j&&r.j.ok)){openInfo("❌ GAGAL",esc((r.j&&r.j.error)||"Gagal mengambil chip, coba lagi"),"closeModal()");return}
+  balance=r.j.balance;stateRev++;acct.inboxPending=0;clampBet();updateUI();updateUserBar();
+  if(r.j.total>0){try{burstCoins(false)}catch(e){}setMsg("📥 Chip diambil: +"+money(r.j.total))}
+  openInboxSrv("in");
+}
 function openInbox(f){
   if(!acct){openWelcome();return}
   if(isAdmin()){openInfo("📥 INBOX","Akun admin tidak punya inbox chip.","closeModal()");return}
   f=f||"all";
+  if(acct.server){openInboxSrv(f);return}
   const all=acct.tx||[];
   const list=all.filter(t=>f==="all"||t.k===f);
   const tin=all.filter(t=>t.k==="in").reduce((a,t)=>a+(t.net||0),0);
