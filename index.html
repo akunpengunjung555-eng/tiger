@@ -1248,6 +1248,30 @@ function seedResult(mode="normal",plain=false,gacor=false,luck=1){
     }
   }
 }
+function plantLineSpec(kind,L,locked,dcells){
+  const cells=[];
+  if(kind==="H"){const r=Math.floor(Math.random()*ROWS);for(let i=0;i<L;i++)cells.push([r,i])}
+  else{const dr=Math.random()<.5?1:-1,rs=dr===1?Math.floor(Math.random()*(ROWS-L+1)):(L-1)+Math.floor(Math.random()*(ROWS-L+1));for(let i=0;i<L;i++)cells.push([rs+dr*i,i])}
+  const a=pickAnimal();
+  cells.forEach(([r,c])=>{board[r][c]=a;locked.add(r*COLS+c);dcells.add(r*COLS+c)});
+}
+/* papan dibentuk dari rencana hasil SERVER (baris / pola sebagian / scatter) */
+function seedFromPlan(p){
+  board=randomBoard();
+  const locked=new Set(),dcells=new Set();
+  if(p.rows){
+    const animal=pickAnimal();
+    [0,1,2,3,4].sort(()=>Math.random()-.5).slice(0,p.rows).forEach(r=>{for(let c=0;c<COLS;c++){board[r][c]=animal;locked.add(r*COLS+c)}});
+  }else if(p.line)plantLineSpec(p.line.kind,p.line.L,locked,dcells);
+  sanitizeDiag(locked);
+  if(p.scatter>=3){
+    let placed=0,guard=0;
+    while(placed<p.scatter&&guard++<500){
+      const r=Math.floor(Math.random()*ROWS),c=Math.floor(Math.random()*COLS);
+      if(board[r][c].e!==SCATTER&&!locked.has(r*COLS+c)){board[r][c]={e:SCATTER,n:"Scatter",v:0};placed++}
+    }
+  }
+}
 function countRows(){
   const rows=[];
   for(let r=0;r<ROWS;r++){
@@ -1681,19 +1705,38 @@ async function spin(isFree=false){
   document.getElementById("meter").style.width="0%";
   if(!bgmTimer)startBgm();
   SFX.spin();
+  let sp=null;     // hasil undian dari SERVER (akun server, mode normal)
+  if(acct&&acct.server&&!freeMode&&!isAdmin()){
+    const r=await apiCall("/spin",{bet},LS.get("daf_token"));
+    if(!(r.ok&&r.j&&r.j.plan)){
+      spinCount--;
+      if(r.j&&typeof r.j.balance==="number"){balance=r.j.balance;clampBet()}
+      if(r.status===401)LS.del("daf_token");
+      stopAuto();busy=false;syncSpinBtn();updateUI();
+      setMsg((r.j&&r.j.error)||"Spin gagal, coba lagi");
+      return 0;
+    }
+    sp=r.j.plan;isFree=sp.free;
+  }
   const mode=isFree?"scatter":"normal";
   let win=0,rescue=false;
 
   if(isFree){
-    freeSpins=Math.max(0,freeSpins-1);
+    freeSpins=sp?sp.fsMid:Math.max(0,freeSpins-1);
     if(!scatterMode)setMode(true);
   }else{
-        if(!isAdmin())balance-=bet;             // hanya admin yang chipnya tidak pernah berkurang
+        if(sp)freeSpins=sp.fsMid;else if(!isAdmin())balance-=bet;             // hanya admin yang chipnya tidak pernah berkurang
   }
+  if(sp)balance=sp.balance-sp.win;
   updateUI();updateBanner();
   document.getElementById("msg").textContent=isFree?"SCATTER MODE — FREE SPIN…":"REELS BERPUTAR…";
   // tentukan dulu apakah spin ini FULL GAMBAR / JACKPOT (dua hadiah terpisah), semua murni hoki
   let special=null;
+  if(sp){
+    if(sp.special)special=sp.special.kind==="full"?{kind:"full",animal:animals[sp.special.animal]}:{kind:"jp",tier:sp.special.tier};
+    diagHL=!special;
+    if(special)seedResult(mode,true);else seedFromPlan(sp);
+  }else{
   // semua akun bisa kena (hoki); akun terdaftar admin = gacor (peluang dikali GACOR_*). Mode gratis tidak pernah dapat.
   const L=(acct&&acct.luck>0)?acct.luck:1,GV=(acct&&acct.gv>0)?acct.gv:1;
   const gF=can("full")?GACOR_FULL*GV:L,gJ=can("jp")?GACOR_JP*GV:L;   // terdaftar = gacor (bervariasi per akun); lainnya = kehokian pribadi
@@ -1703,6 +1746,7 @@ async function spin(isFree=false){
   const gacorSpin=!special&&!freeMode&&(can("full")||can("jp"));
   seedResult(mode,!!special,gacorSpin,(acct&&acct.luck)||1);
   if(gacorSpin)for(let k=0;k<8&&!(countRows().length||diagRuns(board).length);k++)seedResult(mode,false,true);   // gacor: pastikan menang
+  }
   render(true);
   await reelWait(850);            // tombol STOP boleh mempercepat berhentinya reel (hasil/animasi hadiah tetap penuh)
   SFX.land();
@@ -1713,18 +1757,18 @@ async function spin(isFree=false){
     document.getElementById("lastWin").textContent=money(win);
   }else{
     const rows=countRows();
-    const scat=countScatter();
-    const t=tier(rows.length,mode);
+    const scat=sp?sp.scatter:countScatter();
+    const t=sp?(sp.rows?Object.assign(tier(sp.rows,mode),{mult:sp.mult}):null):tier(rows.length,mode);
     if(t){
       win=t.mult*bet;balance+=win;
       if(scatterMode)scatterTotal+=win;
       document.getElementById("msg").textContent=`${t.name} • ${rows.length} BARIS • +${money(win)}`;
       updateUI();updateBanner();
       await showOverlay(t.name,`${rows.length} BARIS PENUH • ×${t.mult} • +${money(win)}`,t.pct,rows.length>=2,win);
-    }else if(diagRuns(board).length){
+    }else if(sp?(!!sp.line&&diagRuns(board).length>0):diagRuns(board).length){
       const run=diagRuns(board).sort((x,y)=>y.cells.length-x.cells.length)[0];
       const L=Math.min(5,run.cells.length),k=MODES[mode].mult,R=(run.kind==="H"?HORIZ_PRIZE:DIAG_PRIZE)[L];
-      const m=Math.round(rnd(R[0],R[1])*k*100)/100;
+      const m=(sp&&sp.line)?sp.mult:Math.round(rnd(R[0],R[1])*k*100)/100;
       win=m*bet;balance+=win;
       if(scatterMode)scatterTotal+=win;
       document.getElementById("msg").textContent=`${run.kind==="H"?"HORIZONTAL":"DIAGONAL"} • ${L} GAMBAR • ${run.side==="L"?"KIRI→KANAN":"KANAN→KIRI"} • +${money(win)}`;
@@ -1740,6 +1784,7 @@ async function spin(isFree=false){
     document.getElementById("lastWin").textContent=money(win);
   }
 
+  if(sp){balance=sp.balance;freeSpins=sp.fsEnd;updateUI()}
   if(scatterMode && freeSpins===0)await endScatterMode();
   if(freeSpins===0)clampBet();    // chip berubah setelah spin -> sesuaikan bet
   updateUI();
@@ -2125,7 +2170,7 @@ function openWelcome(){
 const ADMIN_USER="admin",ADMIN_CHIPS=999999999999;   // ADMIN_USER hanya nama yang dicadangkan; username/password admin sekarang diperiksa server
 const API_URL="https://daf-api.akunpengunjung555.workers.dev";let admToken=null;
 async function apiCall(path,body,tok){const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);try{const r=await fetch(API_URL+path,{method:body?"POST":"GET",signal:ctl.signal,headers:Object.assign({"Content-Type":"application/json"},tok?{Authorization:"Bearer "+tok}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));return{ok:r.ok,status:r.status,j}}catch(e){return{ok:false,status:0,j:{error:"Server tidak terjangkau, coba lagi"}}}finally{clearTimeout(tm)}}
-function srvAcct(x){const p=x.perms||{};return{id:x.id,pid:x.id,name:x.name,balance:x.balance,bet:DEFAULTS.bet,spinCount:0,freeSpins:0,streak:0,lastDaily:"",created:Date.now(),tx:[],luck:x.luck,gv:x.gv,perm:{send:!!p.send,full:!!p.full,jp:!!p.jp},server:true}}
+function srvAcct(x){const p=x.perms||{};return{id:x.id,pid:x.id,name:x.name,balance:x.balance,bet:DEFAULTS.bet,spinCount:0,freeSpins:x.freeSpins|0,streak:0,lastDaily:"",created:Date.now(),tx:[],luck:x.luck,gv:x.gv,perm:{send:!!p.send,full:!!p.full,jp:!!p.jp},server:true}}
 function openAdminLogin(){
   openModal(`<h2>👑 LOGIN ADMIN</h2>
   <input id="admUser" type="text" placeholder="Username" autocomplete="off" autocapitalize="off">
@@ -2437,7 +2482,18 @@ function trBasic(q,amt){   // cek yang tidak butuh jaringan; "" = lolos
   if(!isAdmin()&&amt>balance)return`Chip tidak cukup (chip kamu ${money(balance)})`;
   return"";
 }
-async function trFind(q){   // Firebase = lintas perangkat; tanpa Firebase = hanya akun di perangkat ini
+async function trFind(q){
+  if((acct&&acct.server)||isAdmin()){
+    const tok=isAdmin()?admToken:LS.get("daf_token");
+    if(tok){
+      const r=await apiCall("/lookup",{q},tok);
+      if(r.ok&&r.j&&r.j.id)return{id:r.j.id,pid:r.j.id,name:r.j.name,srv:true};
+      if(acct.server){
+        if(r.status===404)return null;
+        throw Object.assign(new Error((r.j&&r.j.error)||"Tidak bisa terhubung ke server. Coba lagi"),{user:true});
+      }
+    }
+  }   // Firebase = lintas perangkat; tanpa Firebase = hanya akun di perangkat ini
   await fbInit();
   if(FB.ok)return fbFind(q);
   if(fbConfigured())throw Object.assign(new Error("Tidak bisa terhubung ke server. Cek internet lalu coba lagi"),{user:true});
@@ -2518,6 +2574,16 @@ async function confirmTransfer(){
     const m=trBasic(t.q,t.amt);   // cek ulang chip tepat sebelum kirim (setelah menunggu jaringan)
     if(m||acct!==a){openInfo("❌ GAGAL",esc(m||"Akun berubah"),"openTransfer()");return}
     const to=r.to,amt=t.amt,tax=Math.floor(amt*TAX_PCT/100),net=amt-tax;
+    if(to.srv){   // penerima akun server: kirim lewat Worker (saldo tersimpan di server)
+      const rr=adm?await admApi("/admin/chips",{id:to.id,amount:net}):await apiCall("/send",{to:to.id,amount:amt},LS.get("daf_token"));
+      if(!(rr.ok&&rr.j&&rr.j.ok)){openInfo("❌ GAGAL",esc((rr.j&&rr.j.error)||"Chip tidak terkirim"),"openTransfer()");return}
+      if(!adm){balance=rr.j.balance;clampBet()}
+      txStored(a,{k:"out",amt,tax,net,peer:`${to.name} (ID ${to.pid})`,ts:Date.now()});
+      trDraft=null;updateUI();updateUserBar();
+      openInfo("✅ CHIP TERKIRIM",`Dikirim <b>${money(amt)}</b> ke <b>${esc(to.name)}</b> (ID ${esc(to.pid)}).<br>Pajak ${TAX_PCT}%: ${money(tax)} • Diterima: ${money(net)}`,"closeModal()");
+      setMsg(`Chip terkirim ke ${to.name}`);
+      return;
+    }
     const fromLabel=adm?"ADMIN":`${a.name} (ID ${a.pid})`;
     if(!adm){balance-=amt;clampBet();updateUI();saveGame()}   // chip ditahan dulu, dikembalikan kalau gagal
     const item={from:fromLabel,fromUid:FB.uid||"",amount:amt,tax,net,ts:Date.now()};
@@ -2743,9 +2809,10 @@ async function refreshPerms(){   // izin dari admin diambil dari server (tanpa F
   const r=await apiCall("/me",null,tok);
   if(r.ok&&r.j&&r.j.perms&&acct&&acct.server&&String(acct.id)===String(r.j.id)){
     const p=r.j.perms;acct.perm={send:!!p.send,full:!!p.full,jp:!!p.jp};updateUserBar();
+    if(!busy&&!modalOpen&&!freeMode&&typeof r.j.balance==="number"&&r.j.balance!==balance){balance=r.j.balance;clampBet();updateUI()}
   }
 }
-setInterval(refreshPerms,120000);
+setInterval(refreshPerms,30000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshPerms()});
 document.getElementById("loginBtn").addEventListener("click",openWelcome);
 document.getElementById("adminBtn").addEventListener("click",openAdminLogin);
