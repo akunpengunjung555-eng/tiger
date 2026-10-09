@@ -444,6 +444,10 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .roomPill small{display:block;color:#fff;font-size:11px}
 .roomToast{position:fixed;left:50%;transform:translateX(-50%);top:calc(8px + env(safe-area-inset-top,0px));z-index:88;width:min(440px,94%);
   display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.gToast{position:fixed;left:50%;transform:translateX(-50%);top:calc(54px + env(safe-area-inset-top,0px));z-index:200;width:min(460px,94%);display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.gToast div{padding:9px 14px;border-radius:14px;border:2px solid var(--c,#ffd34d);background:linear-gradient(#3a0a52ee,#1a0230ee);color:#fff;font-size:14px;text-align:center;
+  box-shadow:0 0 22px var(--c,#ffd34d),inset 0 0 12px #0008;animation:rtIn .3s ease,rtOut .5s ease 6s forwards}
+.gToast div b{color:var(--c,#ffd34d)}
 .roomToast div{padding:7px 12px;border-radius:12px;border:2px solid var(--gold);background:#35040dee;color:#fff;font-size:13px;text-align:center;
   animation:rtIn .25s ease,rtOut .4s ease 3.6s forwards}
 @keyframes rtIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
@@ -612,6 +616,7 @@ body{padding:5px}
 
 <div id="roomPill" class="roomPill" hidden>👥 <span id="rpCode"></span><small id="rpN"></small></div>
 <div id="roomToast" class="roomToast"></div>
+<div id="gToast" class="gToast"></div>
 <div id="roomPanel" class="roomPanel">
   <div class="rpHead">
     <div><b>👥 ROOM <span id="rpCode2"></span></b><small id="rpMeta"></small></div>
@@ -1491,13 +1496,14 @@ function jpPlan(tier){
   }
   return [tier,tier,tier];
 }
-async function jpCards(tier,amt,reason,onWin){
+async function jpCards(tier,amt,reason,onWin,srv){   // srv=true: tier BELUM diketahui, tiap kartu diminta ke SERVER saat diklik
   const g=id=>document.getElementById(id);
   const root=g("jpGame"),grid=g("jpGrid"),sub=g("jpSub"),title=g("jpTitle"),prize=g("jpPrize"),claim=g("jpClaim"),frame=g("jpFrame"),tallyEl=g("jpTally");
-  const col=JP_COL[tier];
-  const plan=jpPlan(tier);
+  const plan=srv?null:jpPlan(tier);
+  let col="#ffd34d",inflight=false,srvRest=null;
   const cnt={MINI:0,MINOR:0,MAJOR:0,GRAND:0};
-  const tally=()=>{tallyEl.innerHTML=JP_LIST.map(t=>`<span class="${cnt[t]>=2?"hot":""}" style="--c:${JP_COL[t]}">${t} ${cnt[t]}/3</span>`).join("")};
+  const shown={MINI:0,MINOR:0,MAJOR:0,GRAND:0};   // hitungan yang BOLEH terlihat: baru naik setelah kartu itu selesai berbalik (cnt = internal)
+  const tally=()=>{tallyEl.innerHTML=JP_LIST.map(t=>`<span class="${shown[t]>=2?"hot":""}" style="--c:${JP_COL[t]}">${t} ${shown[t]}/3</span>`).join("")};
   grid.innerHTML="";prize.className="winAmt";prize.textContent="";prize.removeAttribute("style");prize.removeAttribute("data-t");
   claim.hidden=true;claim.onclick=null;
   title.textContent="🎰 JACKPOT BONUS 🎰";
@@ -1525,21 +1531,31 @@ async function jpCards(tier,amt,reason,onWin){
     const arm=()=>{clearTimeout(idle);idle=setTimeout(()=>{      // tidak disentuh / mode AUTO -> kartu dibuka otomatis
       const free=cards.filter(c=>!c.opened);if(free.length&&!done)pick(free[Math.floor(Math.random()*free.length)]);
     },20000)};   // selalu tunggu 20 detik (juga saat AUTO) — auto spin lanjut setelah semua kartu terbuka
-    const pick=c=>{
-      if(c.opened||done||n>=plan.length)return;
-      const t=plan[n];n++;cnt[t]++;
+    const pick=async c=>{
+      if(c.opened||done||inflight||(!srv&&n>=plan.length))return;
+      let t,fin=false;
+      if(srv){
+        inflight=true;
+        const r=await apiCall("/jp/open",{},LS.get("daf_token"));
+        inflight=false;
+        if(done||c.opened)return;
+        if(!(r.ok&&r.j&&r.j.t)){sub.textContent=(r.j&&r.j.error)||"Koneksi bermasalah, tekan kartu lagi";arm();return}
+        t=r.j.t;fin=!!r.j.done;
+        if(fin){tier=t;amt=Number(r.j.amt)||amt;srvRest=Array.isArray(r.j.rest)?r.j.rest:null}
+      }else t=plan[n];
+      n++;cnt[t]++;
       show(c,t,false);
       tone(NT(8+Math.min(n,6)*2),0,.28,"triangle",.14);coinPing(.05,.09);
       const nOpen=n;
       // tally & teks "tinggal 1 lagi" baru muncul SETELAH kartu selesai berbalik (flip .75s), supaya hasil tidak bocor duluan
       setTimeout(()=>{
-        tally();
-        if(cnt[tier]>=3&&nOpen===plan.length)return;
+        shown[t]++;tally();
+        if(srv?fin:(cnt[tier]>=3&&nOpen===plan.length))return;
         if(nOpen!==n)return;
-        const hot=JP_LIST.filter(x=>cnt[x]===2);
+        const hot=JP_LIST.filter(x=>shown[x]===2);
         sub.textContent=hot.length?`🔥 ${hot.join(" & ")} tinggal 1 lagi! (${nOpen} kartu terbuka)`:`Buka kartu satu per satu — 3 simbol sama = JACKPOT! (${nOpen} kartu terbuka)`;
       },780);
-      if(cnt[tier]>=3){done=true;clearTimeout(idle);res();return}
+      if(srv?fin:cnt[tier]>=3){done=true;clearTimeout(idle);res();return}
       arm();
     };
     cards.forEach(c=>{c.el.onclick=()=>{unlockAudio();arm();pick(c)}});
@@ -1547,9 +1563,10 @@ async function jpCards(tier,amt,reason,onWin){
   });
   cards.forEach(c=>c.el.onclick=null);
   await sleepRaw(1000);   // tunggu flip kartu ke-3 selesai dulu
-  tally();
+  JP_LIST.forEach(x=>shown[x]=cnt[x]);tally();
   // 3 kartu sama -> JACKPOT
-  if(onWin)onWin();
+  col=JP_COL[tier];
+  if(onWin)onWin(tier,amt);
   root.style.setProperty("--jc",col);frame.style.setProperty("--jc",col);root.classList.add("won");
   cards.filter(c=>c.opened&&c.tier===tier).forEach(c=>c.el.classList.add("match"));
   cards.filter(c=>c.opened&&c.tier!==tier).forEach(c=>c.el.classList.add("dim"));
@@ -1565,9 +1582,10 @@ async function jpCards(tier,amt,reason,onWin){
   // semua kartu sisa dibuka (tiap tier tetap total 3 kartu)
   const rest=[];JP_LIST.forEach(t=>{for(let k=cnt[t];k<3;k++)rest.push(t)});
   const restS=fyShuffle(rest);rest.length=0;restS.forEach(x=>rest.push(x));
+  if(srvRest&&srvRest.length===rest.length)srvRest.forEach((x,i)=>rest[i]=x);   // urutan sisa kartu dari server
   const left=cards.filter(c=>!c.opened);
-  for(let i=0;i<left.length;i++){show(left[i],rest[i],true);cnt[rest[i]]++;await sleepRaw(170)}
-  tally();
+  for(let i=0;i<left.length;i++){show(left[i],rest[i],true);cnt[rest[i]]++;shown[rest[i]]++;tally();await sleepRaw(170)}
+  JP_LIST.forEach(x=>shown[x]=cnt[x]);tally();
   await sleepRaw(300);
   showAmt(tier,amt,true,"jpPrize");
   await sleepRaw(3600);
@@ -1577,20 +1595,23 @@ async function jpCards(tier,amt,reason,onWin){
   claim.onclick=null;
   root.className="jpGame";grid.innerHTML="";prize.textContent="";tallyEl.innerHTML="";
   amtTok++;
+  return{tier,amt};
 }
 /* JACKPOT MINI/MINOR/MAJOR/GRAND — tanpa full gambar, tiap tier animasi sendiri */
-async function awardJackpot(tier,reason){
-  const amt=jpAmount(tier);
-  const jb=document.getElementById("jp-"+tier);
+async function awardJackpot(tier,reason,sp,special){
+  const srv=!tier;   // akun server: tier disembunyikan server sampai kartu ke-3 terbuka
   document.getElementById("msg").textContent="JACKPOT BONUS — buka kartunya!";   // tier TIDAK dibocorkan sebelum kartu terbuka
-  await jpCards(tier,amt,reason,()=>{   // dipanggil saat 3 kartu sama sudah terbuka: baru kotak tier menyala & chip masuk
-    jb.classList.add("hit");
-    balance+=amt;
-    if(scatterMode)scatterTotal+=amt;
+  const res=await jpCards(tier,srv?0:jpAmount(tier),reason,(t,a)=>{   // dipanggil saat 3 kartu sama sudah terbuka: baru kotak tier menyala & chip masuk
+    document.getElementById("jp-"+t).classList.add("hit");
+    balance+=a;
+    if(scatterMode)scatterTotal+=a;
     updateUI();
-  });
+  },srv);
+  const amt=res.amt;
+  if(special)special.tier=res.tier;
+  if(srv&&sp){sp.balance+=amt;sp.win=amt}   // saldo akhir dari server sudah termasuk jackpot
   await sleepRaw(300);
-  jb.classList.remove("hit");
+  document.getElementById("jp-"+res.tier).classList.remove("hit");
   return amt;
 }
 /* FULL GAMBAR — hadiah terpisah, tier & jumlah beda tiap gambar */
@@ -1776,7 +1797,7 @@ async function spin(isFree=false){
 
   if(special){
     const why=isFree?"FREE SPIN":"SPIN";
-    win=special.kind==="full"?await awardFull(special.animal,why):await awardJackpot(special.tier,why);
+    win=special.kind==="full"?await awardFull(special.animal,why):await awardJackpot(special.tier,why,sp,special);
     document.getElementById("lastWin").textContent=money(win);
   }else{
     const rows=countRows();
@@ -2222,6 +2243,7 @@ let inboxNote="";
 function applyAcct(a){
   if(!a.admin){if(!(a.luck>0))a.luck=genLuck();if(!(a.gv>0))a.gv=+(0.6+Math.random()).toFixed(2)}
   acct=a;freeMode=false;stash=null;BET_STEP=REAL_STEP;
+  try{globalStart()}catch(_){}
   balance=a.balance;bet=a.bet;spinCount=a.spinCount||0;freeSpins=a.freeSpins||0;
   if(freeSpins>0&&!scatterMode)setMode(true);
   else if(freeSpins===0&&scatterMode)setMode(false);
@@ -3347,7 +3369,59 @@ function roomTogglePanel(force){
   if(!R)return;const p=document.getElementById("roomPanel");
   p.classList.toggle("show",force===undefined?!p.classList.contains("show"):force);roomRender();
 }
+/* ===== NOTIF JACKPOT GLOBAL: semua pemain online (bukan hanya satu room) ===== */
+const G={un:null,ch:null,seen:0,start:0,tm:null,seq:-1};
+function gToast(e){
+  const box=document.getElementById("gToast");if(!box||!e)return;
+  const col={MINI:"#2fe36b",MINOR:"#29a8ff",MAJOR:"#d84dff",GRAND:"#ffd34d"}[e.tier]||"#ffd34d";
+  const d=document.createElement("div");d.style.setProperty("--c",col);
+  d.innerHTML=`🌍 ${esc(String(e.av||"👤").slice(0,4))} <b>${esc(String(e.name||"?").slice(0,12))}</b> dapat JACKPOT <b>${esc(String(e.tier||"").slice(0,6))}</b> <b>+${money(Number(e.amt)||0)}</b> 👑`;
+  box.appendChild(d);
+  while(box.children.length>3)box.removeChild(box.firstChild);
+  setTimeout(()=>d.remove(),6600);
+  try{coinPing(.05,.09)}catch(_){}
+}
+/* akun SERVER: feed jackpot resmi dari server (tidak bisa dipalsukan). Akun lokal: Firestore/antar-tab. */
+function gOnEvent(e){
+  if(!e||!e.ts||e.ts<=G.seen||e.ts<G.start-2000)return;
+  if(acct&&acct.server)return;   // akun server hanya percaya feed server
+  G.seen=e.ts;
+  if(acct&&e.pid&&String(e.pid)===String(acct.pid))return;
+  gToast(e);
+}
+async function gPoll(){
+  if(!acct||!acct.server||document.hidden)return;
+  const tok=LS.get("daf_token");if(!tok)return;
+  const r=await apiCall("/feed?since="+G.seq,null,tok);
+  if(!(r.ok&&r.j))return;
+  const first=G.seq<0;
+  if(typeof r.j.last==="number")G.seq=r.j.last;
+  if(first)return;   // panggilan pertama hanya menandai posisi: jackpot lama tidak ditampilkan
+  (r.j.items||[]).forEach(it=>{if(String(it.uid)!==String(acct.id))gToast({name:it.name,tier:it.tier,amt:it.amt,av:animals[(parseInt(it.uid,10)||0)%animals.length].e})});
+}
+async function globalStart(){
+  if(acct&&acct.server){
+    if(!G.tm){G.seq=-1;G.tm=setInterval(gPoll,5000)}
+    gPoll();return;
+  }
+  if(G.un||G.ch)return;
+  G.start=Date.now();
+  try{
+    if(typeof BroadcastChannel!=="undefined"){G.ch=new BroadcastChannel("daf_global");G.ch.onmessage=m=>gOnEvent(m.data)}
+    await Promise.race([fbInit(),sleepRaw(6000).then(()=>false)]);
+    if(FB.ok){
+      G.un=FB.db.collection("rooms").doc("GLOBAL").onSnapshot(x=>{if(x.exists)gOnEvent(x.data())},e=>console.warn("global notif:",e));
+    }
+  }catch(e){console.warn("global notif:",e)}
+}
+function globalSend(tier,amt){
+  if(!acct||acct.server)return;   // akun server: server yang mencatat
+  const ev={k:"jp",tier,amt,name:acct.name,av:avatarOf(acct),pid:String(acct.pid||""),ts:Date.now()};
+  try{if(G.ch)G.ch.postMessage(ev)}catch(_){}
+  try{if(FB.ok)FB.db.collection("rooms").doc("GLOBAL").set(ev).catch(e=>console.warn("global notif:",e))}catch(_){}
+}
 function roomAfterSpin(i){   // dipanggil di akhir tiap spin
+  if(i.special&&i.special.kind==="jp")globalSend(i.special.tier,i.win);   // global: semua pemain, walau tidak di room
   if(!R)return;
   const sb=i.isFree?0:i.bet;
   R.spins++;R.sessBet+=sb;R.sessWin+=i.win;if(i.win>R.best)R.best=i.win;
