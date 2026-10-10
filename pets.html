@@ -430,17 +430,17 @@ function nameLab(txt,col,bg){const c=document.createElement('canvas');c.width=38
 function petName(p){const r=RAR[SP[p.sp][2]];return {t:(p.mu&&MU[p.mu]?'✨'+MU[p.mu].n+' ':'')+SP[p.sp][1]+' Lv'+p.lv,c:r.c}}
 /* ===== EFEK ANIMASI HEWAN SPESIAL: Epik, Legendaris, Mitos, dan semua mutasi ===== */
 let GLOW;
-function glowTex(){if(GLOW)return GLOW;const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.35,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return GLOW=new THREE.CanvasTexture(c)}
+function glowTex(){if(GLOW)return GLOW;const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.22,'rgba(255,255,255,1)');g.addColorStop(.5,'rgba(255,255,255,.45)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return GLOW=new THREE.CanvasTexture(c)}
 const FXR={U:{c:[0x4ade80,0xbaffd0],k:0},R:{c:[0xd84dff,0xff9bff],n:14,k:0},L:{c:[0xffd34d,0xfff2a0],n:22,k:0},M:{c:[0xff4d6d,0xff9b30],n:30,k:1}};
 const FXM={emas:{c:[0xffd34d,0xfff2a0],n:24,k:0},neon:{c:[0x29e8ff,0xa0fbff],n:26,k:0},raksasa:{c:[0xff8a5c,0xffc09a],n:22,k:1},pelangi:{c:null,n:28,k:0}};
 function addFx(w,p,force){const r=SP[p.sp][2],d=(p.mu&&FXM[p.mu])||FXR[force?'L':r];if(!d)return;
- const v=SP[p.sp][3]/K*(p.mu&&MU[p.mu]?MU[p.mu].m:1),lg=Math.log2(Math.max(1,v/60)),n=Math.round(6+3.6*lg),C=new THREE.Color(),pr=[];
+ const v=SP[p.sp][3]/K*(p.mu&&MU[p.mu]?MU[p.mu].m:1),lg=Math.log2(Math.max(1,v/60)),n=Math.round(9+4.5*lg),C=new THREE.Color(),pr=[];
  for(let i=0;i<n;i++){const q={a:R_(0,6.283),r:R_(.55,1.05),s:R_(.25,.6),p:Math.random(),w:R_(.8,2)*(Math.random()<.5?-1:1)};if(d.c){C.setHex(d.c[i%2]);q.c=[C.r,C.g,C.b]}pr.push(q)}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(n*3),3));g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(n*3),3));
- const m=new THREE.Points(g,new THREE.PointsMaterial({size:Math.min(.34,.17+.012*lg),map:glowTex(),vertexColors:true,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true}));
+ const sz0=Math.min(.5,.28+.018*lg),PM=(z,o)=>new THREE.PointsMaterial({size:z,map:glowTex(),vertexColors:true,transparent:true,opacity:o,depthWrite:false,blending:THREE.AdditiveBlending,sizeAttenuation:true}),m=new THREE.Points(g,PM(sz0,1)),hl=new THREE.Points(g,PM(sz0*3,.4));hl.frustumCulled=false;m.add(hl);
  m.frustumCulled=false;m.userData.fx={pr,d};w.add(m);w.fx=m}
 function fxUp(m,t,sc){const{pr,d}=m.userData.fx,P=m.geometry.attributes.position,K=m.geometry.attributes.color,C=new THREE.Color();m.scale.setScalar(sc);
- for(let i=0;i<pr.length;i++){const q=pr[i],u=(q.p+t*q.s*(d.k?.9:.45))%1,a=q.a+t*q.w,r=q.r*(d.k?1-u*.6:1-.25*u),f=Math.sin(u*Math.PI);
+ for(let i=0;i<pr.length;i++){const q=pr[i],u=(q.p+t*q.s*(d.k?.9:.45))%1,a=q.a+t*q.w,r=q.r*(d.k?1-u*.6:1-.25*u),f=Math.min(1,Math.sin(u*Math.PI)*2)*(.8+.2*Math.sin(t*7+i*1.7))*1.25;
   P.setXYZ(i,Math.sin(a)*r,.15+u*1.7,Math.cos(a)*r);
   const c=q.c||(C.setHSL((t*.25+i/pr.length)%1,.9,.6),[C.r,C.g,C.b]);K.setXYZ(i,c[0]*f,c[1]*f,c[2]*f)}
  P.needsUpdate=K.needsUpdate=true}
@@ -506,7 +506,7 @@ function yardShow(){const yd=$('#yard');yd.hidden=tab!=='kandang';if(yd.hidden)r
  S.pets.forEach(p=>{if(!T.E[p.id]){const w=mk(p.sp),a=Math.random()*6.28,r=Math.random()*6;w.userData.id=p.id;tint(w,p.mu);addFx(w,p);T.sc.add(w);
   T.E[p.id]={w,id:p.id,x:Math.sin(a)*r,z:Math.cos(a)*r,tx:0,tz:0,ry:Math.random()*6,wait:Math.random()*2,ph:Math.random()*6,v:.9+Math.random()*.7,lt:'',lb:null}}
   T.E[p.id].p=p});
- for(const id in T.E)if(!S.pets.some(p=>p.id==id)){const q=T.E[id];[q.nl,q.lb].forEach(m=>{if(m){m.material.map.dispose();m.material.dispose()}});if(q.w.fx){q.w.fx.geometry.dispose();q.w.fx.material.dispose()}T.sc.remove(q.w);delete T.E[id]}
+ for(const id in T.E)if(!S.pets.some(p=>p.id==id)){const q=T.E[id];[q.nl,q.lb].forEach(m=>{if(m){m.material.map.dispose();m.material.dispose()}});if(q.w.fx){q.w.fx.geometry.dispose();q.w.fx.material.dispose();q.w.fx.children.forEach(h=>h.material.dispose())}T.sc.remove(q.w);delete T.E[id]}
  if(S.vis&&!T.V){const w=mk(S.vis.sp,1);w.userData.vis=1;addFx(w,{sp:S.vis.sp,mu:''},1);w.position.set(6,0,-4);w.rotation.y=Math.atan2(-6,4);const s=nameLab('Tamu langka: '+SP[S.vis.sp][1],'#ffd34d');s.position.y=w.userData.h;w.add(s);T.sc.add(w);T.V={w,e:{ph:0,sl:0,id:99}}}
  if(!S.vis&&T.V){T.sc.remove(T.V.w);T.V=null}
  syncEggs();syncDec();syncDec2();updBub()}
