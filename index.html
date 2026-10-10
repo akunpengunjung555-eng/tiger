@@ -468,6 +468,28 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .gCard.soon .gArt:after{content:"?";position:absolute;z-index:3;right:12%;bottom:8%;font-size:34px;font-weight:900;color:#ffffff40}
 .gCard.soon{border-color:#8a7a60}
 .gCard.soon .gBody b{color:#bfae93}
+/* ===== POLES UI: animasi modal, entrance lobi, umpan balik tombol, spinner ===== */
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.btn,.ubtn{transition:transform .12s ease,filter .12s ease}
+.btn:active,.ubtn:active{transform:scale(.97);filter:brightness(1.08)}
+.lbNav button{transition:background .15s ease,transform .12s ease}
+.lbNav button:active{transform:scale(.94)}
+.modal.show{animation:mdIn .2s ease}
+.modal.show .mbox{animation:mbIn .26s cubic-bezier(.2,.9,.3,1.1)}
+.modal.show.hide{animation:mdOut .16s ease forwards;pointer-events:none}
+.modal.show.hide .mbox{animation:mbOut .16s ease forwards}
+@keyframes mdIn{from{opacity:0}to{opacity:1}}
+@keyframes mdOut{to{opacity:0}}
+@keyframes mbIn{from{opacity:0;transform:translateY(14px) scale(.94)}to{opacity:1;transform:none}}
+@keyframes mbOut{to{opacity:0;transform:translateY(8px) scale(.96)}}
+@keyframes gIn{from{opacity:0;transform:translateY(18px) scale(.94)}to{opacity:1;transform:none}}
+.lobby.show .gCard{animation:gIn .5s cubic-bezier(.2,.8,.3,1) calc(var(--n,0)*.07s) backwards,gGlow 2.8s ease-in-out calc(.5s + var(--n,0)*.07s) infinite alternate}
+.lobby.show .gCard.soon{animation:gIn .5s cubic-bezier(.2,.8,.3,1) calc(var(--n,0)*.07s) backwards}
+.lobby.show .lbHero,.lobby.show .lbDaily:not(.ready){animation:gIn .45s ease backwards}
+.lobby.show .lbDaily.ready{animation:gIn .45s ease backwards,lbPulse 1.1s ease-in-out .45s infinite alternate}
+.spinS{display:inline-block;width:12px;height:12px;border:2px solid #ffd97855;border-top-color:#ffd978;border-radius:50%;animation:gSpin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+.ld .ldTip{max-width:min(300px,82vw);margin-top:6px;font-size:12px;line-height:1.4;color:#ffe9a6;opacity:.7}
+
 
 .lbNav{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(#35040d,#1a0208);border-top:2px solid #d98a1b}
@@ -658,7 +680,7 @@ body{padding:5px}
 </style>
 </head>
 <body>
-<div id="loader" class="ld on" role="status" aria-live="polite"><div class="ldIc" id="ldIc">🐉</div><div class="ldTt" id="ldTt">DAF ARENA</div><div class="ldSub" id="ldSub">MENYIAPKAN GAME…</div><div class="ldBar"><i></i></div></div>
+<div id="loader" class="ld on" role="status" aria-live="polite"><div class="ldIc" id="ldIc">🐉</div><div class="ldTt" id="ldTt">DAF ARENA</div><div class="ldSub" id="ldSub">MENYIAPKAN GAME…</div><div class="ldBar"><i></i></div><div class="ldTip" id="ldTip">Login supaya chip dan progres tersimpan.</div></div>
 <div id="lobby" class="lobby" aria-label="Lobi">
   <div class="lbTop">
     <button id="lbUser" class="lbUser" type="button"><span id="lbAv" class="lbAv">👤</span><span class="lbWho"><b id="lbName">Tamu</b><small id="lbPid">Belum login</small></span></button>
@@ -979,8 +1001,9 @@ function addEyes(){   // tombol 👁 untuk melihat / menyembunyikan sandi
     w.appendChild(b);
   });
 }
-function openModal(html){modalOpen=true;document.getElementById("mbox").innerHTML=html;try{addEyes()}catch(e){}document.getElementById("modal").classList.add("show")}
-function closeModal(){modalOpen=false;document.getElementById("modal").classList.remove("show");if(fbNotes.length)setTimeout(showFbNotes,60)}
+let mdTimer=null;
+function openModal(html){modalOpen=true;clearTimeout(mdTimer);const m=document.getElementById("modal");m.classList.remove("hide");document.getElementById("mbox").innerHTML=html;try{addEyes()}catch(e){}m.classList.add("show")}
+function closeModal(){modalOpen=false;const m=document.getElementById("modal");if(m.classList.contains("show")&&!m.classList.contains("hide")){m.classList.add("hide");clearTimeout(mdTimer);mdTimer=setTimeout(()=>m.classList.remove("show","hide"),160)}if(fbNotes.length)setTimeout(showFbNotes,60)}
 function openInfo(title,html,nextJs){
   openModal(`<h2>${title}</h2><p>${html}</p><button class="btn spin" type="button" style="font-size:18px" onclick="${nextJs}">OK</button>`);
 }
@@ -1286,7 +1309,7 @@ async function doServerPw(){
   openInfo("✅ BERHASIL","Kata sandi sudah diganti.","openProfile()");
 }
 async function openLeaderboard(){
-  openModal(`<h2>🏆 PERINGKAT CHIP</h2><div id="lbBox" class="hint">Memuat…</div>
+  openModal(`<h2>🏆 PERINGKAT CHIP</h2><div id="lbBox" class="hint"><span class="spinS"></span>Memuat…</div>
   <button class="btn small" type="button" style="font-size:14px" onclick="openProfile()">KEMBALI</button>`);
   const r=await apiCall("/leaderboard",null);
   const box=document.getElementById("lbBox");if(!box)return;
@@ -1712,9 +1735,11 @@ window.addEventListener("storage",e=>{   // izin diubah admin di tab lain
 /* ===== LOBI: hub semua game. Tambah game baru = tambah 1 objek di GAMES (lihat contoh "soon") ===== */
 let inGame=null,ldBootActive=true;
 /* ----- layar loading: muncul seketika (menutup perpindahan), lalu memudar setelah game siap ----- */
-const LDEL=document.getElementById("loader");let ldTimer=null;
+const LDEL=document.getElementById("loader");let ldTimer=null,ldFail=null;
+const LD_TIPS=["Login supaya chip dan progres tersimpan.","Klaim hadiah harian setiap hari.","Ajak teman main bareng lewat mode mabar.","Atur bet sesuai chip, mainkan dengan bijak.","Ketuk tombol i di kartu game untuk melihat cara main."];
 function ldShow(icon,title,sub,ms){
-  clearTimeout(ldTimer);
+  clearTimeout(ldTimer);clearTimeout(ldFail);ldFail=setTimeout(ldHide,15000);   // pengaman: loading tidak pernah menggantung
+  document.getElementById("ldTip").textContent=LD_TIPS[Math.floor(Math.random()*LD_TIPS.length)];
   document.getElementById("ldIc").textContent=icon;document.getElementById("ldTt").textContent=title;document.getElementById("ldSub").textContent=sub;
   LDEL.style.setProperty("--d",ms+"ms");LDEL.classList.remove("on","fin");void LDEL.offsetWidth;LDEL.classList.add("on");
 }
@@ -1743,9 +1768,9 @@ const GAMES=[
 ];
 function renderGames(){
   const sp='<span class="sp sp1">✦</span><span class="sp sp2">✦</span><span class="sp sp3">✦</span>';
-  document.getElementById("lbGames").innerHTML=GAMES.map(g=>g.live
-    ?`<button class="gCard" type="button" style="--c1:${g.c1};--c2:${g.c2};--c3:${g.c3||"#ffcf5a"}" data-g="${g.id}"><span class="gArt"><span class="gRays"></span>${g.art||`<span class="gi">${g.icon}</span>`}${sp}</span>${g.badge?`<span class="gBadge">${esc(g.badge)}</span>`:""}<span class="gInfo" data-info="${g.id}">i</span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gTick" data-tick="${g.id}"></span><span class="gPlay">▶ MAIN</span></span><span class="gShine"></span></button>`
-    :`<div class="gCard soon"><span class="gArt"><span class="gi">${g.icon}</span></span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gPlay">🔒 SEGERA</span></span></div>`).join("");
+  document.getElementById("lbGames").innerHTML=GAMES.map((g,i)=>g.live
+    ?`<button class="gCard" type="button" style="--n:${i};--c1:${g.c1};--c2:${g.c2};--c3:${g.c3||"#ffcf5a"}" data-g="${g.id}"><span class="gArt"><span class="gRays"></span>${g.art||`<span class="gi">${g.icon}</span>`}${sp}</span>${g.badge?`<span class="gBadge">${esc(g.badge)}</span>`:""}<span class="gInfo" data-info="${g.id}">i</span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gTick" data-tick="${g.id}"></span><span class="gPlay">▶ MAIN</span></span><span class="gShine"></span></button>`
+    :`<div class="gCard soon" style="--n:${i}"><span class="gArt"><span class="gi">${g.icon}</span></span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gPlay">🔒 SEGERA</span></span></div>`).join("");
 }
 function openGame(id){
   const g=GAMES.find(x=>x.id===id);if(!g||!g.live)return;
@@ -1794,7 +1819,7 @@ function needAcct(fn){if(!acct){openWelcome();return}fn()}
 /* ----- inbox: riwayat chip masuk & keluar ----- */
 async function openInboxSrv(f){
   f=f||"all";
-  openModal(`<h2>📥 INBOX</h2><div class="hint">Memuat…</div>`);
+  openModal(`<h2>📥 INBOX</h2><div class="hint"><span class="spinS"></span>Memuat…</div>`);
   const r=await apiCall("/inbox",null,LS.get("daf_token"));
   if(!(r.ok&&r.j&&Array.isArray(r.j.pending))){openInfo("❌ GAGAL",esc((r.j&&r.j.error)||"Gagal memuat inbox"),"closeModal()");return}
   const pend=r.j.pending,hist=r.j.history||[];
