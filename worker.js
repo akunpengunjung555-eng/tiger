@@ -598,7 +598,7 @@ if (!a) return bad(env, "Akun tidak ditemukan", 404);
 const today = dayKey(now), yest = dayKey(now - 864e5);
 if (a.last_daily === today) return bad(env, "Hadiah hari ini sudah diklaim", 409);
 const streak = a.last_daily === yest ? (a.streak | 0) + 1 : 1, idx = (streak - 1) % 7, reward = DAILY_REWARD[idx];
-const r = await env.DB.prepare("UPDATE accounts SET balance=balance+?1,streak=?2,last_daily=?3 WHERE id=?4 AND last_daily<>?3").bind(reward, streak, today, auth.id).run();
+const r = await env.DB.prepare("UPDATE accounts SET balance=balance+?1,streak=?2,last_daily=?3 WHERE id=?4 AND COALESCE(last_daily,'')<>?3").bind(reward, streak, today, auth.id).run();
 if (!r.meta.changes) return bad(env, "Hadiah hari ini sudah diklaim", 409);
 const me = await env.DB.prepare("SELECT balance FROM accounts WHERE id=?").bind(auth.id).first();
 return json(env, { ok: true, balance: me.balance, streak, idx, reward, today });

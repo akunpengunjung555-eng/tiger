@@ -227,6 +227,11 @@ else if(k=='start'){[880,1109,1319,1760].forEach((f,i)=>{ting(t+i*.13,.09,f/2.4)
 else if(k=='warn'){const f=700+(6-v)*110;tone(f,t,.16,.12+.03*(6-v),'square');tone(f*1.5,t,.16,.04,'triangle')}
 else if(k=='end'){tone(196,t,.32,.13,'sawtooth');tone(196,t+.4,.5,.13,'sawtooth');ting(t,.12,500)}
 else if(k=='heart'){tone(784,t,.9,.08);tone(988,t+.15,1,.08)}}
+/* suara tombol UI (zona taruhan sudah punya suara chip sendiri, jadi dilewati) */
+function uiTap(k){if(!snd||!ac||ac.state!='running'||!master)return;const t=ac.currentTime+.005,f=640*(1+(Math.random()-.5)*.08);
+if(k=='back')tone(460,t,.09,.1,'triangle',330);else{tone(f,t,.06,.1,'triangle',f*.74);bur(t,.02,5000,.05)}}
+document.addEventListener('click',e=>{const el=e.target.closest&&e.target.closest('button,.room,[data-v],[data-r]');if(!el||el.disabled||el.id=='gift'||el.closest('[data-z]'))return;
+const id=el.id||'',tx=(el.textContent||'').trim();uiTap(/^(cx|mLb|mEx)$/.test(id)||/^(←|✕|×|↩)/.test(tx)?'back':'tap')},true);
 const SS='speechSynthesis' in window;let spk=[];
 function pv(){if(!SS)return;const v=speechSynthesis.getVoices(),id=v.filter(x=>/^id|^in[-_]/i.test(x.lang)||/indonesia/i.test(x.name));vc=id.find(x=>/google|damayanti|gadis|female|wanita/i.test(x.name))||id[0]||null}
 if(SS){pv();speechSynthesis.onvoiceschanged=pv}

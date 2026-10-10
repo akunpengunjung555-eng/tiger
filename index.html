@@ -690,6 +690,7 @@ body.emb #lobby{display:none!important}
   <div class="lbTop">
     <button id="lbUser" class="lbUser" type="button"><span id="lbAv" class="lbAv">👤</span><span class="lbWho"><b id="lbName">Tamu</b><small id="lbPid">Belum login</small></span></button>
     <div class="lbChip"><small>CHIP</small><strong id="lbChip">0</strong></div>
+    <button id="lbSnd" class="ubtn" type="button" aria-label="Suara dan musik" data-snd="tab" style="flex:none;min-width:40px;padding:7px 8px">🔊</button>
     <button id="lbLogin" class="ubtn gold" type="button">LOGIN</button>
   </div>
   <div class="lbBody"><div class="lbWrap">
@@ -825,6 +826,7 @@ body.emb #lobby{display:none!important}
 <div id="qqWrap" class="qqWrap"><iframe id="qqFrame" title="Bandar QQ" allow="autoplay"></iframe></div>
 <div id="modal" class="modal"><div id="mbox" class="mbox"></div></div>
 
+<script src="daf-sfx.js?v=1"></script>
 <script src="daf-assets.js?v=1"></script>
 <script src="daf.js?v=2"></script>
 <script>
@@ -1661,13 +1663,22 @@ function lobbySync(){
   // ticker jackpot di kartu game
   GAMES.forEach(g=>{if(g.ticker){const e=document.querySelector(`[data-tick="${g.id}"]`);if(e)e.textContent=g.ticker()}});
 }
+/* backsound lobi: menyala hanya saat daftar game tampil. Layar Pets punya musik sendiri (frame pets.html), game punya musik sendiri. */
+function lobbyBgm(){
+  if(!window.DAFSound)return;
+  const lb=document.getElementById("lobby");
+  if(!EMB&&lb.classList.contains("show")&&!lb.classList.contains("vp")&&!inGame)DAFSound.bgm("lobby");else DAFSound.bgmStop();
+}
+function sndSync(){const b=document.getElementById("lbSnd");if(b&&window.DAFSound){const on=DAFSound.isBgm()||DAFSound.isSfx();b.textContent=on?"🔊":"🔇";b.style.opacity=on?1:.65}}
 function showLobby(){
   lobbySync();clearInterval(lbTimer);lbTimer=setInterval(lobbySync,500);
   document.getElementById("lobby").classList.add("show");
+  lobbyBgm();sndSync();
 }
 function hideLobby(){
   clearInterval(lbTimer);lbTimer=null;
   document.getElementById("lobby").classList.remove("show");
+  lobbyBgm();
 }
 function needAcct(fn){if(!acct){openWelcome();return}fn()}
 
@@ -1759,8 +1770,10 @@ function loadSettings(){
 function openSettings(){
   const on=!!acct;
   openModal(`<h2>⚙️ PENGATURAN</h2>
-  <div class="setRow"><span><b>Suara &amp; musik</b></span><button class="ubtn ${voiceOn?"gold":""}" type="button" onclick="setVoice(!voiceOn);openSettings()">${voiceOn?"🔊 ON":"🔇 OFF"}</button></div>
-  <div class="setRow"><span><b>Kecepatan spin</b></span><button class="ubtn gold" type="button" onclick="setSpeedIdx(SPEEDS.indexOf(SPD)+1);openSettings()">⚡ ${SPD.n}</button></div>
+  <div class="setRow"><span><b>Suara &amp; musik game</b></span><button class="ubtn ${voiceOn?"gold":""}" type="button" onclick="setVoice(!voiceOn);openSettings()">${voiceOn?"🔊 ON":"🔇 OFF"}</button></div>
+  ${window.DAFSound?`<div class="setRow"><span><b>Musik lobi &amp; Pets</b></span><button class="ubtn ${DAFSound.isBgm()?"gold":""}" type="button" onclick="DAFSound.setBgm(!DAFSound.isBgm());sndSync();openSettings()">${DAFSound.isBgm()?"🎵 ON":"🔇 OFF"}</button></div>
+   <div class="setRow"><span><b>Suara tombol &amp; hewan</b></span><button class="ubtn ${DAFSound.isSfx()?"gold":""}" type="button" onclick="DAFSound.setSfx(!DAFSound.isSfx());sndSync();openSettings()">${DAFSound.isSfx()?"🔔 ON":"🔇 OFF"}</button></div>`:""}
+   <div class="setRow"><span><b>Kecepatan spin</b></span><button class="ubtn gold" type="button" onclick="setSpeedIdx(SPEEDS.indexOf(SPD)+1);openSettings()">⚡ ${SPD.n}</button></div>
   ${on?`<div class="setRow"><span><b>Akun</b><br><small>${isAdmin()?"Admin":esc(acct.name)}</small></span><button class="ubtn" type="button" onclick="openProfile()">🪪 PROFIL</button></div>`
       :`<div class="setRow"><span><b>Akun</b><br><small>Belum login</small></span><button class="ubtn gold" type="button" onclick="openWelcome()">LOGIN</button></div>`}
   ${isAdmin()?`<div class="setRow"><span><b>Panel admin</b><br><small>Atur izin kirim chip, full gambar &amp; jackpot</small></span><button class="ubtn gold" type="button" onclick="openAdminPanel()">🛠 BUKA</button></div>`:""}
@@ -1792,18 +1805,24 @@ document.getElementById("nvSend").addEventListener("click",()=>needAcct(openTran
 document.getElementById("nvSet").addEventListener("click",openSettings);
 document.getElementById("exitGameBtn").addEventListener("click",exitGame);
 renderGames();
+if(window.DAFSound){
+  DAFSound.autoBind({skip:el=>el.id==="spin"||el.id==="spinN"||el.id==="auto"||el.id==="lbSnd"||!!el.closest("#reels,#jpGame")});
+  DAFSound.onChange(sndSync);
+  document.getElementById("lbSnd").addEventListener("click",()=>{const on=!(DAFSound.isBgm()||DAFSound.isSfx());DAFSound.setBgm(on);DAFSound.setSfx(on);sndSync();if(on)DAFSound.ui("on")});
+}
 /* DAF Pets = layar utama lobi (iframe pets.html); "Tempat Berburu Chip" = daftar game */
 const petsF=()=>document.getElementById("petsFrame");
 function petsPost(m){const f=petsF();try{f&&f.contentWindow&&f.contentWindow.postMessage(m,location.origin==="null"?"*":location.origin)}catch(e){}}
 function lbView(v){const lb=document.getElementById("lobby");if((v==="pets")===lb.classList.contains("vp"))return;
   if(v==="games")petsPost({t:"pets-flush"});
   const pe=v==="pets";
-  ldRun(pe?"🐾":"🎯",pe?"DAF Pets":"Tempat Berburu Chip",pe?"Kembali ke kandang…":"Membuka tempat berburu…",800,()=>{lb.classList.toggle("vp",pe);if(pe)petsPost({t:"pets-resume"});try{refreshPerms()}catch(e){}});
+  ldRun(pe?"🐾":"🎯",pe?"DAF Pets":"Tempat Berburu Chip",pe?"Kembali ke kandang…":"Membuka tempat berburu…",800,()=>{lb.classList.toggle("vp",pe);lobbyBgm();if(pe)petsPost({t:"pets-resume"});try{refreshPerms()}catch(e){}});
 }
 document.getElementById("lbToPets").addEventListener("click",()=>lbView("pets"));
 window.addEventListener("message",e=>{const f=petsF();if(!f||e.source!==f.contentWindow)return;const m=e.data||{};
   if(m.t==="pets-hunt")lbView("games");
   else if(m.t==="pets-login")openWelcome();
+  else if(m.t==="pets-daily")needAcct(()=>isAdmin()?openInfo("🎁 HARIAN","Akun admin tidak memakai hadiah harian.","closeModal()"):openDaily());
   else if(m.t==="pets-bal"&&!inGame&&acct&&acct.server&&!isAdmin()&&!busy&&typeof m.balance==="number"&&isFinite(m.balance)){balance=m.balance;updateUI()}
 });
 if(!EMB){petsF().src="pets.html";document.getElementById("lobby").classList.add("vp")}

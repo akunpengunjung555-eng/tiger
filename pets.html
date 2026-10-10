@@ -164,7 +164,8 @@ h2:after{content:"";flex:1;height:2px;border-radius:2px;background:linear-gradie
 .hc:active{transform:scale(.975)}
 .hnote{text-align:center;color:#ffd9a8aa;font-size:11px;padding:4px 10px 14px}
 @media(prefers-reduced-motion:reduce){.hc,.hc:before,.hc:after,.hc .hi,#v.tin,#hFrame{animation:none!important}}
-</style><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script></head><body><div class="app">
+</style><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="daf-sfx.js?v=1"></script></head><body><div class="app">
 <header><h1>🐾 DAF Pets</h1><div class="row"><button class="b" id="bgmBtn" aria-label="Musik" style="min-width:40px;padding:6px 8px">🔊</button><button class="b gd" data-a="daily">🎁 Harian</button><div class="chips">🪙 <b id="chips">0</b></div></div></header>
 <button class="hunt" id="huntBtn"><i>🎯</i><span>Tempat Berburu Chip<small>Main game lain untuk menambah chip</small></span><em>›</em></button><div class="net" id="net"></div>
 <nav><button data-t="kandang"><i>🏡</i>Kandang</button><button data-t="toko"><i>🛒</i>Toko</button><button data-t="lelang"><i>🔨</i>Lelang</button><button data-t="hadiah"><i>🎁</i>Misi &amp; Hadiah</button></nav>
@@ -239,27 +240,23 @@ async function huntPlay(id){if(H.game)return;const g=GM.find(x=>x.id===id);if(!g
 function huntBack(){if(XB)return;if(H.game){xSwap('🎯','Tempat Berburu Chip','Kembali ke daftar game…',async()=>{hPick();await netFlush()},600)}else{xSwap('🐾','DAF Pets','Kembali ke kandang…',async()=>{$('#hunt').hidden=true;H.open=false;document.body.style.overflow='';bgmStart();await netFlush();R()},650)}}
 document.addEventListener('click',e=>{const lg=e.target.closest('a[href="index.html"]');if(lg&&HOST){e.preventDefault();return toP({t:'pets-login'})}if(e.target.closest('#huntBtn'))return HOST?toP({t:'pets-hunt'}):huntOpen();if(e.target.closest('#hBack'))return huntBack();const g=e.target.closest('[data-hg]');if(g)huntPlay(g.dataset.hg)});
 addEventListener('message',e=>{const f=$('#hFrame');if(e.origin===location.origin&&e.data&&e.data.t==='pets-exit'&&f&&e.source===f.contentWindow)huntBack()});
-addEventListener('message',e=>{if(!HOST||e.source!==parent)return;const t=e.data&&e.data.t;if(t==='pets-flush'){bgmStop();save();netSync(true)}else if(t==='pets-resume'){bgmStart();netSync();R()}});
+addEventListener('message',e=>{if(!HOST||e.source!==parent)return;const t=e.data&&e.data.t;if(t==='pets-flush'){ACT=false;bgmStop();save();netSync(true)}else if(t==='pets-resume'){ACT=true;bgmStart();netSync();R()}});
 addEventListener('storage',e=>{if(e.key==='daf_session'||e.key==='daf_token')location.reload()});
-/* ===== BACKSOUND PETS (musik santai dibuat lewat WebAudio, tanpa file) =====
+/* ===== BACKSOUND & SUARA PETS (engine bersama: daf-sfx.js; musik dibuat WebAudio, tanpa file) =====
    Mau pakai lagu sendiri? isi BGM_URL dengan alamat file mp3 satu folder, mis. 'musik.mp3' */
-const BGM_URL='',BGM={on:localStorage.getItem('dafpets_bgm')!=='0',ctx:null,t:null,step:0};
-const BCH=[[261.6,329.6,392,493.9],[220,261.6,329.6,392],[174.6,220,261.6,329.6],[196,246.9,293.7,392]],BPN=[523.3,587.3,659.3,784,880,1046.5];
-function bgmNote(f,t,d,ty,v){const c=BGM.ctx,o=c.createOscillator(),g=c.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.05);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(BGM.lp);o.start(t);o.stop(t+d+.05)}
-function bgmBeat(){const t=BGM.ctx.currentTime+.05,s=BGM.step++,bar=Math.floor(s/4)%4;
- if(s%4===0)BCH[bar].forEach(f=>bgmNote(f/2,t,3.4,'sine',.05));
- if(s%2===0&&Math.random()<.85)bgmNote(rnd(BPN),t+.02,1.4,'triangle',.06);
- if(s%4===2&&Math.random()<.5)bgmNote(rnd(BPN),t+.18,1.2,'sine',.045)}
-function bgmStart(){if(!BGM.on||BGM.t)return;
+const SND=window.DAFSound||{ui(){},pet(){},step(){},bgm(){},bgmStop(){},unlock(){},autoBind(){},isBgm:()=>false,setBgm(){},toggleBgm:()=>false,onChange(){}};
+const BGM_URL='',BGM={a:null,t:0};
+let ACT=true;   /* false = layar Pets sedang disembunyikan lobi (daftar game / di dalam game): musik & langkah kaki Pets harus diam */
+const bgmWant=()=>ACT&&!H.open&&!document.hidden;
+function bgmStart(){if(!SND.isBgm()||!bgmWant())return;
  if(BGM_URL){if(!BGM.a){BGM.a=new Audio(BGM_URL);BGM.a.loop=true;BGM.a.volume=.5}BGM.a.play().then(()=>{BGM.t=1}).catch(()=>{});return}
- try{if(!BGM.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=BGM.ctx=new C();BGM.g=c.createGain();BGM.g.gain.value=0;BGM.lp=c.createBiquadFilter();BGM.lp.type='lowpass';BGM.lp.frequency.value=2400;BGM.lp.connect(BGM.g);BGM.g.connect(c.destination)}
-  const c=BGM.ctx;c.resume();BGM.g.gain.cancelScheduledValues(0);BGM.g.gain.setValueAtTime(BGM.g.gain.value,c.currentTime);BGM.g.gain.linearRampToValueAtTime(.9,c.currentTime+1.5);BGM.t=setInterval(bgmBeat,714);bgmBeat()}catch(e){}}
-function bgmStop(){if(!BGM.t)return;if(BGM.a){BGM.a.pause();BGM.t=null;return}
- clearInterval(BGM.t);BGM.t=null;try{const c=BGM.ctx;BGM.g.gain.cancelScheduledValues(0);BGM.g.gain.setValueAtTime(BGM.g.gain.value,c.currentTime);BGM.g.gain.linearRampToValueAtTime(0,c.currentTime+.6);setTimeout(()=>{if(!BGM.t)c.suspend()},700)}catch(e){}}
-function bgmUI(){const b=$('#bgmBtn');if(b){b.textContent=BGM.on?'🔊':'🔇';b.style.opacity=BGM.on?1:.6}}
-document.addEventListener('click',e=>{if(e.target.closest('#bgmBtn')){BGM.on=!BGM.on;try{localStorage.setItem('dafpets_bgm',BGM.on?'1':'0')}catch(x){}bgmUI();BGM.on?bgmStart():bgmStop();return}if(BGM.on&&!H.open)bgmStart()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmStop();else if(!H.open)bgmStart()});
-bgmUI();
+ SND.bgm('main')}
+function bgmStop(){if(BGM.a){BGM.a.pause();BGM.t=0}SND.bgmStop()}
+function bgmUI(){const b=$('#bgmBtn');if(b){const on=SND.isBgm();b.textContent=on?'🔊':'🔇';b.style.opacity=on?1:.6}}
+SND.autoBind({skip:el=>el.id==='bgmBtn'});
+SND.onChange(()=>{bgmUI();SND.isBgm()?bgmStart():bgmStop()});   /* sinkron dengan tombol musik di lobi/frame lain */
+document.addEventListener('click',e=>{if(e.target.closest('#bgmBtn')){const on=SND.toggleBgm();bgmUI();on?bgmStart():bgmStop();SND.ui(on?'on':'off');return}bgmStart()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmStop();else bgmStart()});
 setInterval(()=>{if(H.open)$('#hChips').textContent=fmt(ADAPTER.get())},1000);
 
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();netSync(true)}else netSync()});
@@ -282,7 +279,7 @@ function load(st){S=null;try{S=st||JSON.parse(localStorage.getItem(KEY))||(NET.o
  S.seen=S.seen||[];S.pets.forEach(p=>{if(!S.seen.includes(p.sp))S.seen.push(p.sp)});S.yl=S.yl||0;S.dl=S.dl||{d:'',s:0};S.eggs=S.eggs||[];
  /* tanpa hasil offline: chip hanya masuk saat game dimainkan */}
 function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function toast(m){const t=$('#t');t.innerHTML=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)}
+function toast(m){if(/tidak cukup|penuh|habis|belum|tidak valid|sudah |gagal|kabur/i.test(m))SND.ui('err');const t=$('#t');t.innerHTML=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)}
 function addPet(sp,lv,mu){S.pets.push({id:S.n++,sp,f:80,j:80,acc:0,lv:lv||1,xp:0,mu:mu||''});S.seen=S.seen||[];if(!S.seen.includes(sp))S.seen.push(sp);if(mu){S.ms=S.ms||[];if(!S.ms.includes(mu))S.ms.push(mu)}}
 const CHIP_SCALE=.35; /* atur di sini: makin kecil = hasil chip hewan makin sedikit */
 const rate=p=>CHIP_SCALE*RAR[SP[p.sp][2]].r*(1+(p.lv-1)*.4)*(p.mu?MU[p.mu].m:1)*((p.f>25&&p.j>25)?1:.25)*dm();
@@ -291,8 +288,6 @@ function tick(dt){
   p.acc=Math.min(p.acc+rate(p)/60*dt,rate(p)*30)});
  auTick(dt);visTick(dt)}
 /* ===== LELANG ===== */
-function newAuc(){const k=rnd(Object.keys(SP).filter(i=>SP[i][2]!=='L'||Math.random()<.25));
- S.au.push({id:S.n++,sp:k,bid:Math.round(SP[k][3]*(.35+Math.random()*.2)),by:'NPC',end:Date.now()+(40+Math.random()*140)*1000})}
 function auTick(dt){
  while(NPC_LELANG&&S.au.filter(a=>!a.mine).length<6)newAuc();
  const now=Date.now();
@@ -379,39 +374,11 @@ hadiah(){
  `<h2>Terima hadiah</h2><input id="rc" placeholder="Tempel kode DAF-..."><div class="btns"><button class="b go" data-a="redeem">Klaim hadiah</button></div>`}
 };
 function R(){$('#chips').textContent=fmt(ADAPTER.get());
- document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));$('#v').innerHTML=V[tab]();yardShow()}
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));const h=V[tab](),v=$('#v');if(R.h!==h||R.t!==tab){v.innerHTML=h;R.h=h;R.t=tab}yardShow()}
 document.addEventListener('click',e=>{
  const n=e.target.closest('nav button');if(n){const t=n.dataset.t;if(t===tab||XB)return;const m=TABM[t]||['🐾','DAF Pets'];xSwap(m[0],m[1],'Membuka '+m[1]+'…',()=>{tab=t;R();const v=$('#v');v.classList.remove('tin');void v.offsetWidth;v.classList.add('tin')},160);return}
  const b=e.target.closest('[data-a]');if(!b)return;
  A[b.dataset.a](b.dataset.i);save();R()});
-/* ===== KANDANG: hewan berkeliaran, tidur, lapar, memunculkan koin ===== */
-const Y={};let yl=0;
-function fx(id,t){const n=Y[id];if(!n)return;const d=document.createElement('div');d.className='fx';d.textContent=t;d.style.left=(n.x+Math.random()*30-15)+'px';d.style.top=(n.y-56)+'px';$('#yard').appendChild(d);setTimeout(()=>d.remove(),900)}
-function yardShow(){const yd=$('#yard');yd.hidden=tab!=='kandang';if(yd.hidden)return;
- S.pets.forEach(p=>{if(!Y[p.id]){const el=document.createElement('div');el.className='pet '+SP[p.sp][2];el.dataset.a='pat';el.dataset.i=p.id;
-  el.innerHTML='<div class=bub></div><div class=fl><div class=sp>'+pic(p.sp)+'</div></div>';yd.appendChild(el);
-  Y[p.id]={el,fl:el.children[1],bub:el.children[0],x:40+Math.random()*((yd.clientWidth||320)-80),y:110+Math.random()*100,tx:0,ty:0,w:Math.random()*2,d:1,p}}
-  Y[p.id].p=p});
- for(const id in Y)if(!S.pets.some(p=>p.id==id)){Y[id].el.remove();delete Y[id]}
- updBub()}
-function updBub(){for(const id in Y){const n=Y[id],p=n.p,b=n.bub;let h='',c='bub';
- if(p.acc>=1){h='🪙 +'+fmt(p.acc);c+=' coin';b.dataset.a='claim';b.dataset.i=p.id}
- else{delete b.dataset.a;h=p.f<25?'😋':p.j<25?'💤':''}
- if(b.textContent!==h)b.textContent=h;b.className=c}}
-function yardLoop(t){requestAnimationFrame(yardLoop);const dt=Math.min(.05,(t-yl)/1000||0);yl=t;const yd=$('#yard');if(yd.hidden)return;
- const W=yd.clientWidth,H=yd.clientHeight;
- for(const id in Y){const n=Y[id],p=n.p;
-  if(p.j<25)n.mv=0;
-  else if(n.w>0){n.w-=dt;n.mv=0}
-  else{
-   if(!n.has){if(p.f<25&&Math.random()<.7){n.tx=W/2+Math.random()*68-34;n.ty=H-58}else{n.tx=24+Math.random()*(W-48);n.ty=100+Math.random()*(H-160)}n.has=1}
-   const dx=n.tx-n.x,dy=n.ty-n.y,l=Math.hypot(dx,dy);
-   if(l<4){n.has=0;n.w=1+Math.random()*3.5;n.mv=0}
-   else{const v=n.v=n.v||28+Math.random()*24;n.x+=dx/l*v*dt;n.y+=dy/l*v*dt;if(Math.abs(dx)>1)n.d=dx>0?1:-1;n.mv=1}}
-  const s=.8+(n.y/H)*.4;
-  n.el.style.transform='translate('+(n.x-26)+'px,'+(n.y-52)+'px)';n.el.style.zIndex=Math.round(n.y);
-  n.fl.style.transform='scale('+n.d*s+','+s+')';
-  n.el.classList.toggle('mv',!!n.mv);n.el.classList.toggle('zz',p.j<25)}}
 /* ===== KANDANG 3D (three.js): model hewan dibuat dari bentuk dasar, berjalan, tidur, siklus siang-malam ===== */
 const WT={harimau:22,singa:19,panda:16,gajah:13,rubah:11,serigala:8,merak:6,naga:5},CH={C:.8,U:.55,R:.3,L:.12};
 function cap(){return 6+(S.yl||0)*2}
@@ -520,6 +487,12 @@ function yardShow(){const yd=$('#yard');yd.hidden=tab!=='kandang';if(yd.hidden)r
 function updBub(){if(!T)return;for(const id in T.E){const e=T.E[id],p=e.p,c=p.acc>=1,tx=c?'🪙 +'+sh(p.acc):p.f<25?'😋':p.j<25?'💤':'';
  if(tx===e.lt)continue;e.lt=tx;if(e.lb){e.w.remove(e.lb);e.lb.material.map.dispose();e.lb.material.dispose();e.lb=null}
  if(tx){const s=lab(tx,c?'#ffd34d':'rgba(0,0,0,0)');s.userData.coin=c;s.position.y=e.w.userData.h;e.w.add(s);e.lb=s}}}
+/* jejak kaki: satu langkah tiap kaki menyentuh tanah (ph kelipatan PI); volume menurut jarak ke kamera, panning menurut posisi di layar */
+function stepSnd(e,p){const n=Math.floor(e.ph/Math.PI);if(e.sn===undefined){e.sn=n;return}if(n===e.sn)return;e.sn=n;
+ if(!ACT||H.open||tab!=='kandang'||document.hidden||!SND.isSfx())return;
+ const sy=Math.sin(T.yaw),cy=Math.cos(T.yaw),dx=e.x-sy*11,dz=e.z-cy*11,dist=Math.hypot(dx,7,dz),side=e.x*cy-e.z*sy;
+ const vol=Math.max(0,1-(dist-6)/18)*Math.min(1.15,.6+sz(p)*.55);
+ SND.step(p.sp,{vol,pan:Math.max(-1,Math.min(1,side/8))*.75})}
 function pose(g,e,mv,t){const ph=e.ph;g.L.forEach(l=>{l.rotation.x=e.sl?0:Math.sin(ph+l.p*Math.PI)*.65*mv});
  g.b.position.y=(g.by||0)+(e.sl?-.12:mv?Math.abs(Math.sin(ph))*.07:Math.sin(ph)*.012);
  if(g.t)g.t.rotation.y=Math.sin(t*(mv?6:2.5))*(e.sl?.1:.45);
@@ -537,7 +510,7 @@ function yardLoop(t){requestAnimationFrame(yardLoop);const yd=$('#yard');if(yd.h
     const dx=e.tx-e.x,dz=e.tz-e.z,l=Math.hypot(dx,dz);
     if(l<.15){e.has=0;e.wait=1+Math.random()*4}
     else{e.x+=dx/l*e.v*dt;e.z+=dz/l*e.v*dt;let da=Math.atan2(dx,dz)-e.ry;da=Math.atan2(Math.sin(da),Math.cos(da));e.ry+=da*Math.min(1,dt*6);mv=1}}}
-  e.w.position.set(e.x,0,e.z);e.w.rotation.y=e.ry;e.ph+=dt*(mv?9:1.5);g.scale.setScalar(g.s0*sz(p));if(e.lb)e.lb.position.y=e.w.userData.h*(.35+.65*sz(p));if(e.w.rb)e.w.rb.forEach((m,i)=>m.color.setHSL((t*.2+i*.07)%1,.8,.55));pose(g,e,mv,t);
+  e.w.position.set(e.x,0,e.z);e.w.rotation.y=e.ry;e.ph+=dt*(mv?9:1.5);if(mv)stepSnd(e,p);g.scale.setScalar(g.s0*sz(p));if(e.lb)e.lb.position.y=e.w.userData.h*(.35+.65*sz(p));if(e.w.rb)e.w.rb.forEach((m,i)=>m.color.setHSL((t*.2+i*.07)%1,.8,.55));pose(g,e,mv,t);
   if(e.w.o)e.w.o.scale.setScalar((1.2+Math.sin(t*3)*.06)*g.s0)}
  if(T.D&&T.D.kincir)T.D.kincir.p.rotation.z+=dt*1.2;if(T.D&&T.D.langit)T.D.langit.position.y=3.6+Math.sin(t)*.2;
  for(const id in T.G||{}){const g=T.G[id];g.w.rotation.z=g.rdy?Math.sin(t*12)*.15:0}
@@ -613,7 +586,6 @@ function syncDec(){if(!T.D)T.D={};const d=S.dec||{};
  if(d.kolam&&!T.D.kolam){const g=new THREE.Group();mesh(G.C,0x9a8f7a,0,.06,0,g,2.1,.12,2.1);mesh(G.C,0x3aa0e0,0,.1,0,g,1.85,.06,1.85,0x0a3a66);g.position.set(-3.8,0,-3.2);T.sc.add(g);T.D.kolam=g}
  if(d.rumah&&!T.D.rumah){const g=new THREE.Group();box(1.6,1,1.4,0xc9894a,0,.5,0,g);mesh(G.K,0xb0302a,0,1.45,0,g,1.35,.9,1.35).rotation.y=Math.PI/4;box(.3,.55,.05,0x4a2a10,0,.28,.72,g);g.position.set(4,0,-3.4);g.rotation.y=-.6;T.sc.add(g);T.D.rumah=g}
  if(d.air&&!T.D.air){const g=new THREE.Group();mesh(G.C,0xb8b8c4,0,.15,0,g,1.1,.3,1.1);mesh(G.C,0xb8b8c4,0,.7,0,g,.18,1,.18);mesh(G.C,0x6ad0ff,0,1.3,0,g,.5,.12,.5,0x0a4a7a);g.position.set(3.6,0,3.2);T.sc.add(g);T.D.air=g}}
-function decShop(){return '<h2>Dekorasi kandang (menambah hasil chip semua hewan)</h2><div class="grid">'+Object.keys(DEC).map(k=>{const D=DEC[k],has=(S.dec||{})[k];return `<div class="card"><span class="em">${D.e}</span><br><b>${D.n}</b> · +${Math.round(D.b*100)}% chip<div class="btns"><button class="b gd" data-a="buyD" data-i="${k}" ${has?'disabled':''}>${has?'Terpasang':'Beli '+fmt(D.c)}</button></div></div>`}).join('')+'</div>'}
 function qList(){const q=qs();return '<h2>Misi harian</h2><div class="grid">'+QS.map((Q,i)=>{const v=Math.min(q[Q.k],Q.g),ok=v>=Q.g,dn=q.done[i];return `<div class="card"><b>${Q.n}</b><div class="bar"><i style="width:${v/Q.g*100}%;background:#2fe36b"></i></div><small>${v}/${Q.g} · hadiah ${sh(Q.r)}</small><div class="btns"><button class="b ${ok&&!dn?'go':''}" data-a="claimQ" data-i="${i}" ${ok&&!dn?'':'disabled'}>${dn?'Diambil':'Ambil'}</button></div></div>`}).join('')+'</div>'}
 function mutBook(){const m=S.ms||[];return `<h2>Buku mutasi ${m.length}/${Object.keys(MU).length}</h2><div class="btns">`+Object.keys(MU).map(k=>`<span class="b" style="${m.includes(k)?'':'opacity:.35'}">✨ ${MU[k].n} ×${MU[k].m}</span>`).join('')+'</div>'}
 Object.assign(A,{
@@ -665,6 +637,24 @@ function harta(){return ADAPTER.get()+Object.keys(S.dec||{}).reduce((a,k)=>a+DEC
 function decShop(){const h=harta(),tot=Object.keys(S.dec||{}).reduce((a,k)=>a+DEC[k].b,0);
  return `<h2>Harta ${sh(h)} / 1 T${h>=1e12?' ✅ target tercapai':''}</h2><div class="bar"><i style="width:${Math.min(100,h/1e10)}%;background:#ffd34d"></i></div><small>Harta = chip + nilai properti + nilai hewan. Bonus properti sekarang +${Math.round(tot*100)}% chip semua hewan.</small><h2>Properti kandang</h2><div class="grid">`+Object.keys(DEC).map(k=>{const D=DEC[k],has=(S.dec||{})[k];return `<div class="card"><span class="em">${D.e}</span><br><b>${D.n}</b> · +${Math.round(D.b*100)}% chip<div class="btns"><button class="b gd" data-a="buyD" data-i="${k}" ${has?'disabled':''}>${has?'Terpasang':'Beli '+fmt(D.c)}</button></div></div>`}).join('')+'</div>'}
 {const _k=V.kandang,_t=V.toko;V.kandang=()=>eggList()+_k()+mutBook()+careInfo();V.toko=()=>_t().replace(/<h2>Telur misterius<\/h2>[\s\S]*?(?=<h2>Hewan langsung)/,eggShop()).replace(/<h2>Hewan langsung<\/h2>[\s\S]*?(?=<h2>Gabung hewan)/,'<small>Hewan tidak dijual langsung. Dapatkan dari telur, tamu langka, lelang pemain, atau hadiah teman.</small>')+decShop();V.hadiah=(h=>()=>qList()+h())(V.hadiah)}
+
+/* ===== HADIAH HARIAN: akun login memakai hadiah harian SERVER (satu streak, satu klaim/hari, sama dengan tombol Harian di lobi) ===== */
+{const local=A.daily;
+ A.daily=function(){if(!NET.on)return local.call(A);if(HOST)return toP({t:'pets-daily'});return dailySrv()}}
+async function dailySrv(){
+ if(NET.dead)return;if(!NET.ready)return toast('Menyambung ke akun, coba lagi sebentar');
+ const r=await netApi('/daily');
+ if(r.status===401){netDead();return}
+ if(r.ok&&r.j&&typeof r.j.balance==='number'){NET.bal=r.j.balance;SND.ui('coin');toast('🎁 Hari ke-'+r.j.streak+': +'+fmt(r.j.reward)+' chip');R();return}
+ toast(r.status===409?'Hadiah harian sudah diambil, kembali besok':((r.j&&r.j.error)||'Gagal mengambil hadiah harian'))}
+/* ===== SUARA AKSI: elus = suara hewan, ambil chip = koin, belanja = denting, tetas = fanfare ===== */
+{const sw=(k,f)=>{const o=A[k];if(!o)return;A[k]=function(...a){const c=ADAPTER.get(),n=S.eggs.length,pl=S.pets.length,r=o.apply(A,a);f(a,c,n,pl);return r}};
+ sw('pat',a=>{const p=S.pets.find(x=>x.id==a[0]);SND.pet(p&&p.sp)});
+ ['claim','claimAll','claimQ','daily'].forEach(k=>sw(k,(a,c)=>{if(ADAPTER.get()>c)SND.ui('coin')}));
+ sw('hatch',(a,c,n)=>{if(S.eggs.length<n)SND.ui('hatch')});
+ sw('merge',(a,c,n,pl)=>{if(S.pets.length<pl)SND.ui('ok')});
+ ['feed','play','feedAll','buyE','buyD','up','speed','bid'].forEach(k=>sw(k,(a,c)=>{if(ADAPTER.get()<c)SND.ui('spend')}))}
+bgmUI();
 load();setNet();R();requestAnimationFrame(yardLoop);netBoot();
 let lt=Date.now();
 setInterval(()=>{const n=Date.now(),raw=(n-lt)/1000;lt=n;const dt=document.hidden?0:Math.min(raw,2);if(dt>0)tick(dt);save();
