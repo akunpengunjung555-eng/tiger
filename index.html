@@ -595,6 +595,10 @@ body{padding:5px}
 .overlay .winAmt{font-size:clamp(22px,8.4cqw,100px)}
 .overlay .winSub{font-size:clamp(11px,3.4cqw,21px)}
 .winPic img{height:min(22vh,150px)}
+/* ===== BANDAR QQ (iframe) ===== */
+.qqWrap{position:fixed;inset:0;z-index:90;background:#000;display:none}
+.qqWrap.show{display:block}
+.qqWrap iframe{width:100%;height:100%;border:0;display:block;background:#000}
 </style>
 </head>
 <body>
@@ -732,6 +736,7 @@ body{padding:5px}
   </div>
   <div id="jpParticles" class="jpParticles"></div>
 </div>
+<div id="qqWrap" class="qqWrap"><iframe id="qqFrame" title="Bandar QQ" allow="autoplay"></iframe></div>
 <div id="modal" class="modal"><div id="mbox" class="mbox"></div></div>
 
 <!-- ===== FIREBASE: isi config di bawah (Firebase Console > Project settings > Your apps > Web app) ===== -->
@@ -3012,6 +3017,9 @@ const GAMES=[
    canExit(){if(busy){setMsg("Tunggu spin selesai dulu");return false}return true},
    onEnter(){unlockAudio();if(voiceOn&&!bgmTimer)startBgm();window.scrollTo(0,0)},
    onExit(){stopAuto();stopBgm();stopVoices();saveGame()}},
+  {id:"qq",name:"Bandar QQ",tag:"DOMINO • MERAH vs BIRU",icon:"🎴",c1:"#0f5132",c2:"#052e1a",live:true,
+   howto:"• Pasang chip ke <b>MERAH</b> atau <b>BIRU</b>. Tiap sisi dapat 2 kartu domino; nilai = jumlah titik, ambil angka satuannya (maks <b>9 = QIU</b>).<br>• <b>MERAH / BIRU</b> bayar 1:1 (seri = taruhan kembali). <b>SERI</b> 1:8.<br>• <b>QIU</b> (satu sisi 9) 1:8 • <b>TWIN</b> (kedua kartu sisi itu balak) 1:15.<br>• <b>QIU QIU</b> (Merah &amp; Biru sama-sama 9) 1:88 • <b>SIX/TWINS</b> (kedua sisi twin) 1:500.<br>• Kartu dikocok &amp; dihitung di server untuk akun login.",
+   onEnter(){qqOpen()},onExit(){qqClose()}},
   {id:"soon1",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎰",live:false},
   {id:"soon2",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎲",live:false}
 ];
@@ -3187,6 +3195,48 @@ document.getElementById("nvSend").addEventListener("click",()=>needAcct(openTran
 document.getElementById("nvSet").addEventListener("click",openSettings);
 document.getElementById("exitGameBtn").addEventListener("click",exitGame);
 renderGames();
+
+/* ===== BANDAR QQ: game domino di iframe (Bandar_QQ.html, satu folder dengan index.html).
+   Akun SERVER -> kartu dikocok & saldo dihitung di server (/qq/round). Tamu/akun lokal/mode gratis/admin -> main lokal. ===== */
+const QQ_SRC="Bandar_QQ.html",QQ_ORIGIN=location.origin==="null"?"*":location.origin;
+const qqSrv=()=>!!(acct&&acct.server&&!freeMode&&!isAdmin());
+function qqFrame(){return document.getElementById("qqFrame")}
+function qqPost(m){const f=qqFrame();if(f&&f.contentWindow)f.contentWindow.postMessage(m,QQ_ORIGIN)}
+function qqOpen(){
+  document.getElementById("game").style.display="none";
+  document.getElementById("qqWrap").classList.add("show");
+  qqFrame().src=QQ_SRC;
+}
+function qqClose(){
+  document.getElementById("qqWrap").classList.remove("show");
+  qqFrame().src="about:blank";
+  document.getElementById("game").style.display="";
+  updateUI();
+}
+async function qqInit(){
+  const adm=isAdmin(),srv=qqSrv();
+  if(srv){const r=await apiCall("/me",null,LS.get("daf_token"));if(r.ok&&r.j&&typeof r.j.balance==="number"){balance=r.j.balance;updateUI()}}
+  if(inGame!=="qq")return;
+  qqPost({t:"qq-init",server:srv,inf:adm,balance:adm?Math.max(balance,1e12):Math.max(0,Math.floor(balance))});
+}
+async function qqRound(m){
+  const reply=o=>qqPost(Object.assign({t:"qq-reply",id:m.id},o));
+  if(!qqSrv()){reply({ok:false,error:"Mode server tidak aktif",balance});return}
+  let r=null;
+  for(let i=0;i<2;i++){r=await apiCall("/qq/round",{bets:m.bets,rid:m.rid},LS.get("daf_token"));if(r.status!==0)break}   // koneksi putus: kirim ulang dengan rid sama (tidak dipotong dua kali)
+  if(r.ok&&r.j&&r.j.hands){balance=r.j.balance;updateUI();reply({ok:true,hands:r.j.hands,win:r.j.win,balance:r.j.balance});return}
+  if(r.j&&typeof r.j.balance==="number"){balance=r.j.balance;updateUI()}
+  if(r.status===401){LS.del("daf_token");reply({ok:false,error:"Sesi habis, silakan login lagi",status:401,balance});exitGame();resetSession("Sesi habis, silakan login lagi");openWelcome();return}
+  reply({ok:false,error:(r.j&&r.j.error)||"Taruhan gagal, coba lagi",status:r.status,balance});
+}
+window.addEventListener("message",e=>{
+  const f=qqFrame();if(!f||inGame!=="qq"||e.source!==f.contentWindow||e.origin!==location.origin)return;
+  const m=e.data||{};
+  if(m.t==="qq-ready")qqInit();
+  else if(m.t==="qq-exit")exitGame();
+  else if(m.t==="qq-round")qqRound(m);
+  else if(m.t==="qq-bal"){if(qqSrv()||isAdmin()||typeof m.balance!=="number"||!isFinite(m.balance))return;balance=Math.max(0,Math.floor(m.balance));updateUI();saveGame()}
+});
 
 
 /* ===== MODE SOLO & MABAR (ROOM) =====
