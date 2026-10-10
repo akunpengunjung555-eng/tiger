@@ -378,7 +378,7 @@ if(won.length){sfx('chips');await sleep(1900)}
 if(SRV)coins=SRV.balance;else{coins+=back;if(HOST&&!HOST.server&&!HOST.inf)toHost({t:'qq-bal',balance:coins})}SRV=null;const hp=Object.keys(mine).reduce((a,k)=>res[k]>1?a+mine[k]*(res[k]-1):a,0),hit=hp>0,amt=Math.max(net,hp);if(net>0||hit){shower(amt>=2e7?40:22);if(qq||six)bigWin(six?'SIX TWINS!':'QIU QIU!',amt,six?'six':'qq');else floatText('+'+fmt(amt),'#7dffb0',$('coin'),22);try{navigator.vibrate&&navigator.vibrate([80,40,120])}catch(e){}sfx(six||amt>=1e9?'superwin':qq||amt>=5e8?'megawin':amt>=1e8?'bigwin':'win');setTimeout(()=>say('Kamu menang'),900)}else if(net<0){floatText('-'+fmt(-net),'#ff8a8a',$('coin'),22);sfx('lose');setTimeout(()=>say('Kamu kalah'),900)}
 $('msg').textContent=(w=='t'?'SERI!':w=='m'?'MERAH menang!':'BIRU menang!')+(Object.keys(mine).length?(hit&&net<0?` Menang +${fmt(hp)} (bersih -${fmt(-net)})`:` Hasilmu: ${net>=0?'+':'-'}${fmt(Math.abs(net))}`):'');
 if(!LIVE)bots.forEach(b=>b[1]+=Math.round((Math.random()-.45)*b[1]*.02));
-pot={};phase='end';RESM=$('msg').textContent;if(ERRM){$('msg').textContent='⚠ '+ERRM+' — taruhan tidak dipotong';ERRM=''}draw();await sleep(1800);if(g==gen&&!LIVE)newRound()}
+pot={};phase='end';holdUntil=Date.now()+1200;RESM=$('msg').textContent;if(ERRM){$('msg').textContent='⚠ '+ERRM+' — taruhan tidak dipotong';ERRM=''}draw();await sleep(1800);if(g==gen&&!LIVE)newRound()}
 
 /* ===== MODE ONLINE / MABAR: ronde & kartu SAMA untuk semua pemain di room (server), taruhan 30 dtk, chat global.
    Hemat kuota gratis: poll tiap 3 dtk saat taruhan, sekali saat hasil, 6 dtk di luar itu. ===== */
@@ -390,7 +390,9 @@ if(k=='SIX')l=`🎴 ${nm} SIX TWINS!`;else if(QX[k])l=`🎴 ${nm} ${QX[k]}!`;els
 const col={SIX:'#7df9ff',QQ:'#ff7ad9',TWM:'#ff6b73',QQM:'#ff6b73',MERAH:'#ff6b73',TWB:'#6aa3ff',QQB:'#6aa3ff',BIRU:'#6aa3ff',SERI:'#4ade80',WIN:'#ffd34d',FULL:'#ff7a3d',SUPER:'#ff4d6d',MEGA:'#ffb02e',BIG:'#ffd34d',LINE:'#7dffa0',MINI:'#2fe36b',MINOR:'#29a8ff',MAJOR:'#d84dff',GRAND:'#ffd34d'}[k]||'#ffd34d';
 return{col,html:`${l}<small>+${fmt(Number(e.amt)||0)} • ${t[2]=='Q'?'🎴 di Bandar QQ':t[2]=='1'?'🎁 di scatter mode':'di slot'}</small>`}}
 function gShow(e){GQ.push(e);if(GQ.length>20)GQ.shift()}
-function gFlush(){if(gBusy||!GQ.length)return;gBusy=1;const e=GQ.shift(),p=gText(e),el=$('gan');el.firstChild.style.setProperty('--c',p.col);el.firstChild.innerHTML=p.html;requestAnimationFrame(()=>el.classList.add('on'));sfx('special');setTimeout(()=>{el.classList.remove('on');setTimeout(()=>{gBusy=0},400)},4200)}
+let holdUntil=0,CHH=[];const revealing=()=>LIVE&&(phase=='lock'||phase=='deal'||Date.now()<holdUntil);
+function chFlush(){if(revealing()||!CHH.length)return;CHH.splice(0).forEach(addChat)}
+function gFlush(){chFlush();if(revealing()||gBusy||!GQ.length)return;gBusy=1;const e=GQ.shift(),p=gText(e),el=$('gan');el.firstChild.style.setProperty('--c',p.col);el.firstChild.innerHTML=p.html;requestAnimationFrame(()=>el.classList.add('on'));sfx('special');setTimeout(()=>{el.classList.remove('on');setTimeout(()=>{gBusy=0},400)},4200)}
 const QB=30000,QC=45000,QK=['m','b','t','q','s','qm','qb','tm','tb'],chSeen=new Set();
 const api=(path,body)=>hostCall({t:'qq-api',path,body});
 const eqm=(a,b)=>QK.every(k=>(a[k]||0)===(b[k]||0));
@@ -405,7 +407,7 @@ if(r.ok&&r.j&&r.j.n!==undefined){if(r.j.room===roomI)onState(r.j)}else if(phase!
 function onState(s){skew=s.t-Date.now();
 (s.rooms||[]).forEach((c,i)=>{if(ROOMS[i])ROOMS[i][2]=c});$('onl').textContent=s.onl||1;
 bots.length=0;(s.seats||[]).slice(0,5).forEach(x=>{const a=seatOf(x.name);a[1]=x.bal;bots.push(a)});while(bots.length<5)bots.push(EMPTY());
-(s.chat||[]).forEach(addChat);if(s.feed){if(fSeq>=0)(s.feed.items||[]).forEach(gShow);fSeq=s.feed.last}if(typeof s.clast==='number')chSeq=s.clast;
+(s.chat||[]).forEach(m=>{if(m.name==='📢'&&revealing())CHH.push(m);else addChat(m)});if(s.feed){if(fSeq>=0)(s.feed.items||[]).forEach(gShow);fSeq=s.feed.last}if(typeof s.clast==='number')chSeq=s.clast;
 if(s.hist){tr=s.hist.map(trOf);wantHist=0}
 if(!s.hands){if(curN!==s.n)liveRound(s);else mergePot(s);return}
 if(shownN===s.n)return;shownN=s.n;
