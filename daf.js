@@ -476,7 +476,7 @@ function sanitizeDiag(locked){
     if(!changed)return;
   }
 }
-function plantLine(locked,dcells){
+function plantLine(locked,dcells,an){
   let x=Math.random()*100,L=3;
   for(const [n,w] of DIAG_LEN_W){x-=w;if(x<0){L=n;break}}
   const kind=Math.random()<.4?"H":"D",side="L";
@@ -988,7 +988,17 @@ async function endScatterMode(){
   setMode(false);
   document.getElementById("msg").textContent="Kembali ke mode NORMAL";
 }
-async function spin(isFree=false){
+async function spin(isFree=false){   // pembungkus pengaman: kalau terjadi error, game tidak boleh macet
+  try{return await spinCore(isFree)}
+  catch(e){
+    console.error("Spin error:",e);
+    busy=false;
+    try{const ov=document.getElementById("overlay");ov.classList.remove("show","alarmflash");document.getElementById("cabinet").classList.remove("shake")}catch(_){}
+    try{syncSpinBtn();updateUI();updateBanner();document.getElementById("msg").textContent="Terjadi kesalahan — coba spin lagi"}catch(_){}
+    return 0;
+  }
+}
+async function spinCore(isFree=false){
   if(busy||modalOpen)return 0;
   if(freeSpins>0)isFree=true;
   if(!isFree)clampBet();          // bet otomatis turun kalau chip tidak cukup
