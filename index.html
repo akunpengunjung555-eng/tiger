@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Dragon Animal Fortune — MAX WIN</title>
+<title>DAF Arena</title>
 <style>
 :root{
   --gold:#ffd34d;--gold2:#ff9b16;--red:#8f071a;--red2:#35040d;
@@ -370,6 +370,21 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .jpParticles{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
 
 
+/* ===== LAYAR LOADING (awal buka, masuk game, keluar ke lobi) ===== */
+.ld{position:fixed;inset:0;z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;color:#fff;
+  background:radial-gradient(circle at 50% 0,#b3203f 0,#5a0a1a 38%,#1a0208 80%,#050106 100%);
+  opacity:0;visibility:hidden;pointer-events:none;transition:opacity .35s ease,visibility 0s linear .35s}
+.ld.on{opacity:1;visibility:visible;pointer-events:auto;transition:none}
+.ld .ldIc{font-size:72px;line-height:1;filter:drop-shadow(0 6px 14px #000a);animation:ldPulse 1.1s ease-in-out infinite}
+.ld .ldTt{font-size:clamp(20px,6vw,28px);font-weight:900;letter-spacing:1px;color:#ffe36a;text-shadow:0 2px 0 #000a}
+.ld .ldSub{font-size:13px;letter-spacing:2px;color:#ffe9a6;opacity:.85}
+.ld .ldBar{width:min(260px,70vw);height:10px;border-radius:6px;border:2px solid var(--gold);background:#2a0309;overflow:hidden}
+.ld .ldBar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffb11a,#ffe36a)}
+.ld.on .ldBar i{animation:ldFill var(--d,900ms) cubic-bezier(.2,.7,.3,1) forwards}
+.ld.fin .ldBar i{animation:none;width:100%;transition:width .15s ease}
+@keyframes ldFill{from{width:0}to{width:92%}}
+@keyframes ldPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+
 /* ===== LOBI / BERANDA UTAMA (hub semua game slot) ===== */
 .lobby{position:fixed;inset:0;z-index:95;display:none;flex-direction:column;
   background:radial-gradient(circle at 50% 0,#b3203f 0,#5a0a1a 38%,#1a0208 80%,#050106 100%)}
@@ -414,6 +429,46 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .gCard.soon{--c1:#4a3a3f;--c2:#1b1114;border-color:#8a7a60;box-shadow:none;cursor:default}
 .gCard.soon .gi{filter:grayscale(1) drop-shadow(0 4px 6px #000a);opacity:.55;animation:none}
 .gCard.soon .gPlay{background:#3a2d31;color:#bfae93;text-shadow:none}
+/* ===== THUMBNAIL GAME (revisi: kartu bergambar, kilau, partikel, lencana) ===== */
+.lbGames{grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:620px){.lbGames{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}}
+.gCard{padding:0;justify-content:flex-start;aspect-ratio:auto;min-height:228px;border-radius:18px;isolation:isolate;
+  border:3px solid #ffd34d;box-shadow:0 6px 18px #000a,0 0 20px color-mix(in srgb,var(--c3,#ffb000) 55%,transparent),inset 0 0 0 1px #fff4;
+  animation:gGlow 2.8s ease-in-out infinite alternate;transition:transform .15s}
+.gCard.soon{animation:none;min-height:228px}
+@keyframes gGlow{from{box-shadow:0 6px 18px #000a,0 0 12px color-mix(in srgb,var(--c3,#ffb000) 40%,transparent),inset 0 0 0 1px #fff4}to{box-shadow:0 6px 18px #000a,0 0 28px color-mix(in srgb,var(--c3,#ffb000) 75%,transparent),inset 0 0 0 1px #fff6}}
+.gArt{position:relative;flex:1 1 auto;min-height:128px;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 58%,var(--c3,#ffcf5a) 0,var(--c1) 52%,var(--c2) 100%);border-bottom:3px solid #ffd34d}
+.gRays{position:absolute;left:50%;top:58%;width:260%;aspect-ratio:1;margin:-130% 0 0 -130%;
+  background:repeating-conic-gradient(#ffffff2e 0 9deg,transparent 9deg 18deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0,transparent 55%);mask-image:radial-gradient(circle,#000 0,transparent 55%);
+  animation:gSpin 16s linear infinite}
+@keyframes gSpin{to{transform:rotate(360deg)}}
+.gCard .gArt .gi{position:relative;left:auto;right:auto;top:auto;z-index:2;font-size:clamp(60px,19vw,84px);line-height:1;
+  filter:drop-shadow(0 6px 10px #000b) drop-shadow(0 0 14px var(--c3,#ffcf5a));animation:homeFloat 2.4s ease-in-out infinite alternate}
+.gArt svg{position:relative;z-index:2;width:92%;height:92%;filter:drop-shadow(0 6px 8px #000a);animation:homeFloat 2.8s ease-in-out infinite alternate;overflow:visible}
+.gArt .sp{position:absolute;z-index:3;color:#fff6a8;font-size:15px;text-shadow:0 0 8px #ffd34d;animation:gTwinkle 1.8s ease-in-out infinite}
+.gArt .sp1{left:14%;top:16%}.gArt .sp2{right:15%;top:30%;animation-delay:.6s;font-size:12px}.gArt .sp3{left:24%;bottom:14%;animation-delay:1.1s;font-size:11px}
+@keyframes gTwinkle{0%,100%{opacity:.15;transform:scale(.6) rotate(0)}50%{opacity:1;transform:scale(1.25) rotate(45deg)}}
+.gBadge{position:absolute;z-index:4;left:-1px;top:10px;padding:3px 10px 3px 8px;border-radius:0 10px 10px 0;font-size:11px;font-weight:900;letter-spacing:1px;
+  color:#fff;background:linear-gradient(#ff4d4d,#b30d1f);border:2px solid #ffd34d;border-left:0;text-shadow:0 1px 0 #0008;box-shadow:0 3px 6px #0008}
+.gCard .gInfo{z-index:4}
+.gBody{position:relative;z-index:3;display:flex;flex-direction:column;padding:8px 10px 10px;background:linear-gradient(#00000055,#000000aa)}
+.gCard .gBody b{font-size:15px;color:#fff6c2}
+.gCard .gBody small{margin-top:1px}
+.gCard .gBody .gTick{display:inline-block;align-self:flex-start;margin-top:5px;padding:2px 8px;border-radius:9px;background:#2a0309;border:1px solid #ffd34d88}
+.gCard .gBody .gTick:empty{display:none}
+.gCard .gBody .gPlay{margin-top:7px;padding:8px 0;font-size:14px;letter-spacing:1px;box-shadow:0 3px 0 #8a3a00,0 0 12px #ffb00099}
+.gShine{position:absolute;z-index:5;top:-10%;bottom:-10%;left:-70%;width:38%;pointer-events:none;
+  background:linear-gradient(100deg,transparent,#ffffff55,transparent);transform:skewX(-18deg);animation:gShine 4s ease-in-out infinite}
+@keyframes gShine{0%,55%{left:-70%}100%{left:140%}}
+.gCard.soon .gArt{background:radial-gradient(circle at 50% 58%,#5a4a50 0,#2b1f23 60%,#140c0f 100%);border-bottom-color:#8a7a60}
+.gCard.soon .gRays,.gCard.soon .gShine,.gCard.soon .sp{display:none}
+.gCard.soon .gArt .gi{filter:grayscale(1) drop-shadow(0 4px 6px #000a);opacity:.5;animation:none}
+.gCard.soon .gArt:after{content:"?";position:absolute;z-index:3;right:12%;bottom:8%;font-size:34px;font-weight:900;color:#ffffff40}
+.gCard.soon{border-color:#8a7a60}
+.gCard.soon .gBody b{color:#bfae93}
+
 .lbNav{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(#35040d,#1a0208);border-top:2px solid #d98a1b}
 .lbNav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0;border:0;border-radius:10px;
@@ -603,6 +658,7 @@ body{padding:5px}
 </style>
 </head>
 <body>
+<div id="loader" class="ld on" role="status" aria-live="polite"><div class="ldIc" id="ldIc">🐉</div><div class="ldTt" id="ldTt">DAF ARENA</div><div class="ldSub" id="ldSub">MENYIAPKAN GAME…</div><div class="ldBar"><i></i></div></div>
 <div id="lobby" class="lobby" aria-label="Lobi">
   <div class="lbTop">
     <button id="lbUser" class="lbUser" type="button"><span id="lbAv" class="lbAv">👤</span><span class="lbWho"><b id="lbName">Tamu</b><small id="lbPid">Belum login</small></span></button>
@@ -610,7 +666,7 @@ body{padding:5px}
     <button id="lbLogin" class="ubtn gold" type="button">LOGIN</button>
   </div>
   <div class="lbBody"><div class="lbWrap">
-    <div class="lbHero"><h1>🎰 LOBI GAME 🎰</h1><p>PILIH PERMAINAN</p></div>
+    <div class="lbHero"><h1>🐉 DAF ARENA 🐉</h1><p>LOBI GAME • PILIH PERMAINAN</p></div>
     <button id="lbDaily" class="lbDaily" type="button"><span class="ic">🎁</span><span id="lbDailyTxt"></span></button>
     <div class="lbSec">PERMAINAN</div>
     <div id="lbGames" class="lbGames"></div>
@@ -1653,35 +1709,51 @@ window.addEventListener("storage",e=>{   // izin diubah admin di tab lain
 
 /* ===== LOBI: hub semua game. Tambah game baru = tambah 1 objek di GAMES (lihat contoh "soon") ===== */
 let inGame=null;
+/* ----- layar loading: muncul seketika (menutup perpindahan), lalu memudar setelah game siap ----- */
+const LDEL=document.getElementById("loader");let ldTimer=null;
+function ldShow(icon,title,sub,ms){
+  clearTimeout(ldTimer);
+  document.getElementById("ldIc").textContent=icon;document.getElementById("ldTt").textContent=title;document.getElementById("ldSub").textContent=sub;
+  LDEL.style.setProperty("--d",ms+"ms");LDEL.classList.remove("on","fin");void LDEL.offsetWidth;LDEL.classList.add("on");
+}
+function ldHide(){LDEL.classList.add("fin");ldTimer=setTimeout(()=>LDEL.classList.remove("on","fin"),180)}
+function ldRun(icon,title,sub,min,fn,ready){
+  ldShow(icon,title.toUpperCase(),sub.toUpperCase(),min);
+  const t0=Date.now();let p=null;
+  try{fn();if(ready)p=ready()}catch(e){console.warn(e)}
+  const done=()=>{const w=Math.max(0,min-(Date.now()-t0));ldTimer=setTimeout(ldHide,w)};
+  if(p&&p.then){let fin=false;const go=()=>{if(!fin){fin=true;done()}};p.then(go,go);setTimeout(go,8000)}else done();
+}
 const GAMES=[
-  {id:"daf",name:"Dragon Animal Fortune",tag:"MAX WIN • SOLO & MABAR",icon:"🐉",multi:true,c1:"#b3203f",c2:"#4a0612",live:true,
+  {id:"daf",name:"Dragon Animal Fortune",tag:"MAX WIN • SOLO & MABAR",icon:"🐉",multi:true,c1:"#b3203f",c2:"#4a0612",c3:"#ffb02e",badge:"🔥 HOT",live:true,
    ticker:()=>{const e=document.querySelector("#jp-GRAND strong");return e?"👑 GRAND "+e.textContent:""},
    howto:"• Putar untuk mencocokkan gambar hewan di papan 6×5.<br>• <b>FULL GAMBAR</b>: satu papan penuh gambar sama = hadiah besar.<br>• <b>HORIZONTAL &amp; DIAGONAL</b>: 3–5 gambar sama dari kiri ke kanan.<br>• <b>JACKPOT</b> (MINI/MINOR/MAJOR/GRAND): buka kartu satu per satu dari 12 kartu sampai ada 3 simbol sama = hadiah.<br>• <b>AUTO SPIN</b>: tahan tombol SPIN (atau tekan ▾) lalu pilih 10 / 20 / 50 / 100 / 200 / 500 spin.<br>• Chip habis? Main <b>MODE GRATIS</b> untuk latihan.",
    canExit(){if(busy){setMsg("Tunggu spin selesai dulu");return false}return true},
    onEnter(){unlockAudio();if(voiceOn&&!bgmTimer)startBgm();window.scrollTo(0,0)},
    onExit(){stopAuto();stopBgm();stopVoices();saveGame()}},
-  {id:"qq",name:"Bandar QQ",tag:"DOMINO • MERAH vs BIRU",icon:"🎴",c1:"#0f5132",c2:"#052e1a",live:true,
+  {id:"qq",name:"Bandar QQ",tag:"DOMINO • MERAH vs BIRU",icon:"🎴",c1:"#0f5132",c2:"#052e1a",c3:"#38d481",badge:"🎴 NEW",live:true,
+   art:`<svg viewBox="0 0 160 100" aria-hidden="true"><defs><linearGradient id="qqT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d8cfb8"/></linearGradient></defs><g transform="translate(54 48) rotate(-16)"><rect x="-17" y="-32" width="34" height="64" rx="6" fill="url(#qqT)" stroke="#1a1a1a" stroke-width="2"/><line x1="-17" y1="0" x2="17" y2="0" stroke="#1a1a1a" stroke-width="2"/><g fill="#1a1a1a"><circle cx="-8" cy="-24" r="3.4"/><circle cx="8" cy="-24" r="3.4"/><circle cx="-8" cy="-16" r="3.4"/><circle cx="8" cy="-16" r="3.4"/><circle cx="-8" cy="-8" r="3.4"/><circle cx="8" cy="-8" r="3.4"/></g><g fill="#d3142a"><circle cx="-8" cy="9" r="3.6"/><circle cx="8" cy="9" r="3.6"/><circle cx="-8" cy="24" r="3.6"/><circle cx="8" cy="24" r="3.6"/></g></g><g transform="translate(106 46) rotate(14)"><rect x="-17" y="-32" width="34" height="64" rx="6" fill="url(#qqT)" stroke="#1a1a1a" stroke-width="2"/><line x1="-17" y1="0" x2="17" y2="0" stroke="#1a1a1a" stroke-width="2"/><g fill="#1a1a1a"><circle cx="-8" cy="-24" r="3.4"/><circle cx="8" cy="-24" r="3.4"/><circle cx="0" cy="-16" r="3.4"/><circle cx="-8" cy="-8" r="3.4"/><circle cx="8" cy="-8" r="3.4"/></g><g fill="#d3142a"><circle cx="0" cy="16" r="3.6"/></g></g><g><circle cx="30" cy="86" r="11" fill="#d3142a" stroke="#fff" stroke-width="2"/><circle cx="30" cy="86" r="7" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="130" cy="86" r="11" fill="#1f5fd6" stroke="#fff" stroke-width="2"/><circle cx="130" cy="86" r="7" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="80" cy="90" r="9" fill="#e9b61a" stroke="#fff" stroke-width="2"/><circle cx="80" cy="90" r="5.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="3 3"/></g></svg>`,
    howto:"• Pasang chip ke <b>MERAH</b> atau <b>BIRU</b>. Tiap sisi dapat 2 kartu domino; nilai = jumlah titik, ambil angka satuannya (maks <b>9 = QIU</b>).<br>• <b>MERAH / BIRU</b> bayar 1:1 (seri = taruhan kembali). <b>SERI</b> 1:8.<br>• <b>QIU</b> (satu sisi 9) 1:8 • <b>TWIN</b> (kedua kartu sisi itu balak) 1:15.<br>• <b>QIU QIU</b> (Merah &amp; Biru sama-sama 9) 1:88 • <b>SIX/TWINS</b> (kedua sisi twin) 1:500.<br>• Kartu dikocok &amp; dihitung di server untuk akun login.",
-   onEnter(){qqOpen()},onExit(){qqClose()}},
+   onEnter(){qqOpen()},onExit(){qqClose()},
+   ready:()=>new Promise(res=>{const f=qqFrame();if(f)f.addEventListener("load",res,{once:true});else res()})},
   {id:"soon1",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎰",live:false},
   {id:"soon2",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎲",live:false}
 ];
 function renderGames(){
+  const sp='<span class="sp sp1">✦</span><span class="sp sp2">✦</span><span class="sp sp3">✦</span>';
   document.getElementById("lbGames").innerHTML=GAMES.map(g=>g.live
-    ?`<button class="gCard" type="button" style="--c1:${g.c1};--c2:${g.c2}" data-g="${g.id}"><span class="gInfo" data-info="${g.id}">i</span><span class="gi">${g.icon}</span><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gTick" data-tick="${g.id}"></span><span class="gPlay">▶ MAIN</span></button>`
-    :`<div class="gCard soon"><span class="gi">${g.icon}</span><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gPlay">🔒 SEGERA</span></div>`).join("");
+    ?`<button class="gCard" type="button" style="--c1:${g.c1};--c2:${g.c2};--c3:${g.c3||"#ffcf5a"}" data-g="${g.id}"><span class="gArt"><span class="gRays"></span>${g.art||`<span class="gi">${g.icon}</span>`}${sp}</span>${g.badge?`<span class="gBadge">${esc(g.badge)}</span>`:""}<span class="gInfo" data-info="${g.id}">i</span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gTick" data-tick="${g.id}"></span><span class="gPlay">▶ MAIN</span></span><span class="gShine"></span></button>`
+    :`<div class="gCard soon"><span class="gArt"><span class="gi">${g.icon}</span></span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gPlay">🔒 SEGERA</span></span></div>`).join("");
 }
 function openGame(id){
   const g=GAMES.find(x=>x.id===id);if(!g||!g.live)return;
-  hideLobby();inGame=id;
-  if(g.onEnter)g.onEnter();
+  try{unlockAudio()}catch(e){}
+  ldRun(g.icon,g.name,"Memuat game…",900,()=>{hideLobby();inGame=id;if(g.onEnter)g.onEnter()},g.ready);
 }
 function exitGame(){
   const g=GAMES.find(x=>x.id===inGame);if(!g)return;
   if(g.canExit&&!g.canExit())return;
-  roomLeave();
-  if(g.onExit)g.onExit();
-  inGame=null;showLobby();
+  ldRun("🏠","DAF Arena","Kembali ke lobi…",600,()=>{roomLeave();if(g.onExit)g.onExit();inGame=null;showLobby()});
 }
 let lbTimer=null;
 function realChips(){return (freeMode&&stash)?stash.balance:balance}
@@ -2217,7 +2289,8 @@ document.getElementById("rpCopy").addEventListener("click",()=>{if(!R)return;con
 document.querySelector(".rpReact").addEventListener("click",e=>{const b=e.target.closest("[data-r]");if(b)roomReact(b.dataset.r)});
 window.addEventListener("beforeunload",()=>{if(R){try{R.rt.drop(R.uid)}catch(e){}}});
 makeBoard=function(){seedResult("normal",true);render(false)}; // initial board
-seedResult("normal",true);render(false);updateUI();renderFullTable();loadPhotos();fbInit();loadSettings();showLobby();initAccount();   // buka di LOBI; modal login (jika perlu) muncul di atas lobi
+seedResult("normal",true);render(false);updateUI();renderFullTable();loadPhotos();fbInit();loadSettings();showLobby();initAccount();
+(function(){const t0=Date.now();let d=false;const hide=()=>{if(!d){d=true;ldHide()}},fin=()=>setTimeout(hide,Math.max(0,1000-(Date.now()-t0)));if(document.readyState==="complete")fin();else window.addEventListener("load",fin,{once:true});setTimeout(hide,6000)})();   // loading awal   // buka di LOBI; modal login (jika perlu) muncul di atas lobi
 </script>
 </body>
 </html>
