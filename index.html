@@ -2235,7 +2235,7 @@ async function gPoll(){
   const first=G.seq<0;
   if(typeof r.j.last==="number")G.seq=r.j.last;   // server menjamin nomor tidak mundur
   if(first)return;   // panggilan pertama hanya menandai posisi: jackpot lama tidak ditampilkan
-  (r.j.items||[]).forEach(it=>{if(String(it.uid)!==String(acct.id))gToast({name:it.name,tier:it.tier,amt:it.amt,av:animals[(parseInt(it.uid,10)||0)%animals.length].e})});
+  (r.j.items||[]).forEach(it=>{if(inGame!=="qq"&&String(it.uid)!==String(acct.id))gToast({name:it.name,tier:it.tier,amt:it.amt,av:animals[(parseInt(it.uid,10)||0)%animals.length].e})});
 }
 async function globalStart(){
   if(acct&&acct.server){

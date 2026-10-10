@@ -120,6 +120,8 @@ button{touch-action:manipulation}
 .cpl div{margin:2px 0;word-break:break-word}.cpl b{color:#ffd34d}.cpl .sy{opacity:.6}
 .cpi{display:flex;gap:6px;padding:8px}.cpi input{flex:1;min-width:0;border-radius:8px;border:1px solid #fff4;background:#0008;color:#fff;padding:8px;font-size:14px}
 .cpi button{border:0;border-radius:8px;background:#ffd34d;color:#000;font-weight:900;padding:0 14px}
+.gan{position:fixed;left:0;right:0;top:0;z-index:300;display:flex;justify-content:center;pointer-events:none;opacity:0;transform:translateY(-100%);transition:transform .35s,opacity .35s}.gan.on{opacity:1;transform:none}
+.gan div{width:min(480px,100%);box-sizing:border-box;padding:7px 12px;border-bottom:3px solid var(--c,#ffd34d);background:#240335;color:#fff;text-align:center;font-size:15px;line-height:1.3}.gan b{color:var(--c,#ffd34d)}.gan small{display:block;font-size:12px;color:#ddd}
 </style></head><body><div class="app">
 <div class="bar"><span class="pill">🪙 <span id="coin"></span></span><span class="pill" id="room"></span><span class="pill">👥 <span id="onl">309</span></span><span style="display:flex;gap:6px"><button class="ib" id="chb" style="display:none">💬<b id="chd" style="display:none;color:#ff5a5a;font-size:9px">●</b></button><button class="ib" id="trb">📈</button><button class="ib" id="gear">⚙️</button></span></div>
 <div class="tp" id="tp"><div id="stat"></div><div class="tl" id="tl"></div></div>
@@ -157,6 +159,7 @@ button{touch-action:manipulation}
 <div class="row"><button class="btn" id="auto"></button><button class="btn" id="redo">🔁 Ulang</button><button class="btn" id="dbl">✖2</button><button class="btn" id="undo">Batal</button></div>
 <div class="note">Koin virtual untuk hiburan, tanpa deposit atau penarikan.</div>
 </div>
+<div class="gan" id="gan"><div></div></div>
 <div class="cp" id="cp"><div class="cph"><b>💬 Chat Global</b><button class="ib" id="cx">✕</button></div><div class="cpl" id="cpl"></div><div class="cpi"><input id="ci" maxlength="120" placeholder="Tulis pesan..." autocomplete="off"><button id="cs">Kirim</button></div></div>
 <div class="rs" id="rs"><div class="rt" id="rt"></div><div class="rh r" id="rr"></div><div class="rh b" id="rbb"></div><div class="rx" id="rx"></div></div>
 <div class="ov" id="ovL"><div class="box"><h3>Lobi</h3><div id="rooms"></div><div class="note" style="text-align:left;margin:6px 0 10px;opacity:.75;font-size:10px">Qiu Qiu menang jika Merah dan Biru sama-sama Qiu (9), Six Twins jika keduanya Twin. Payout Seri dan Qiu masih perkiraan.</div><button class="btn" onclick="ovL.style.display='none'">Tutup</button></div></div>
@@ -269,11 +272,12 @@ const zEl=k=>_zr[k]?_zr[k].el:document.querySelector(`[data-z="${k}"]`),aEl=i=>d
 function place(k,i,c){fly(aEl(i),zEl(k),c,520);sfx('chip',i=='me'?1:.5)}
 $('tbl').onclick=e=>{const b=e.target.closest('[data-z]');if(!b||phase!='bet')return;const k=b.dataset.z;
 if(!fitSel()){$('msg').textContent='Koin tidak cukup untuk taruhan minimum.';return}
+if(LIVE){betDo(m=>{const t={...m};t[k]=(t[k]||0)+sel;return t});return}
 const c=CH.find(x=>x[0]==sel)[2];place(k,'me',c);
-coins-=sel;mine[k]=(mine[k]||0)+sel;pot[k]=(pot[k]||0)+sel;syncBet();fitSel();setTimeout(draw,0)};
+coins-=sel;mine[k]=(mine[k]||0)+sel;pot[k]=(pot[k]||0)+sel;fitSel();setTimeout(draw,0)};
 $('chips').onclick=e=>{if(e.target.closest('.me')){react('me',['😎','😂','🔥','👏','😍'][rc++%5]);sfx('heart',.6);return}const b=e.target.closest('[data-v]');if(b){sel=+b.dataset.v;draw()}};
 $('auto').onclick=()=>{auto=!auto;draw()};
-$('undo').onclick=()=>{if(phase!='bet')return;for(const k in mine){coins+=mine[k];pot[k]-=mine[k]}mine={};syncBet();draw()};
+$('undo').onclick=()=>{if(phase!='bet')return;if(LIVE){betDo(()=>({}));return}for(const k in mine){coins+=mine[k];pot[k]-=mine[k]}mine={};draw()};
 $('gift').onclick=()=>{if(coins>=5e4){coins-=5e4;$('msg').textContent='Hadiah ❤️ terkirim ke bandar!';sfx('heart');say('Terima kasih atas hadiahnya');draw()}};
 $('gear').onclick=e=>{e.stopPropagation();$('menu').style.display=$('menu').style.display=='block'?'none':'block'};
 document.body.addEventListener('click',()=>{$('menu').style.display='none';$('tp').style.display='none'});
@@ -318,8 +322,8 @@ shower(48)}
 function shower(n){for(let i=0;i<n;i++)setTimeout(()=>{const e=document.createElement('div');e.className='chip3d fl';e.style.cssText=`--c:#d4a017;--s:${14+Math.random()*10}px;left:${Math.random()*innerWidth}px;top:-30px;z-index:45`;document.body.appendChild(e);e.animate([{transform:'translate(0,0) rotate(0)'},{transform:`translate(${Math.random()*80-40}px,${innerHeight+40}px) rotate(${Math.random()*720}deg)`}],{duration:1400+Math.random()*900,easing:'cubic-bezier(.3,.1,.7,.6)'}).onfinish=()=>e.remove()},i*40)}
 let rc=0;const react=(i,e)=>floatText(e,'#fff',aEl(i),34);
 function addBet(k,amt){if(coins<amt)return false;coins-=amt;mine[k]=(mine[k]||0)+amt;pot[k]=(pot[k]||0)+amt;return true}
-$('redo').onclick=()=>{if(phase!='bet'||!last)return;let i=0;for(const k in last)if(addBet(k,last[k])){const z=k;setTimeout(()=>place(z,'me','#d4a017'),i++*120)}syncBet();draw()};
-$('dbl').onclick=()=>{if(phase!='bet')return;let i=0;for(const k of Object.keys(mine)){const z=k;if(addBet(k,mine[k]))setTimeout(()=>place(z,'me','#2563eb'),i++*120)}syncBet();draw()};
+$('redo').onclick=()=>{if(phase!='bet'||!last)return;if(LIVE){betDo(m=>{const t={...m};for(const k in last)t[k]=(t[k]||0)+last[k];return t});return}let i=0;for(const k in last)if(addBet(k,last[k])){const z=k;setTimeout(()=>place(z,'me','#d4a017'),i++*120)}draw()};
+$('dbl').onclick=()=>{if(phase!='bet')return;if(LIVE){betDo(m=>{const t={};for(const k in m)t[k]=m[k]*2;return t});return}let i=0;for(const k of Object.keys(mine)){const z=k;if(addBet(k,mine[k]))setTimeout(()=>place(z,'me','#2563eb'),i++*120)}draw()};
 function showTrend(){
 const col=w=>w=='m'?'#e5484d':w=='b'?'#3b82f6':'#16a34a';
 $('tl').innerHTML=tr.slice(-14).reverse().map(r=>{const rg=k=>r.w=='t'?' t':r.w==k?' w':'';return `<span class="cl"><i class="l">${r.vr==9?'Q':r.tm?'T':''}</i><span class="dot m${rg('m')}">${r.vr}</span><span class="dot b${rg('b')}">${r.vb}</span><i class="r">${r.vb==9?'Q':r.tb?'T':''}</i></span>`}).join('')||'<span style="opacity:.6">-</span>'}
@@ -379,6 +383,13 @@ pot={};phase='end';if(ERRM){$('msg').textContent='⚠ '+ERRM+' — taruhan tidak
 /* ===== MODE ONLINE / MABAR: ronde & kartu SAMA untuk semua pemain di room (server), taruhan 30 dtk, chat global.
    Hemat kuota gratis: poll tiap 3 dtk saat taruhan, sekali saat hasil, 6 dtk di luar itu. ===== */
 let LIVE=false,curN=-1,shownN=-1,skew=0,lastPoll=0,polling=0,hbT=0,chSeq=0,chUnread=0,sbT=0,sbBusy=0,sbDirty=0,oth={},wantHist=1,lastSec=-1,lvTimer=0;
+let fSeq=-1;const GQ=[];let gBusy=0;
+function gText(e){const t=String(e.tier||'').split('|'),k=t[0].replace(/[^A-Z]/g,''),nm='<b>'+String(e.name||'?').replace(/[^A-Za-z0-9_]/g,'').slice(0,12)+'</b>';let l;
+if(k=='SIX')l=`🎴 ${nm} SIX TWINS!`;else if(k=='QQ')l=`🎴 ${nm} QIU QIU!`;else if(k=='WIN'||k=='LINE')l=`🏆 ${nm} MENANG BESAR`;else if(k=='FULL')l=`🖼️ ${nm} FULL GAMBAR`;else if(k=='SUPER'||k=='MEGA'||k=='BIG')l=`🏆 ${nm} ${k} WIN`;else l=`👑 ${nm} JACKPOT KARTU <b>${k.slice(0,6)}</b>`;
+const col={SIX:'#7df9ff',QQ:'#ff7ad9',WIN:'#ffd34d',FULL:'#ff7a3d',SUPER:'#ff4d6d',MEGA:'#ffb02e',BIG:'#ffd34d',LINE:'#7dffa0',MINI:'#2fe36b',MINOR:'#29a8ff',MAJOR:'#d84dff',GRAND:'#ffd34d'}[k]||'#ffd34d';
+return{col,html:`${l}<small>+${fmt(Number(e.amt)||0)} • ${t[2]=='Q'?'🎴 di Bandar QQ':t[2]=='1'?'🎁 di scatter mode':'di slot'}</small>`}}
+function gShow(e){GQ.push(e);if(GQ.length>4)GQ.shift()}
+function gFlush(){if(gBusy||!GQ.length||phase=='deal'||phase=='lock')return;gBusy=1;const e=GQ.shift(),p=gText(e),el=$('gan');el.firstChild.style.setProperty('--c',p.col);el.firstChild.innerHTML=p.html;requestAnimationFrame(()=>el.classList.add('on'));sfx('special');setTimeout(()=>{el.classList.remove('on');setTimeout(()=>{gBusy=0},400)},4200)}
 const QB=30000,QC=45000,QK=['m','b','t','q','s','qm','qb','tm','tb'],chSeen=new Set();
 const api=(path,body)=>hostCall({t:'qq-api',path,body});
 const eqm=(a,b)=>QK.every(k=>(a[k]||0)===(b[k]||0));
@@ -388,12 +399,12 @@ const EMPTY=()=>['—',0,'#5a4a6a','#222','#333',1];
 const trOf=h=>{const vr=val(h.r),vb=val(h.b);return{w:vr>vb?'m':vb>vr?'b':'t',q:vr==9||vb==9,tw:twin(h.r)||twin(h.b),tm:twin(h.r),tb:twin(h.b),vr,vb}};
 function liveStart(){LIVE=true;bots.length=0;for(let i=0;i<5;i++)bots.push(EMPTY());$('gift').style.display='none';$('chb').style.display='';ROOMS.forEach(r=>r[2]=0);phase='wait';$('msg').textContent='Menghubungkan ke meja...';draw();lvTimer=setInterval(liveTick,250);poll()}
 async function poll(){if(polling)return;polling=1;lastPoll=Date.now();const hb=Date.now()-hbT>12000;if(hb)hbT=Date.now();
-const r=await api('/qq/state',{room:roomI,since:chSeq,hb:hb?1:0,h:wantHist});polling=0;
-if(r.ok&&r.j&&r.j.n!==undefined&&r.j.room===roomI)onState(r.j)}
+const r=await api('/qq/state',{room:roomI,since:chSeq,fs:fSeq,hb:hb?1:0,h:wantHist});polling=0;
+if(r.ok&&r.j&&r.j.n!==undefined){if(r.j.room===roomI)onState(r.j)}else if(phase!='deal')$('msg').textContent='⚠ '+((r.j&&r.j.error)||'Server tidak merespons')+' (mencoba lagi...)'}
 function onState(s){skew=s.t-Date.now();
 (s.rooms||[]).forEach((c,i)=>{if(ROOMS[i])ROOMS[i][2]=c});$('onl').textContent=s.onl||1;
 bots.length=0;(s.seats||[]).slice(0,5).forEach(x=>{const a=seatOf(x.name);a[1]=x.bal;bots.push(a)});while(bots.length<5)bots.push(EMPTY());
-(s.chat||[]).forEach(addChat);if(typeof s.clast==='number')chSeq=s.clast;
+(s.chat||[]).forEach(addChat);if(s.feed){if(fSeq>=0)(s.feed.items||[]).forEach(gShow);fSeq=s.feed.last}if(typeof s.clast==='number')chSeq=s.clast;
 if(s.hist){tr=s.hist.map(trOf);wantHist=0}
 if(!s.hands){if(curN!==s.n)liveRound(s);else mergePot(s);return}
 if(shownN===s.n)return;shownN=s.n;
@@ -402,14 +413,14 @@ else{phase='wait';$('msg').textContent='Ronde sedang berjalan... tunggu ronde be
 function liveRound(s){gen++;curN=s.n;if(SS)speechSynthesis.cancel();phase='bet';vt=0;mine={...s.mine};win={};H=null;oth={};pot={};
 for(const k of QK){oth[k]=(s.pot[k]||0)-(mine[k]||0);pot[k]=s.pot[k]||0}coins=s.balance;
 $('hr').innerHTML=$('hbl').innerHTML='';$('lr').textContent='MERAH';$('lb').textContent='BIRU';
-if(auto&&last&&!Object.keys(mine).length){let tot=0;for(const k in last)tot+=last[k];if(coins>=tot){coins-=tot;for(const k in last){mine[k]=last[k];pot[k]=(pot[k]||0)+last[k]}syncBet()}}
+if(auto&&last&&!Object.keys(mine).length)betDo(()=>({...last}));
 $('msg').textContent='Pasang taruhan! Tap zona untuk menaruh chip.';lastSec=-1;sfx('start');setTimeout(()=>say('Silakan pasang taruhan'),300);draw()}
-function mergePot(s){const sm=s.mine||{},np={};let c=0;
-for(const k of QK){const o=(s.pot[k]||0)-(sm[k]||0);np[k]=o+(mine[k]||0);
+function mergePot(s){const sm=s.mine||{},np={},idle=!bqBusy&&!pendFns.length;let c=0;
+for(const k of QK){const o=(s.pot[k]||0)-(sm[k]||0);
 if(o>(oth[k]||0)&&phase=='bet'&&c++<3){const ix=bots.map((b,i)=>b[5]?-1:i).filter(i=>i>=0);if(ix.length)place(k,ix[Math.random()*ix.length|0],CH[1+(Math.random()*5|0)][2])}
-oth[k]=o}
-pot=np;if(!sbBusy&&!sbDirty&&eqm(sm,mine))coins=s.balance;draw()}
-function liveTick(){if(!LIVE)return;
+oth[k]=o;np[k]=o+(idle?(sm[k]||0):(mine[k]||0))}
+pot=np;if(idle){mine={...sm};coins=s.balance}draw()}
+function liveTick(){if(!LIVE)return;gFlush();
 const sn=Date.now()+skew,n=Math.floor(sn/QC),st=n*QC,left=st+QB-sn,sec=Math.max(0,Math.ceil(left/1000)),age=Date.now()-lastPoll;
 if(left>0){$('tm').textContent=sec;$('tm').classList.toggle('urgent',sec<=5&&sec>0);
 if(phase=='bet'&&sec!==lastSec){lastSec=sec;if(sec<=5&&sec>0)sfx('warn',sec);if(sec==3)say('Waktu hampir habis')}
@@ -417,14 +428,23 @@ if(curN!==n?age>500:age>3000)poll()}
 else{if(phase=='bet'){phase='lock';sfx('end');$('msg').textContent='Taruhan ditutup. Membuka kartu...';draw()}
 $('tm').classList.remove('urgent');$('tm').textContent=phase=='wait'?Math.ceil((st+QC-sn)/1000):0;
 if(phase=='lock'?(age>1200&&left<-250):age>6000)poll()}}
-function syncBet(){if(!LIVE)return;sbDirty=1;clearTimeout(sbT);sbT=setTimeout(doSync,250)}
-async function doSync(){if(sbBusy){sbT=setTimeout(doSync,200);return}
-sbDirty=0;sbBusy=1;const n=curN,sent={...mine};const r=await api('/qq/bet',{room:roomI,n,bets:sent});sbBusy=0;
-if(n!==curN||!LIVE)return;const j=r.j||{};
-if(r.ok){if(!sbDirty&&eqm(sent,mine)&&typeof j.balance==='number')coins=j.balance}
-else if(r.status===0){setTimeout(syncBet,1500);return}
-else{if(r.status===401)return;if(j.mine){mine={...j.mine};for(const k of QK)pot[k]=(oth[k]||0)+(mine[k]||0)}if(typeof j.balance==='number')coins=j.balance;$('msg').textContent='⚠ '+(j.error||'Taruhan gagal')}
+/* TARUHAN: chip baru muncul & koin baru berkurang SETELAH server mengonfirmasi. Tampilan selalu mengikuti data server. */
+let bqBusy=0,pendFns=[];
+function betDo(fn){pendFns.push(fn);if(!bqBusy)betFlush()}
+async function betFlush(){if(bqBusy)return;bqBusy=1;
+while(pendFns.length){const fns=pendFns.splice(0),n=curN;let t={...mine};for(const f of fns)t=f(t);for(const k of Object.keys(t))if(!(t[k]>0))delete t[k];
+if(eqm(t,mine))continue;
+$('msg').textContent='⏳ Mengirim taruhan...';
+const r=await api('/qq/bet',{room:roomI,n,bets:t});
+if(n!==curN||!LIVE){pendFns.length=0;break}
+const j=r.j||{},old=mine;
+if(r.ok){mine={...j.mine};if(typeof j.balance==='number')coins=j.balance;
+for(const k of QK){pot[k]=(oth[k]||0)+(mine[k]||0);if((mine[k]||0)>(old[k]||0))place(k,'me','#d4a017')}
+if(phase=='bet')$('msg').textContent='Pasang taruhan! Tap zona untuk menaruh chip.'}
+else{if(j.mine){mine={...j.mine};for(const k of QK)pot[k]=(oth[k]||0)+(mine[k]||0)}if(typeof j.balance==='number')coins=j.balance;
+pendFns.length=0;$('msg').textContent='⚠ '+(r.status===0?'Koneksi bermasalah':(j.error||'Gagal'))+' - taruhan TIDAK masuk';if(r.status===0){lastPoll=0}}
 draw()}
+bqBusy=0}
 function addChat(m){if(chSeen.has(m.seq))return;chSeen.add(m.seq);const d=document.createElement('div'),b=document.createElement('b');b.textContent=m.name+': ';d.appendChild(b);d.appendChild(document.createTextNode(m.msg));const l=$('cpl');l.appendChild(d);while(l.children.length>60)l.removeChild(l.firstChild);l.scrollTop=l.scrollHeight;
 if($('cp').style.display!='flex'){chUnread++;$('chd').style.display=''}}
 function sysChat(t){const d=document.createElement('div');d.className='sy';d.textContent=t;$('cpl').appendChild(d);$('cpl').scrollTop=1e9}
