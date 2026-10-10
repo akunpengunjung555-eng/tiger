@@ -949,7 +949,11 @@ function updateUserBar(){
   document.getElementById("nvSend").hidden=!canSend();   // tombol KIRIM hanya untuk admin & akun yang didaftarkan admin
 }
 let inboxNote="";
-function applyAcct(a){
+function applyAcct(a){   // semua jalur ganti/masuk akun lewat sini -> tampilkan loading (kecuali saat loading awal)
+  if(ldBootActive){applyAcctCore(a);return}
+  ldRun(a.admin?"👑":avatarOf(a),a.admin?"Admin":a.name,"Memuat akun…",800,()=>applyAcctCore(a));
+}
+function applyAcctCore(a){
   if(!a.admin){if(!(a.luck>0))a.luck=genLuck();if(!(a.gv>0))a.gv=+(0.6+Math.random()).toFixed(2)}
   acct=a;freeMode=false;stash=null;BET_STEP=REAL_STEP;
   try{globalStart()}catch(_){}
@@ -1007,15 +1011,15 @@ async function loginAdmin(){
   const u=document.getElementById("admUser").value.trim(),p=document.getElementById("admPass").value,er=document.getElementById("admErr");
   if(!u||!p){er.textContent="Isi username dan password";return}
   if(busy){er.textContent="Tunggu spin selesai dulu";return}
-  er.textContent="Memeriksa…";
+  er.textContent="Memeriksa…";ldShow("👑","ADMIN","MEMERIKSA…",2500);
   let r,j={};
   try{
     const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);
     r=await fetch(API_URL+"/admin/login",{method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json"},body:JSON.stringify({user:u,pass:p})});
     clearTimeout(tm);
     j=await r.json().catch(()=>({}));
-  }catch(e){er.textContent="Server tidak terjangkau, coba lagi";return}
-  if(!r.ok||!j.token){er.textContent=j.error||"Username atau password salah";return}
+  }catch(e){ldHide();er.textContent="Server tidak terjangkau, coba lagi";return}
+  if(!r.ok||!j.token){ldHide();er.textContent=j.error||"Username atau password salah";return}
   admToken=j.token;
   unlockAudio();
   stopAuto();
@@ -1136,9 +1140,9 @@ function openLogin(){
 async function doLogin(){
   const q=document.getElementById("lgUser").value.trim(),pw=document.getElementById("lgPass").value;
   if(!q||!pw){pwErr("Isi username/ID dan kata sandi");return}
-  pwErr("Memeriksa…");
+  pwErr("Memeriksa…");ldShow("🔑","MASUK","MEMERIKSA AKUN…",2500);
   const r=await apiCall("/login",{user:q,pass:pw});
-  if(!r.ok||!r.j.token){pwErr(r.j.error||"Gagal masuk");return}
+  if(!r.ok||!r.j.token){ldHide();pwErr(r.j.error||"Gagal masuk");return}
   LS.set("daf_token",r.j.token);
   enterAcct(srvAcct(r.j.account));
 }
@@ -1158,9 +1162,9 @@ async function doRegister(){
   if(!NAME_RE.test(u)||/^\d{8}$/.test(u)){pwErr("Username 3–12 karakter: huruf, angka, atau _ (bukan 8 digit angka)");return}
   if(p1.length<4){pwErr("Kata sandi minimal 4 karakter");return}
   if(p1!==p2){pwErr("Ulangi kata sandi tidak sama");return}
-  pwErr("Mendaftar…");
+  pwErr("Mendaftar…");ldShow("➕","DAFTAR","MEMBUAT AKUN…",2500);
   const r=await apiCall("/register",{name:u,pass:p1});
-  if(!r.ok||!r.j.token){pwErr(r.j.error||"Gagal mendaftar");return}
+  if(!r.ok||!r.j.token){ldHide();pwErr(r.j.error||"Gagal mendaftar");return}
   LS.set("daf_token",r.j.token);
   enterAcct(srvAcct(r.j.account));
 }
@@ -1206,9 +1210,7 @@ function resetSession(text){
 }
 function logout(){
   if(busy){setMsg("Tunggu spin selesai dulu");return}
-  LS.del("daf_token");
-  resetSession("Keluar dari akun");
-  openWelcome();
+  ldRun("🚪","Keluar akun","Menyimpan data…",700,()=>{LS.del("daf_token");resetSession("Keluar dari akun");openWelcome()});
 }
 function openDeleteConfirm(){
   if(!acct||isAdmin())return;
@@ -1708,7 +1710,7 @@ window.addEventListener("storage",e=>{   // izin diubah admin di tab lain
 
 
 /* ===== LOBI: hub semua game. Tambah game baru = tambah 1 objek di GAMES (lihat contoh "soon") ===== */
-let inGame=null;
+let inGame=null,ldBootActive=true;
 /* ----- layar loading: muncul seketika (menutup perpindahan), lalu memudar setelah game siap ----- */
 const LDEL=document.getElementById("loader");let ldTimer=null;
 function ldShow(icon,title,sub,ms){
@@ -2290,7 +2292,7 @@ document.querySelector(".rpReact").addEventListener("click",e=>{const b=e.target
 window.addEventListener("beforeunload",()=>{if(R){try{R.rt.drop(R.uid)}catch(e){}}});
 makeBoard=function(){seedResult("normal",true);render(false)}; // initial board
 seedResult("normal",true);render(false);updateUI();renderFullTable();loadPhotos();fbInit();loadSettings();showLobby();initAccount();
-(function(){const t0=Date.now();let d=false;const hide=()=>{if(!d){d=true;ldHide()}},fin=()=>setTimeout(hide,Math.max(0,1000-(Date.now()-t0)));if(document.readyState==="complete")fin();else window.addEventListener("load",fin,{once:true});setTimeout(hide,6000)})();   // loading awal   // buka di LOBI; modal login (jika perlu) muncul di atas lobi
+(function(){const t0=Date.now();let d=false;const hide=()=>{if(!d){d=true;ldBootActive=false;ldHide()}},fin=()=>setTimeout(hide,Math.max(0,1000-(Date.now()-t0)));if(document.readyState==="complete")fin();else window.addEventListener("load",fin,{once:true});setTimeout(hide,6000)})();   // loading awal   // buka di LOBI; modal login (jika perlu) muncul di atas lobi
 </script>
 </body>
 </html>
