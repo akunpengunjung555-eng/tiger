@@ -165,7 +165,7 @@ h2:after{content:"";flex:1;height:2px;border-radius:2px;background:linear-gradie
 .hnote{text-align:center;color:#ffd9a8aa;font-size:11px;padding:4px 10px 14px}
 @media(prefers-reduced-motion:reduce){.hc,.hc:before,.hc:after,.hc .hi,#v.tin,#hFrame{animation:none!important}}
 </style><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script></head><body><div class="app">
-<header><h1>🐾 DAF Pets</h1><div class="row"><button class="b gd" data-a="daily">🎁 Harian</button><div class="chips">🪙 <b id="chips">0</b></div></div></header>
+<header><h1>🐾 DAF Pets</h1><div class="row"><button class="b" id="bgmBtn" aria-label="Musik" style="min-width:40px;padding:6px 8px">🔊</button><button class="b gd" data-a="daily">🎁 Harian</button><div class="chips">🪙 <b id="chips">0</b></div></div></header>
 <button class="hunt" id="huntBtn"><i>🎯</i><span>Tempat Berburu Chip<small>Main game lain untuk menambah chip</small></span><em>›</em></button><div class="net" id="net"></div>
 <nav><button data-t="kandang"><i>🏡</i>Kandang</button><button data-t="toko"><i>🛒</i>Toko</button><button data-t="lelang"><i>🔨</i>Lelang</button><button data-t="hadiah"><i>🎁</i>Misi &amp; Hadiah</button></nav>
 <section id="yard" hidden><div class="hint">Geser: putar kamera · Ketuk hewan: elus · Ketuk 🪙: ambil</div><div id="bowl" data-a="feedAll">🥣<small>Beri makan</small></div></section>
@@ -229,18 +229,37 @@ const H={open:false,game:null};
 function hLoad(on,sub,ic,tt){const l=$('#hLoad'),b=$('#hBar');l.classList.toggle('on',!!on);b.classList.remove('go');if(on){$('#hIc').textContent=ic||'🎯';$('#hTt').textContent=(tt||'Tempat Berburu Chip').toUpperCase();$('#hSub').textContent=sub||'Memuat…';$('#hTip').textContent=rnd(HTIPS);void b.offsetWidth;b.classList.add('go')}}
 function hPick(){const f=$('#hFrame');f.onload=null;f.src='about:blank';f.hidden=true;H.game=null;$('#hGame').textContent='Pilih game';
  const p=$('#hPick');p.hidden=false;p.innerHTML='<div class="hhero"><b>🎯 CARI CHIP, BAWA PULANG</b><small>Menang di game, chip langsung masuk ke saldo Pets</small></div>'+GM.map((g,i)=>`<button class="hc" data-hg="${g.id}" style="--c1:${g.c};--c2:${g.d};--bc:${g.b};--n:${i}"><i class="hi">${g.img?`<img src="${g.img}" alt="">`:g.e}</i><span class="ht"><b>${g.n}</b><small>${g.s}</small><u class="go">MAIN SEKARANG ›</u></span></button>`).join('')+'<div class="hnote">Tombol ← di kiri atas membawamu kembali ke kandang</div>'}
-function huntOpen(){if(H.open||XB)return;xSwap('🎯','Tempat Berburu Chip','Membuka tempat berburu…',async()=>{H.open=true;$('#hunt').hidden=false;document.body.style.overflow='hidden';hPick();await netFlush()},650)}
+function huntOpen(){if(H.open||XB)return;xSwap('🎯','Tempat Berburu Chip','Membuka tempat berburu…',async()=>{H.open=true;bgmStop();$('#hunt').hidden=false;document.body.style.overflow='hidden';hPick();await netFlush()},650)}
 async function huntPlay(id){if(H.game)return;const g=GM.find(x=>x.id===id);if(!g)return;H.game=id;
  hLoad(true,'Memuat '+g.n+'…',g.e,g.n);await netFlush();if(H.game!==id)return;
  const f=$('#hFrame'),t0=Date.now();
  await new Promise(res=>{let d=0;const go=()=>{if(!d){d=1;res()}};f.onload=go;setTimeout(go,12000);f.src='index.html?g='+id+'&embed=1'});
  await sleep(Math.max(0,900-(Date.now()-t0)));if(H.game!==id)return;
  $('#hPick').hidden=true;f.hidden=false;$('#hGame').textContent=g.e+' '+g.n;hLoad(false)}
-function huntBack(){if(XB)return;if(H.game){xSwap('🎯','Tempat Berburu Chip','Kembali ke daftar game…',async()=>{hPick();await netFlush()},600)}else{xSwap('🐾','DAF Pets','Kembali ke kandang…',async()=>{$('#hunt').hidden=true;H.open=false;document.body.style.overflow='';await netFlush();R()},650)}}
+function huntBack(){if(XB)return;if(H.game){xSwap('🎯','Tempat Berburu Chip','Kembali ke daftar game…',async()=>{hPick();await netFlush()},600)}else{xSwap('🐾','DAF Pets','Kembali ke kandang…',async()=>{$('#hunt').hidden=true;H.open=false;document.body.style.overflow='';bgmStart();await netFlush();R()},650)}}
 document.addEventListener('click',e=>{const lg=e.target.closest('a[href="index.html"]');if(lg&&HOST){e.preventDefault();return toP({t:'pets-login'})}if(e.target.closest('#huntBtn'))return HOST?toP({t:'pets-hunt'}):huntOpen();if(e.target.closest('#hBack'))return huntBack();const g=e.target.closest('[data-hg]');if(g)huntPlay(g.dataset.hg)});
 addEventListener('message',e=>{const f=$('#hFrame');if(e.origin===location.origin&&e.data&&e.data.t==='pets-exit'&&f&&e.source===f.contentWindow)huntBack()});
-addEventListener('message',e=>{if(!HOST||e.source!==parent)return;const t=e.data&&e.data.t;if(t==='pets-flush'){save();netSync(true)}else if(t==='pets-resume'){netSync();R()}});
+addEventListener('message',e=>{if(!HOST||e.source!==parent)return;const t=e.data&&e.data.t;if(t==='pets-flush'){bgmStop();save();netSync(true)}else if(t==='pets-resume'){bgmStart();netSync();R()}});
 addEventListener('storage',e=>{if(e.key==='daf_session'||e.key==='daf_token')location.reload()});
+/* ===== BACKSOUND PETS (musik santai dibuat lewat WebAudio, tanpa file) =====
+   Mau pakai lagu sendiri? isi BGM_URL dengan alamat file mp3 satu folder, mis. 'musik.mp3' */
+const BGM_URL='',BGM={on:localStorage.getItem('dafpets_bgm')!=='0',ctx:null,t:null,step:0};
+const BCH=[[261.6,329.6,392,493.9],[220,261.6,329.6,392],[174.6,220,261.6,329.6],[196,246.9,293.7,392]],BPN=[523.3,587.3,659.3,784,880,1046.5];
+function bgmNote(f,t,d,ty,v){const c=BGM.ctx,o=c.createOscillator(),g=c.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.05);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(BGM.lp);o.start(t);o.stop(t+d+.05)}
+function bgmBeat(){const t=BGM.ctx.currentTime+.05,s=BGM.step++,bar=Math.floor(s/4)%4;
+ if(s%4===0)BCH[bar].forEach(f=>bgmNote(f/2,t,3.4,'sine',.05));
+ if(s%2===0&&Math.random()<.85)bgmNote(rnd(BPN),t+.02,1.4,'triangle',.06);
+ if(s%4===2&&Math.random()<.5)bgmNote(rnd(BPN),t+.18,1.2,'sine',.045)}
+function bgmStart(){if(!BGM.on||BGM.t)return;
+ if(BGM_URL){if(!BGM.a){BGM.a=new Audio(BGM_URL);BGM.a.loop=true;BGM.a.volume=.5}BGM.a.play().then(()=>{BGM.t=1}).catch(()=>{});return}
+ try{if(!BGM.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=BGM.ctx=new C();BGM.g=c.createGain();BGM.g.gain.value=0;BGM.lp=c.createBiquadFilter();BGM.lp.type='lowpass';BGM.lp.frequency.value=2400;BGM.lp.connect(BGM.g);BGM.g.connect(c.destination)}
+  const c=BGM.ctx;c.resume();BGM.g.gain.cancelScheduledValues(0);BGM.g.gain.setValueAtTime(BGM.g.gain.value,c.currentTime);BGM.g.gain.linearRampToValueAtTime(.9,c.currentTime+1.5);BGM.t=setInterval(bgmBeat,714);bgmBeat()}catch(e){}}
+function bgmStop(){if(!BGM.t)return;if(BGM.a){BGM.a.pause();BGM.t=null;return}
+ clearInterval(BGM.t);BGM.t=null;try{const c=BGM.ctx;BGM.g.gain.cancelScheduledValues(0);BGM.g.gain.setValueAtTime(BGM.g.gain.value,c.currentTime);BGM.g.gain.linearRampToValueAtTime(0,c.currentTime+.6);setTimeout(()=>{if(!BGM.t)c.suspend()},700)}catch(e){}}
+function bgmUI(){const b=$('#bgmBtn');if(b){b.textContent=BGM.on?'🔊':'🔇';b.style.opacity=BGM.on?1:.6}}
+document.addEventListener('click',e=>{if(e.target.closest('#bgmBtn')){BGM.on=!BGM.on;try{localStorage.setItem('dafpets_bgm',BGM.on?'1':'0')}catch(x){}bgmUI();BGM.on?bgmStart():bgmStop();return}if(BGM.on&&!H.open)bgmStart()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)bgmStop();else if(!H.open)bgmStart()});
+bgmUI();
 setInterval(()=>{if(H.open)$('#hChips').textContent=fmt(ADAPTER.get())},1000);
 
 document.addEventListener('visibilitychange',()=>{if(document.hidden){save();netSync(true)}else netSync()});
