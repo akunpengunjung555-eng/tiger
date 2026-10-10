@@ -496,6 +496,7 @@ function init3d(yd){G={S:new THREE.SphereGeometry(1,22,16),B:new THREE.BoxGeomet
  cv.addEventListener('pointermove',e=>{if(!d0)return;const dx=e.clientX-d0.x;if(Math.abs(dx)>6)d0.m=1;if(d0.m)T.yaw=d0.yaw-dx*.008});
  cv.addEventListener('pointerup',e=>{if(d0&&!d0.m)pick(e);d0=null})}
 function pick(e){const rc=T.r.domElement.getBoundingClientRect();T.ray.setFromCamera({x:(e.clientX-rc.left)/rc.width*2-1,y:-((e.clientY-rc.top)/rc.height)*2+1},T.cam);
+ if(MV.k){const v=new THREE.Vector3();if(T.ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0),v)){const l=Math.hypot(v.x,v.z),m=7.8,q=l>m?m/l:1,o=dpos(MV.k);o.x=v.x*q;o.z=v.z*q;SND.ui('ok');save();R()}return}
  const h=T.ray.intersectObjects(T.sc.children.filter(o=>o.userData.id!=null||o.userData.vis),true)[0];if(!h)return;
  let o=h.object;const coin=o.userData.coin;while(o&&o.userData.id==null&&!o.userData.vis)o=o.parent;if(!o)return;
  if(o.userData.vis)A.catchV();else if(o.userData.eg)A.hatch(o.userData.eg);else if(coin)A.claim(o.userData.id);else A.pat(o.userData.id);save();R()}
@@ -509,7 +510,7 @@ function yardShow(){const yd=$('#yard');yd.hidden=tab!=='kandang';if(yd.hidden)r
  for(const id in T.E)if(!S.pets.some(p=>p.id==id&&!p.st)){const q=T.E[id];[q.nl,q.lb].forEach(m=>{if(m){m.material.map.dispose();m.material.dispose()}});if(q.w.fx){q.w.fx.geometry.dispose();q.w.fx.material.dispose();q.w.fx.children.forEach(h=>h.material.dispose())}T.sc.remove(q.w);delete T.E[id]}
  if(S.vis&&!T.V){const w=mk(S.vis.sp,1);w.userData.vis=1;addFx(w,{sp:S.vis.sp,mu:''},1);w.position.set(6,0,-4);w.rotation.y=Math.atan2(-6,4);const s=nameLab('Tamu langka: '+SP[S.vis.sp][1],'#ffd34d');s.position.y=w.userData.h;w.add(s);T.sc.add(w);T.V={w,e:{ph:0,sl:0,id:99}}}
  if(!S.vis&&T.V){T.sc.remove(T.V.w);T.V=null}
- syncEggs();syncDec();syncDec2();updBub()}
+ syncEggs();syncDec();syncDec2();applyDec();updBub()}
 function updBub(){if(!T)return;for(const id in T.E){const e=T.E[id],p=e.p;{const n=petName(p),k=n.t+'|'+n.c;if(e.nk!==k){e.nk=k;if(e.nl){e.w.remove(e.nl);e.nl.material.map.dispose();e.nl.material.dispose()}e.nl=nameLab(n.t,n.c);e.nl.position.y=e.w.userData.h*(.35+.65*sz(p));e.w.add(e.nl)}}const c=p.acc>=1&&Date.now()>=(p.ct||0),tx=c?'🪙 +'+sh(p.acc):p.f<25?'😋':p.j<25?'💤':'';
  if(tx===e.lt)continue;e.lt=tx;if(e.lb){e.w.remove(e.lb);e.lb.material.map.dispose();e.lb.material.dispose();e.lb=null}
  if(tx){const s=lab(tx,c?'#ffd34d':'rgba(0,0,0,0)');if(c)s.scale.set(1.05,.4,1);s.userData.coin=c;s.position.y=e.w.userData.h*(.35+.65*sz(p))+.7;e.w.add(s);e.lb=s}}}
@@ -608,7 +609,7 @@ const QS=[{k:'fed',n:'Beri makan 3 kali',g:3,r:20000000},{k:'pat',n:'Elus hewan 
 function dm(){return 1+Object.keys(S.dec||{}).reduce((a,k)=>a+DEC[k].b,0)}
 function qs(){const td=new Date().toISOString().slice(0,10);if(!S.q||S.q.d!==td)S.q={d:td,fed:0,pat:0,hatch:0,done:{}};return S.q}
 function eggNote(){const n=Date.now();S.eggs.forEach(e=>{if(e.at&&e.at<=n&&!e.nt){e.nt=1;toast('🥚 '+EG[e.tp].n+' siap menetas! Buka tab Kandang')}})}
-function syncDec(){if(!T.D)T.D={};const d=S.dec||{};
+function syncDec(){if(!T.D)T.D={};const d=decOn();
  if(d.kolam&&!T.D.kolam){const g=new THREE.Group();mesh(G.C,0x9a8f7a,0,.06,0,g,2.1,.12,2.1);mesh(G.C,0x3aa0e0,0,.1,0,g,1.85,.06,1.85,0x0a3a66);g.position.set(-3.8,0,-3.2);T.sc.add(g);T.D.kolam=g}
  if(d.rumah&&!T.D.rumah){const g=new THREE.Group();box(1.6,1,1.4,0xc9894a,0,.5,0,g);mesh(G.K,0xb0302a,0,1.45,0,g,1.35,.9,1.35).rotation.y=Math.PI/4;box(.3,.55,.05,0x4a2a10,0,.28,.72,g);g.position.set(4,0,-3.4);g.rotation.y=-.6;T.sc.add(g);T.D.rumah=g}
  if(d.air&&!T.D.air){const g=new THREE.Group();mesh(G.C,0xb8b8c4,0,.15,0,g,1.1,.3,1.1);mesh(G.C,0xb8b8c4,0,.7,0,g,.18,1,.18);mesh(G.C,0x6ad0ff,0,1.3,0,g,.5,.12,.5,0x0a4a7a);g.position.set(3.6,0,3.2);T.sc.add(g);T.D.air=g}}
@@ -652,7 +653,7 @@ function careInfo(){return '<h2>Biaya perawatan</h2><div class="card"><small>Har
 /* ===== PROPERTI LANJUTAN: sampai 1 triliun, ada penghitung harta ===== */
 Object.assign(DEC,{taman:{n:'Taman bunga',c:15e9,b:.2,e:'🌷'},menara:{n:'Menara pengintai',c:5e10,b:.3,e:'🗼'},kincir:{n:'Kincir angin',c:1.2e11,b:.4,e:'🌀'},kastil:{n:'Kastil mini',c:3e11,b:.6,e:'🏰'},piramida:{n:'Piramida emas',c:6e11,b:.8,e:'🔺'},langit:{n:'Istana langit',c:1e12,b:1.5,e:'☁️'}});
 function castle(s){const g=new THREE.Group();box(2.4,1.8,2.4,0xcfc7b8,0,.9,0,g);[[1.2,1.2],[-1.2,1.2],[1.2,-1.2],[-1.2,-1.2]].forEach(([x,z])=>{mesh(G.C,0xb8b0a0,x,1.3,z,g,.45,2.6,.45);mesh(G.K,0xb0302a,x,2.9,z,g,.55,.7,.55)});box(1,3,1,0xd8d0c0,0,3,0,g);mesh(G.K,0x2a49d0,0,5,0,g,.8,1,.8);box(.4,.6,.05,0x223344,0,.7,1.21,g);g.scale.setScalar(s);return g}
-function syncDec2(){const d=S.dec||{},D=T.D;const add=(k,g,x,y,z)=>{g.position.set(x,y,z);T.sc.add(g);D[k]=g};
+function syncDec2(){const d=decOn(),D=T.D;const add=(k,g,x,y,z)=>{g.position.set(x,y,z);T.sc.add(g);D[k]=g};
  if(d.taman&&!D.taman){const g=new THREE.Group();mesh(G.C,0x4f9e3f,0,.03,0,g,1.8,.06,1.8);for(let i=0;i<16;i++){const a=i*2.4,r=.3+i%5*.28;sph([0xff5a8a,0xffd34d,0xffffff,0xb06cff][i%4],Math.sin(a)*r,.14,Math.cos(a)*r,g,.1,.1,.1)}add('taman',g,-3.2,0,3.4)}
  if(d.menara&&!D.menara){const g=new THREE.Group();box(1,3.4,1,0xb8b0a0,0,1.7,0,g);mesh(G.K,0xb0302a,0,3.9,0,g,.9,1.1,.9).rotation.y=.8;box(.3,.4,.05,0x223344,0,2.6,.51,g);add('menara',g,-7.3,0,1.2)}
  if(d.kincir&&!D.kincir){const g=new THREE.Group();box(.9,2,.9,0xd9c9a0,0,1,0,g);mesh(G.K,0x8a5a2b,0,2.45,0,g,.8,.8,.8).rotation.y=.8;const b=piv(0,2.2,.55,g);for(let i=0;i<4;i++){const a=piv(0,0,0,b);a.rotation.z=i*Math.PI/2;box(.18,1.5,.04,0xf2f2f2,0,.75,0,a)}g.p=b;add('kincir',g,6.6,0,-1.2)}
@@ -662,7 +663,7 @@ function syncDec2(){const d=S.dec||{},D=T.D;const add=(k,g,x,y,z)=>{g.position.s
 function harta(){return ADAPTER.get()+Object.keys(S.dec||{}).reduce((a,k)=>a+DEC[k].c,0)+S.pets.reduce((a,p)=>a+av(p.sp,p),0)}
 function decShop(){const h=harta(),tot=Object.keys(S.dec||{}).reduce((a,k)=>a+DEC[k].b,0);
  return `<h2>Harta ${sh(h)} / 1 T${h>=1e12?' ✅ target tercapai':''}</h2><div class="bar"><i style="width:${Math.min(100,h/1e10)}%;background:#ffd34d"></i></div><small>Harta = chip + nilai properti + nilai hewan. Bonus properti sekarang +${Math.round(tot*100)}% chip semua hewan.</small><h2>Properti kandang</h2><div class="grid">`+Object.keys(DEC).map(k=>{const D=DEC[k],has=(S.dec||{})[k];return `<div class="card"><span class="em">${D.e}</span><br><b>${D.n}</b> · +${Math.round(D.b*100)}% chip<div class="btns"><button class="b gd" data-a="buyD" data-i="${k}" ${has?'disabled':''}>${has?'Terpasang':'Beli '+fmt(D.c)}</button></div></div>`}).join('')+'</div>'}
-{const _k=V.kandang,_t=V.toko;V.kandang=()=>eggList()+_k()+mutBook()+careInfo();V.toko=()=>_t().replace(/<h2>Telur misterius<\/h2>[\s\S]*?(?=<h2>Hewan langsung)/,eggShop()).replace(/<h2>Hewan langsung<\/h2>[\s\S]*?(?=<h2>Gabung hewan)/,'<small>Hewan tidak dijual langsung. Dapatkan dari telur, tamu langka, lelang pemain, atau hadiah teman.</small>')+decShop();V.hadiah=(h=>()=>qList()+h())(V.hadiah)}
+{const _k=V.kandang,_t=V.toko;V.kandang=()=>eggList()+decOwned()+_k()+mutBook()+careInfo();V.toko=()=>_t().replace(/<h2>Telur misterius<\/h2>[\s\S]*?(?=<h2>Hewan langsung)/,eggShop()).replace(/<h2>Hewan langsung<\/h2>[\s\S]*?(?=<h2>Gabung hewan)/,'<small>Hewan tidak dijual langsung. Dapatkan dari telur, tamu langka, lelang pemain, atau hadiah teman.</small>')+decShop();V.hadiah=(h=>()=>qList()+h())(V.hadiah)}
 
 /* ===== HADIAH HARIAN: akun login memakai hadiah harian SERVER (satu streak, satu klaim/hari, sama dengan tombol Harian di lobi) ===== */
 {const local=A.daily;
@@ -680,7 +681,22 @@ async function dailySrv(){
  sw('hatch',(a,c,n)=>{if(S.eggs.length<n)SND.ui('hatch')});
  sw('merge',(a,c,n,pl)=>{if(S.pets.length<pl)SND.ui('ok')});
  ['feed','play','feedAll','buyE','buyD','up','speed','bid'].forEach(k=>sw(k,(a,c)=>{if(ADAPTER.get()<c)SND.ui('spend')}))}
+/* ===== PROPERTI: simpan/letakkan, pindah bebas, putar ===== */
+const MV={k:null};
+function dpos(k){S.dpos=S.dpos||{};return S.dpos[k]=S.dpos[k]||{}}
+function decOn(){const o={};for(const k in S.dec||{})if(S.dec[k]&&DEC[k]&&!((S.dpos||{})[k]||{}).st)o[k]=1;return o}
+function applyDec(){if(!T||!T.D)return;const on=decOn();
+ for(const k in T.D)if(!on[k]){T.sc.remove(T.D[k]);delete T.D[k]}
+ for(const k in T.D){const o=(S.dpos||{})[k],g=T.D[k];if(!o)continue;if(o.x!=null){g.position.x=o.x;g.position.z=o.z}if(o.r!=null)g.rotation.y=o.r}
+ const h=$('.hint');if(h)h.textContent=MV.k?'Mode pindah: ketuk lokasi untuk '+DEC[MV.k].n+' · geser: putar kamera':'Geser: putar kamera · Ketuk hewan: elus · Ketuk 🪙: ambil'}
+function decOwned(){const ks=Object.keys(S.dec||{}).filter(k=>S.dec[k]&&DEC[k]);if(!ks.length)return '';
+ return '<h2>Properti saya</h2><div class="grid">'+ks.map(k=>{const D=DEC[k],st=((S.dpos||{})[k]||{}).st,mv=MV.k===k;
+  return `<div class="card" style="--rc:#ffd34d"><b>${D.e} ${D.n}</b> <small>+${Math.round(D.b*100)}% chip · ${st?'📦 Disimpan':'🏡 Di kandang'}</small><div class="btns"><button class="b ${st?'gd':''}" data-a="toggleD" data-i="${k}">${st?'📤 Letakkan':'📥 Simpan'}</button>`+
+  (st?'':`<button class="b ${mv?'go':''}" data-a="moveD" data-i="${k}">${mv?'✅ Selesai':'✥ Pindahkan'}</button><button class="b" data-a="rotD" data-i="${k}">🔄 Putar</button>`)+'</div></div>'}).join('')+'</div>'}
 Object.assign(A,{
+ toggleD(k){if(!DEC[k]||!(S.dec||{})[k])return;const o=dpos(k);o.st=o.st?0:1;if(o.st&&MV.k===k)MV.k=null;SND.ui('ok');toast(DEC[k].n+(o.st?' disimpan':' diletakkan di kandang'))},
+ moveD(k){if(MV.k===k){MV.k=null;return toast('Selesai memindahkan')}MV.k=k;toast('Ketuk lokasi di kandang untuk memindahkan '+DEC[k].n)},
+ rotD(k){const o=dpos(k),g=T&&T.D&&T.D[k];o.r=(o.r!=null?o.r:(g?g.rotation.y:0))+Math.PI/4},
  toggle(id){const p=S.pets.find(x=>x.id==id);if(!p)return;p.st=p.st?0:1;SND.ui('ok');toast(p.st?SP[p.sp][1]+' disimpan dari kandang':SP[p.sp][1]+' diletakkan di kandang')},
  placeAll(){S.pets.forEach(p=>p.st=0);toast('Semua hewan diletakkan di kandang')},
  storeAll(){S.pets.forEach(p=>p.st=1);toast('Semua hewan disimpan')}});
