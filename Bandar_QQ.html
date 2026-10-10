@@ -378,18 +378,19 @@ if(won.length){sfx('chips');await sleep(1900)}
 if(SRV)coins=SRV.balance;else{coins+=back;if(HOST&&!HOST.server&&!HOST.inf)toHost({t:'qq-bal',balance:coins})}SRV=null;const hp=Object.keys(mine).reduce((a,k)=>res[k]>1?a+mine[k]*(res[k]-1):a,0),hit=hp>0,amt=Math.max(net,hp);if(net>0||hit){shower(amt>=2e7?40:22);if(qq||six)bigWin(six?'SIX TWINS!':'QIU QIU!',amt,six?'six':'qq');else floatText('+'+fmt(amt),'#7dffb0',$('coin'),22);try{navigator.vibrate&&navigator.vibrate([80,40,120])}catch(e){}sfx(six||amt>=1e9?'superwin':qq||amt>=5e8?'megawin':amt>=1e8?'bigwin':'win');setTimeout(()=>say('Kamu menang'),900)}else if(net<0){floatText('-'+fmt(-net),'#ff8a8a',$('coin'),22);sfx('lose');setTimeout(()=>say('Kamu kalah'),900)}
 $('msg').textContent=(w=='t'?'SERI!':w=='m'?'MERAH menang!':'BIRU menang!')+(Object.keys(mine).length?(hit&&net<0?` Menang +${fmt(hp)} (bersih -${fmt(-net)})`:` Hasilmu: ${net>=0?'+':'-'}${fmt(Math.abs(net))}`):'');
 if(!LIVE)bots.forEach(b=>b[1]+=Math.round((Math.random()-.45)*b[1]*.02));
-pot={};phase='end';if(ERRM){$('msg').textContent='⚠ '+ERRM+' — taruhan tidak dipotong';ERRM=''}draw();await sleep(1800);if(g==gen&&!LIVE)newRound()}
+pot={};phase='end';RESM=$('msg').textContent;if(ERRM){$('msg').textContent='⚠ '+ERRM+' — taruhan tidak dipotong';ERRM=''}draw();await sleep(1800);if(g==gen&&!LIVE)newRound()}
 
 /* ===== MODE ONLINE / MABAR: ronde & kartu SAMA untuk semua pemain di room (server), taruhan 30 dtk, chat global.
    Hemat kuota gratis: poll tiap 3 dtk saat taruhan, sekali saat hasil, 6 dtk di luar itu. ===== */
 let LIVE=false,curN=-1,shownN=-1,skew=0,lastPoll=0,polling=0,hbT=0,chSeq=0,chUnread=0,sbT=0,sbBusy=0,sbDirty=0,oth={},wantHist=1,lastSec=-1,lvTimer=0;
-let fSeq=-1;const GQ=[];let gBusy=0;
+let RESM='',fSeq=-1;const GQ=[];let gBusy=0;
+const QX={TWM:'TWIN KIRI',TWB:'TWIN KANAN',QQM:'QIU KIRI',QQB:'QIU KANAN',SERI:'SERI',MERAH:'MERAH MENANG',BIRU:'BIRU MENANG'};
 function gText(e){const t=String(e.tier||'').split('|'),k=t[0].replace(/[^A-Z]/g,''),nm='<b>'+String(e.name||'?').replace(/[^A-Za-z0-9_]/g,'').slice(0,12)+'</b>';let l;
-if(k=='SIX')l=`🎴 ${nm} SIX TWINS!`;else if(k=='QQ')l=`🎴 ${nm} QIU QIU!`;else if(k=='WIN'||k=='LINE')l=`🏆 ${nm} MENANG BESAR`;else if(k=='FULL')l=`🖼️ ${nm} FULL GAMBAR`;else if(k=='SUPER'||k=='MEGA'||k=='BIG')l=`🏆 ${nm} ${k} WIN`;else l=`👑 ${nm} JACKPOT KARTU <b>${k.slice(0,6)}</b>`;
-const col={SIX:'#7df9ff',QQ:'#ff7ad9',WIN:'#ffd34d',FULL:'#ff7a3d',SUPER:'#ff4d6d',MEGA:'#ffb02e',BIG:'#ffd34d',LINE:'#7dffa0',MINI:'#2fe36b',MINOR:'#29a8ff',MAJOR:'#d84dff',GRAND:'#ffd34d'}[k]||'#ffd34d';
+if(k=='SIX')l=`🎴 ${nm} SIX TWINS!`;else if(QX[k])l=`🎴 ${nm} ${QX[k]}!`;else if(k=='QQ')l=`🎴 ${nm} QIU QIU!`;else if(k=='WIN'||k=='LINE')l=`🏆 ${nm} MENANG BESAR`;else if(k=='FULL')l=`🖼️ ${nm} FULL GAMBAR`;else if(k=='SUPER'||k=='MEGA'||k=='BIG')l=`🏆 ${nm} ${k} WIN`;else l=`👑 ${nm} JACKPOT KARTU <b>${k.slice(0,6)}</b>`;
+const col={SIX:'#7df9ff',QQ:'#ff7ad9',TWM:'#ff6b73',QQM:'#ff6b73',MERAH:'#ff6b73',TWB:'#6aa3ff',QQB:'#6aa3ff',BIRU:'#6aa3ff',SERI:'#4ade80',WIN:'#ffd34d',FULL:'#ff7a3d',SUPER:'#ff4d6d',MEGA:'#ffb02e',BIG:'#ffd34d',LINE:'#7dffa0',MINI:'#2fe36b',MINOR:'#29a8ff',MAJOR:'#d84dff',GRAND:'#ffd34d'}[k]||'#ffd34d';
 return{col,html:`${l}<small>+${fmt(Number(e.amt)||0)} • ${t[2]=='Q'?'🎴 di Bandar QQ':t[2]=='1'?'🎁 di scatter mode':'di slot'}</small>`}}
-function gShow(e){GQ.push(e);if(GQ.length>4)GQ.shift()}
-function gFlush(){if(gBusy||!GQ.length||phase=='deal'||phase=='lock')return;gBusy=1;const e=GQ.shift(),p=gText(e),el=$('gan');el.firstChild.style.setProperty('--c',p.col);el.firstChild.innerHTML=p.html;requestAnimationFrame(()=>el.classList.add('on'));sfx('special');setTimeout(()=>{el.classList.remove('on');setTimeout(()=>{gBusy=0},400)},4200)}
+function gShow(e){GQ.push(e);if(GQ.length>20)GQ.shift()}
+function gFlush(){if(gBusy||!GQ.length)return;gBusy=1;const e=GQ.shift(),p=gText(e),el=$('gan');el.firstChild.style.setProperty('--c',p.col);el.firstChild.innerHTML=p.html;requestAnimationFrame(()=>el.classList.add('on'));sfx('special');setTimeout(()=>{el.classList.remove('on');setTimeout(()=>{gBusy=0},400)},4200)}
 const QB=30000,QC=45000,QK=['m','b','t','q','s','qm','qb','tm','tb'],chSeen=new Set();
 const api=(path,body)=>hostCall({t:'qq-api',path,body});
 const eqm=(a,b)=>QK.every(k=>(a[k]||0)===(b[k]||0));
@@ -410,7 +411,7 @@ if(!s.hands){if(curN!==s.n)liveRound(s);else mergePot(s);return}
 if(shownN===s.n)return;shownN=s.n;
 if(curN===s.n||Object.keys(s.mine||{}).length){curN=s.n;mine={...s.mine};pot=s.pot||{};go(gen,s)}
 else{phase='wait';$('msg').textContent='Ronde sedang berjalan... tunggu ronde berikutnya.';draw()}}
-function liveRound(s){gen++;curN=s.n;if(SS)speechSynthesis.cancel();phase='bet';vt=0;mine={...s.mine};win={};H=null;oth={};pot={};
+function liveRound(s){gen++;RESM='';curN=s.n;if(SS)speechSynthesis.cancel();phase='bet';vt=0;mine={...s.mine};win={};H=null;oth={};pot={};
 for(const k of QK){oth[k]=(s.pot[k]||0)-(mine[k]||0);pot[k]=s.pot[k]||0}coins=s.balance;
 $('hr').innerHTML=$('hbl').innerHTML='';$('lr').textContent='MERAH';$('lb').textContent='BIRU';
 if(auto&&last&&!Object.keys(mine).length)betDo(()=>({...last}));
@@ -427,6 +428,7 @@ if(phase=='bet'&&sec!==lastSec){lastSec=sec;if(sec<=5&&sec>0)sfx('warn',sec);if(
 if(curN!==n?age>500:age>3000)poll()}
 else{if(phase=='bet'){phase='lock';sfx('end');$('msg').textContent='Taruhan ditutup. Membuka kartu...';draw()}
 $('tm').classList.remove('urgent');$('tm').textContent=phase=='wait'?Math.ceil((st+QC-sn)/1000):0;
+if(phase=='wait'||phase=='end'){const ns=Math.max(0,Math.ceil((st+QC-sn)/1000));if(phase=='end')$('tm').textContent=ns;$('msg').textContent=(phase=='end'&&RESM?RESM+' • ':'')+(+$('onl').textContent<=1?'Menunggu pemain lain… ronde berikutnya ':'Menunggu ronde berikutnya… ')+ns+' dtk'}
 if(phase=='lock'?(age>1200&&left<-250):age>6000)poll()}}
 /* TARUHAN: chip baru muncul & koin baru berkurang SETELAH server mengonfirmasi. Tampilan selalu mengikuti data server. */
 let bqBusy=0,pendFns=[];

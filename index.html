@@ -819,20 +819,6 @@ body{padding:5px}
 <div id="qqWrap" class="qqWrap"><iframe id="qqFrame" title="Bandar QQ" allow="autoplay"></iframe></div>
 <div id="modal" class="modal"><div id="mbox" class="mbox"></div></div>
 
-<!-- ===== FIREBASE: isi config di bawah (Firebase Console > Project settings > Your apps > Web app) ===== -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>
-const FIREBASE_CONFIG={
-  apiKey:"AIzaSyAOaEiO2MwfkgvsCO9CblXtVlnRWPwtLXI",
-  authDomain:"game-tiger-5203a.firebaseapp.com",
-  projectId:"game-tiger-5203a",
-  storageBucket:"game-tiger-5203a.firebasestorage.app",
-  messagingSenderId:"541349499807",
-  appId:"1:541349499807:web:8f9f8369b0d3e38cd563aa"
-};
-</script>
 <script src="daf-assets.js?v=1"></script>
 <script src="daf.js?v=2"></script>
 <script>
@@ -958,7 +944,7 @@ function newAcctOrLimit(){
 /* ----- bar atas ----- */
 function updateUserBar(){
   const on=!!acct,adm=isAdmin();
-  const tag=(freeMode?" • 🎮 MODE GRATIS":"")+(FB.ok?" • ☁️":"");
+  const tag=(freeMode?" • 🎮 MODE GRATIS":"")+(acct&&acct.server?" • ☁️":"");
   document.getElementById("userName").textContent=on
     ?(adm?"👑 ADMIN • chip ∞":avatarOf(acct)+" "+acct.name+" • ID "+acct.pid+(acct.streak?" • 🔥 "+acct.streak:"")+tag)
     :"👤 Belum login — data tidak tersimpan"+tag;
@@ -986,7 +972,6 @@ function applyAcctCore(a){
   clampBet();
   updateUserBar();updateUI();updateBanner();
   inboxNote=isAdmin()?"":claimInbox();   // chip kiriman lokal (mode tanpa Firebase)
-  fbAttach(a);
 }
 
 /* ----- modal ----- */
@@ -1004,7 +989,7 @@ function addEyes(){   // tombol 👁 untuk melihat / menyembunyikan sandi
 }
 let mdTimer=null;
 function openModal(html){modalOpen=true;clearTimeout(mdTimer);const m=document.getElementById("modal");m.classList.remove("hide");document.getElementById("mbox").innerHTML=html;try{addEyes()}catch(e){}m.classList.add("show")}
-function closeModal(){modalOpen=false;const m=document.getElementById("modal");if(m.classList.contains("show")&&!m.classList.contains("hide")){m.classList.add("hide");clearTimeout(mdTimer);mdTimer=setTimeout(()=>m.classList.remove("show","hide"),160)}if(fbNotes.length)setTimeout(showFbNotes,60)}
+function closeModal(){modalOpen=false;const m=document.getElementById("modal");if(m.classList.contains("show")&&!m.classList.contains("hide")){m.classList.add("hide");clearTimeout(mdTimer);mdTimer=setTimeout(()=>m.classList.remove("show","hide"),160)}}
 function openInfo(title,html,nextJs){
   openModal(`<h2>${title}</h2><p>${html}</p><button class="btn spin" type="button" style="font-size:18px" onclick="${nextJs}">OK</button>`);
 }
@@ -1223,7 +1208,6 @@ function loginGuest(){
 function loginAs(id){const a=loadAcct(id);if(a)tryEnter(a);else{setMsg("Akun tidak ditemukan");openWelcome()}}
 function loginNew(){const a=newAcctOrLimit();if(a)enterAcct(a)}
 function resetSession(text){
-  fbUnwatch();
   stopAuto();
   saveGame();LS.del("daf_session");acct=null;
   freeMode=false;stash=null;BET_STEP=REAL_STEP;
@@ -1248,7 +1232,7 @@ function confirmDelete(){
   if(busy){setMsg("Tunggu spin selesai dulu");closeModal();return}
   if(!acct||isAdmin()){closeModal();return}
   const id=acct.id,name=acct.name,dead=acct;
-  fbUnwatch();fbDeleteProfile(dead);
+  
   LS.del("daf_acct_"+id);LS.del("daf_inbox_"+id);
   if(LS.get("daf_guest_id")===id)LS.del("daf_guest_id");
   acct=null;                                  // supaya saveGame tidak menulis ulang akun yang baru dihapus
@@ -1331,15 +1315,7 @@ async function renameUser(){
     a.name=r.j.name;updateUserBar();openProfile();setMsg("Username diganti menjadi "+a.name);return;
   }
   if(lv===ADMIN_USER.toLowerCase()||rawAccounts().some(x=>x.id!==a.id&&String(x.name).toLowerCase()===lv)){err.textContent="Username sudah dipakai";return}
-  if(FB.ok){
-    err.textContent="Memeriksa…";
-    const prev=a.name;
-    try{
-      const ns=await FB.db.collection("names").doc(lv).get();
-      if(ns.exists&&ns.data().uid!==FB.uid){err.textContent="Username sudah dipakai";return}
-      a.name=v;await fbRegister(a);
-    }catch(e){a.name=prev;console.warn(e);err.textContent="Gagal terhubung ke server, coba lagi";return}
-  }else a.name=v;
+  a.name=v;
   if(acct!==a)return;
   saveGame();updateUserBar();openProfile();
   setMsg("Username diganti menjadi "+a.name);
@@ -1381,9 +1357,6 @@ async function trFind(q){
       }
     }
   }   // Firebase = lintas perangkat; tanpa Firebase = hanya akun di perangkat ini
-  await fbInit();
-  if(FB.ok)return fbFind(q);
-  if(fbConfigured())throw Object.assign(new Error("Tidak bisa terhubung ke server. Cek internet lalu coba lagi"),{user:true});
   return findAccount(q);
 }
 async function trCheck(q,amt){
@@ -1473,9 +1446,9 @@ async function confirmTransfer(){
     }
     const fromLabel=adm?"ADMIN":`${a.name} (ID ${a.pid})`;
     if(!adm){balance-=amt;clampBet();updateUI();saveGame()}   // chip ditahan dulu, dikembalikan kalau gagal
-    const item={from:fromLabel,fromUid:FB.uid||"",amount:amt,tax,net,ts:Date.now()};
+    const item={from:fromLabel,amount:amt,tax,net,ts:Date.now()};
     let ok=false;
-    try{ok=FB.ok?(await fbSend(to,item),true):pushInbox(to.id,item)}catch(e){console.warn(e);ok=false}
+    try{ok=pushInbox(to.id,item)}catch(e){console.warn(e);ok=false}
     if(!ok){
       if(!adm)creditAcct(a,amt,null);
       openInfo("❌ GAGAL","Chip tidak terkirim (cek koneksi internet). Chip kamu dikembalikan.","closeModal()");return;
@@ -1505,72 +1478,7 @@ function claimInbox(){   // ambil chip kiriman yang menunggu; kembalikan teks ri
   return lines;
 }
 
-/* ===== FIREBASE: kirim chip antar pemain / antar perangkat ===== */
-const FB={ok:false,db:null,uid:null,unsub:null,ready:null};
-let fbClaiming=false,fbRecheck=false,fbNotes=[];
-function fbConfigured(){return typeof FIREBASE_CONFIG==="object"&&!!FIREBASE_CONFIG.apiKey&&!/^ISI_/.test(FIREBASE_CONFIG.apiKey)}
-function fbInit(){
-  if(FB.ready)return FB.ready;
-  FB.ready=(async()=>{
-    if(!fbConfigured()){console.info("Firebase belum diisi — kirim chip hanya antar akun di perangkat ini");return false}
-    if(typeof firebase==="undefined"){console.warn("SDK Firebase gagal dimuat (offline?)");return false}
-    try{
-      firebase.initializeApp(FIREBASE_CONFIG);
-      FB.db=firebase.firestore();try{FB.db.settings({experimentalForceLongPolling:true,merge:true})}catch(e){console.warn(e)}
-      const au=firebase.auth();
-      const cur=await new Promise(res=>{const u=au.onAuthStateChanged(x=>{u();res(x)})});
-      FB.uid=(cur||(await au.signInAnonymously()).user).uid;
-      FB.ok=true;return true;
-    }catch(e){console.warn("Firebase gagal:",e);FB.err=e;setTimeout(()=>{try{setMsg("☁️ Firebase gagal: "+(e.code||e.message))}catch(_){}},800);return false}
-  })();
-  return FB.ready;
-}
-function nameKey(n){return String(n).toLowerCase()}
-async function fbRegister(a){   // daftarkan ID pemain + username supaya bisa dicari pemain lain
-  if(!FB.ok||!a||a.admin)return;
-  const db=FB.db,P=db.collection("profiles"),N=db.collection("names");
-  let changed=false;
-  for(let i=0;i<6;i++){                       // ID bentrok dengan pemain lain -> buat ID baru
-    const ps=await P.doc(String(a.pid)).get();
-    if(!ps.exists||ps.data().uid===FB.uid)break;
-    a.pid=newPid();changed=true;
-  }
-  let nk=nameKey(a.name);
-  for(let i=0;i<6;i++){                       // username sudah dipakai pemain lain -> beri angka
-    const ns=await N.doc(nk).get();
-    if(!ns.exists||ns.data().uid===FB.uid)break;
-    a.name=String(a.name).slice(0,8)+Math.floor(1000+Math.random()*9000);nk=nameKey(a.name);changed=true;
-  }
-  const pid=String(a.pid),pRef=P.doc(pid),ps=await pRef.get(),old=ps.exists?ps.data():null;
-  if(!(old&&old.uid===FB.uid&&old.nameLc===nk&&old.name===a.name)){
-    const b=db.batch();
-    b.set(pRef,{pid,name:a.name,nameLc:nk,uid:FB.uid,updated:Date.now()});
-    b.set(N.doc(nk),{pid,uid:FB.uid});
-    if(old&&old.nameLc&&old.nameLc!==nk){
-      const os=await N.doc(old.nameLc).get();
-      if(os.exists&&os.data().uid===FB.uid)b.delete(N.doc(old.nameLc));
-    }
-    await b.commit();
-  }
-  if(changed&&a===acct){saveGame();updateUserBar();setMsg(`Akun disesuaikan: ${a.name} • ID ${a.pid}`)}
-}
-async function fbFind(q){   // cari lewat ID 8 digit atau username
-  q=String(q).trim().replace(/^#/,"");
-  let pid=null;
-  if(/^\d{8}$/.test(q))pid=q;
-  else if(/^[A-Za-z0-9_]{1,12}$/.test(q)){
-    const n=await FB.db.collection("names").doc(nameKey(q)).get();
-    if(!n.exists)return null;
-    pid=String(n.data().pid);
-  }else return null;
-  const p=await FB.db.collection("profiles").doc(pid).get();
-  if(!p.exists)return null;
-  const d=p.data();
-  return{pid:d.pid,name:d.name,uid:d.uid};
-}
-function fbSend(to,item){
-  return FB.db.collection("profiles").doc(String(to.pid)).collection("inbox").add(item);
-}
+/* ===== chip & akun: seluruhnya lewat Worker Cloudflare (Firebase dihapus) ===== */
 function creditAcct(a,amt,tx){   // tambah chip ke akun a (yang sedang aktif atau yang tersimpan)
   if(a===acct){
     if(freeMode&&stash)stash.balance+=amt;else balance+=amt;
@@ -1581,71 +1489,6 @@ function creditAcct(a,amt,tx){   // tambah chip ke akun a (yang sedang aktif ata
     rec.balance=(rec.balance||0)+amt;if(tx)logTx(rec,tx);
     LS.set("daf_acct_"+rec.id,JSON.stringify(rec));
   }
-}
-async function fbClaim(a){   // ambil semua chip kiriman di inbox online
-  if(fbClaiming){fbRecheck=true;return}
-  fbClaiming=true;
-  try{
-    do{
-      fbRecheck=false;
-      if(acct!==a||a.admin)break;
-      const snap=await FB.db.collection("profiles").doc(String(a.pid)).collection("inbox").get();
-      let total=0,lines="";
-      for(const d of snap.docs){
-        if(acct!==a)break;
-        let it=null;   // transaksi: hanya satu perangkat/tab yang berhasil mengambil tiap kiriman
-        try{await FB.db.runTransaction(async tx=>{const s=await tx.get(d.ref);it=s.exists?s.data():null;if(it)tx.delete(d.ref)})}catch(e){it=null}
-        if(it&&it.type==="perm"&&it.perm){   // kiriman izin dari admin (bukan chip)
-          a.perm={send:!!it.perm.send,full:!!it.perm.full,jp:!!it.perm.jp};try{const r=loadAcct(a.id);if(r){r.perm=a.perm;LS.set("daf_acct_"+r.id,JSON.stringify(r))}}catch(e){}saveGame();updateUserBar();
-          setMsg("🔧 Izin akun diperbarui admin");continue;
-        }
-        const net=it?Number(it.net):0;
-        if(!(net>0))continue;
-        creditAcct(a,net,{k:"in",amt:it.amount,tax:it.tax,net,peer:String(it.from||"?"),ts:it.ts||Date.now()});
-        total+=net;lines+=`${esc(it.from||"?")}: <b>+${money(net)}</b><br>`;
-      }
-      if(total>0){fbNotes.push(lines);setMsg("📥 Chip kiriman diterima: +"+money(total));showFbNotes()}
-    }while(fbRecheck);
-  }catch(e){console.warn("Ambil chip gagal:",e)}
-  finally{fbClaiming=false}
-}
-function showFbNotes(){
-  if(!fbNotes.length||modalOpen)return;      // dicoba lagi saat modal ditutup
-  if(busy){setTimeout(showFbNotes,1500);return}
-  const html=fbNotes.join("");fbNotes=[];
-  openInfo("📥 CHIP MASUK",html,"closeModal()");
-}
-function fbUnwatch(){if(FB.unsub){try{FB.unsub()}catch(e){}FB.unsub=null}}
-function fbWatch(a){   // live: chip masuk langsung diterima tanpa refresh
-  fbUnwatch();
-  if(!FB.ok||a.admin)return;
-  FB.unsub=FB.db.collection("profiles").doc(String(a.pid)).collection("inbox")
-    .onSnapshot(s=>{if(!s.empty)fbClaim(a)},e=>console.warn("Inbox listener:",e));
-}
-async function fbAttach(a){   // dipanggil tiap login
-  fbUnwatch();
-  const ok=await fbInit();
-  if(!ok||acct!==a)return;
-  if(!a.admin){
-    try{await fbRegister(a)}catch(e){console.warn("Daftar profil gagal:",e);setMsg("☁️ Gagal daftar online: "+(e.code||e.message)+(String(e.code).indexOf("permission")>=0?" — cek Rules Firestore sudah di-Publish":""));return}
-    if(acct!==a)return;
-    if(!a.server)try{   // izin dari admin (koleksi perms Firebase) — akun server memakai izin dari Worker, bukan Firebase
-      const pd=await tmo(FB.db.collection("perms").doc(String(a.pid)).get(),8000,"baca izin");
-      if(acct!==a)return;
-      if(pd.exists){const x=pd.data();a.perm={send:!!x.send,full:!!x.full,jp:!!x.jp};const r=loadAcct(a.id);if(r){r.perm=a.perm;LS.set("daf_acct_"+r.id,JSON.stringify(r))}saveGame();updateUserBar()}
-    }catch(e){console.warn("Baca izin gagal:",e)}
-    fbWatch(a);
-  }
-  updateUserBar();
-}
-async function fbDeleteProfile(a){   // hapus akun: bersihkan juga data online (best effort)
-  try{
-    if(!await fbInit()||!FB.ok||!a||a.admin)return;
-    const db=FB.db,pRef=db.collection("profiles").doc(String(a.pid));
-    const inbox=await pRef.collection("inbox").get();
-    if(!inbox.empty){const b=db.batch();inbox.docs.forEach(d=>b.delete(d.ref));await b.commit()}
-    const b2=db.batch();b2.delete(pRef);b2.delete(db.collection("names").doc(nameKey(a.name)));await b2.commit();
-  }catch(e){console.warn("Hapus profil online gagal:",e)}
 }
 
 /* ----- login harian: 7 hari berulang, streak putus kalau ada hari terlewat ----- */
@@ -1994,54 +1837,35 @@ window.addEventListener("message",e=>{
 /* ===== MODE SOLO & MABAR (ROOM) =====
    Mabar = beberapa pemain di satu room (kode 5 huruf), tiap pemain putar slot sendiri dengan chip sendiri,
    tapi saling lihat: papan peringkat sesi, kemenangan besar/jackpot, reaksi & chat.
-   Online lewat Firebase Firestore (rooms/{kode}/players & feed). Kalau Firebase tidak tersambung -> room LOKAL (antar tab browser yang sama). */
+   Online lewat Worker Cloudflare (/room/*, tabel D1 room_meta/room_players/room_feed). */
 const ROOM_MAX=6,ROOM_STALE=100000,ROOM_CHARS="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 let R=null,roomBusy=false,lastChat=0;
 function genCode(){let c="";for(let i=0;i<5;i++)c+=ROOM_CHARS[Math.floor(Math.random()*ROOM_CHARS.length)];return c}
 function cleanCode(v){return String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5)}
 
-function rtOnline(code){
-  const ref=FB.db.collection("rooms").doc(code),pl=ref.collection("players"),fd=ref.collection("feed");
-  let un=[];
+function rtServer(code){   // room mabar lewat Worker (D1), polling 3 dtk
+  const tok=()=>isAdmin()?admToken:LS.get("daf_token");
+  const call=async(p,b)=>{const r=await apiCall("/room/"+p,Object.assign({code},b),tok());if(!r.ok)throw Object.assign(new Error((r.j&&r.j.error)||"Server room tidak merespons"),{code:r.status});return r.j};
+  let tm=null,first=true,bad=false;const seen=new Set();
   return{kind:"online",
-    async getMeta(){const x=await ref.get();return x.exists?x.data():null},
-    async setMeta(m){await ref.set(m)},
-    async listPlayers(){const q=await pl.get();return q.docs.map(d=>Object.assign({id:d.id},d.data()))},
-    put(id,d){return pl.doc(id).set(d,{merge:true})},
-    drop(id){return pl.doc(id).delete()},
-    event(ev){return fd.add(ev)},
+    async getMeta(){return(await call("get")).meta},
+    async setMeta(m){await call("create")},
+    async listPlayers(){return(await call("get")).players},
+    put(id,d){return call("put",{d})},
+    drop(id){return call("put",{drop:1})},
+    event(ev){return call("put",{ev})},
     listen(onP,onE,onErr){
-      un.push(pl.onSnapshot(x=>onP(x.docs.map(d=>Object.assign({id:d.id},d.data()))),onErr));
-      let first=true;
-      un.push(fd.orderBy("ts","desc").limit(30).onSnapshot(x=>{
-        const all=x.docs.map(d=>d.data());
-        const fresh=first?[]:x.docChanges().filter(c=>c.type==="added").map(c=>c.doc.data());
-        first=false;onE(all,fresh);
-      },onErr));
+      const tick=async()=>{
+        if(document.hidden)return;
+        try{
+          const j=await call("poll");bad=false;onP(j.players);
+          const fresh=first?[]:j.events.filter(e=>!seen.has(e.seq)).reverse();
+          j.events.forEach(e=>seen.add(e.seq));first=false;onE(j.events,fresh);
+        }catch(e){if(!bad){bad=true;onErr(e)}}
+      };
+      tick();tm=setInterval(tick,3000);
     },
-    stop(){un.forEach(f=>{try{f()}catch(e){}});un=[]}
-  };
-}
-function rtLocal(code){
-  const key="daf_room_"+code;
-  const ch=typeof BroadcastChannel!=="undefined"?new BroadcastChannel(key):null;
-  const P={},E=[];let hP=null,hE=null,me=null;
-  const emitP=()=>{if(hP)hP(Object.keys(P).map(id=>Object.assign({id},P[id])))};
-  const emitE=(ev,fresh)=>{E.unshift(ev);if(E.length>30)E.length=30;if(hE)hE(E.slice(),fresh?[ev]:[])};
-  if(ch)ch.onmessage=e=>{const m=e.data||{};
-    if(m.t==="p"){P[m.id]=m.d;emitP()}
-    else if(m.t==="d"){delete P[m.id];emitP()}
-    else if(m.t==="e"){emitE(m.ev,true)}
-    else if(m.t==="hello"&&me&&P[me]){ch.postMessage({t:"p",id:me,d:P[me]})}};
-  return{kind:"local",
-    async getMeta(){try{return JSON.parse(LS.get(key+"_meta"))}catch(e){return null}},
-    async setMeta(m){LS.set(key+"_meta",JSON.stringify(m))},
-    async listPlayers(){if(ch)ch.postMessage({t:"hello"});await sleepRaw(300);return Object.keys(P).map(id=>Object.assign({id},P[id]))},
-    async put(id,d){me=id;P[id]=Object.assign(P[id]||{},d);if(ch)ch.postMessage({t:"p",id,d:P[id]});emitP()},
-    async drop(id){delete P[id];if(ch)ch.postMessage({t:"d",id});emitP()},
-    async event(ev){if(ch)ch.postMessage({t:"e",ev});emitE(ev,false)},
-    listen(a,b){hP=a;hE=b;if(ch)ch.postMessage({t:"hello"})},
-    stop(){hP=hE=null;if(ch){try{ch.close()}catch(e){}}}
+    stop(){clearInterval(tm);tm=null}
   };
 }
 
@@ -2081,10 +1905,10 @@ async function roomConnect(code,create){
   roomBusy=true;
   try{
     rmSay("Menghubungkan…");
-    await Promise.race([fbInit(),sleepRaw(6000).then(()=>false)]);
-    const rt=FB.ok?rtOnline(code):rtLocal(code);
+    if(!(acct.server||isAdmin())){rmSay("Mabar hanya untuk akun server — login dulu");return "no"}
+    const rt=rtServer(code);
     let meta=await rt.getMeta();
-    const uid=FB.ok?FB.uid:"L"+Math.random().toString(36).slice(2,9);
+    const uid=isAdmin()?"ADMIN":String(acct.id);
     if(create){
       if(meta)return "clash";
       meta={game:"daf",host:uid,hostName:acct.name,max:ROOM_MAX,created:Date.now()};
@@ -2104,12 +1928,12 @@ async function roomConnect(code,create){
     closeModal();
     if(inGame!=="daf")openGame("daf");
     roomUI(true);
-    roomToast(`Room <b>${esc(code)}</b> ${create?"dibuat — bagikan kodenya ke teman":"— kamu masuk"} ${rt.kind==="local"?"(lokal: antar tab)":""}`);
+    roomToast(`Room <b>${esc(code)}</b> ${create?"dibuat — bagikan kodenya ke teman":"— kamu masuk"}`);
     return "ok";
   }catch(e){
     console.warn("room:",e);
     if(R){try{R.rt.stop()}catch(_){}clearInterval(R.hb);R=null}
-    rmSay(e&&e.code==="permission-denied"?"Firestore menolak akses room — atur Rules untuk koleksi 'rooms'":"Gagal terhubung: "+((e&&(e.code||e.message))||"error"));
+    rmSay("Gagal terhubung: "+((e&&(e.message||e.code))||"error"));
     return "err";
   }finally{roomBusy=false}
 }
@@ -2122,7 +1946,7 @@ function roomEvent(ev){
   if(!R||!acct)return Promise.resolve();
   return Promise.resolve(R.rt.event(Object.assign({uid:R.uid,name:acct.name,av:avatarOf(acct),ts:Date.now()},ev))).catch(roomOnErr);
 }
-function roomOnErr(e){console.warn("room err",e);roomToast(e&&e.code==="permission-denied"?"⚠️ Firestore menolak akses room (cek Rules)":"⚠️ Koneksi room bermasalah")}
+function roomOnErr(e){console.warn("room err",e);roomToast("⚠️ Koneksi room bermasalah")}
 function roomOnPlayers(list){
   if(!R)return;const now=Date.now();R.players={};
   list.forEach(p=>{if(now-(p.seen||0)<ROOM_STALE||p.id===R.uid)R.players[p.id]=p});
@@ -2159,7 +1983,7 @@ function roomRender(){
   document.getElementById("rpN").textContent=arr.length+"/"+(R.meta.max||ROOM_MAX)+" pemain";
   if(!document.getElementById("roomPanel").classList.contains("show"))return;
   document.getElementById("rpCode2").textContent=R.code;
-  document.getElementById("rpMeta").textContent=(R.rt.kind==="online"?"🌐 Online":"💻 Lokal (antar tab)")+" • ketuk 👁 pemain untuk intip layarnya";
+  document.getElementById("rpMeta").textContent="🌐 Online"+" • ketuk 👁 pemain untuk intip layarnya";
   document.getElementById("rpPlayers").innerHTML=arr.map((p,i)=>{
     const net=Number(p.net)||0,chips=p.chips==null?"∞":money(Number(p.chips)||0);
     return `<div class="rpP ${p.id===R.uid?"me":""} ${R.watch===p.id?"watched":""}" ${p.id===R.uid?"":`data-id="${esc(p.id)}"`}><span>${i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1}</span><span>${esc(String(p.av||"👤").slice(0,4))}</span><span class="nm">${p.id===R.uid?"":"👁 "}${esc(String(p.name||"?").slice(0,12))}${R.meta.host===p.id?" 👑":""}</span><span class="ch">${chips}</span><span class="nt ${net>=0?"up":"dn"}">${net>=0?"+":"−"}${money(Math.abs(net))}</span></div>`;
@@ -2177,19 +2001,20 @@ function roomTogglePanel(force){
   p.classList.toggle("show",force===undefined?!p.classList.contains("show"):force);roomRender();
 }
 /* ===== NOTIF JACKPOT GLOBAL: semua pemain online (bukan hanya satu room) ===== */
-const G={un:null,ch:null,seen:0,start:0,tm:null,seq:-1};
+const G={tm:null,seq:-1};
 const GQ=[];let gBusy=false,gEl=null;
 function gParse(e){
   const t=String(e.tier||"").split("|"),k=t[0],a=animals[+t[1]],fr=t[2]==="1";
   const an=a?` ${a.e} <b>${esc(a.n.toUpperCase())}</b>`:"";
   const amt=money(Number(e.amt)||0),nm=`<b>${esc(String(e.name||"?").slice(0,12))}</b>`;
-  const col={MINI:"#2fe36b",MINOR:"#29a8ff",MAJOR:"#d84dff",GRAND:"#ffd34d",FULL:"#ff7a3d",SIX:"#7df9ff",QQ:"#ff7ad9",WIN:"#ffd34d",SUPER:"#ff4d6d",MEGA:"#ffb02e",BIG:"#ffd34d",LINE:"#7dffa0"}[k]||"#ffd34d";
+  const col={MINI:"#2fe36b",MINOR:"#29a8ff",MAJOR:"#d84dff",GRAND:"#ffd34d",FULL:"#ff7a3d",SIX:"#7df9ff",QQ:"#ff7ad9",TWM:"#ff6b73",QQM:"#ff6b73",MERAH:"#ff6b73",TWB:"#6aa3ff",QQB:"#6aa3ff",BIRU:"#6aa3ff",SERI:"#4ade80",WIN:"#ffd34d",SUPER:"#ff4d6d",MEGA:"#ffb02e",BIG:"#ffd34d",LINE:"#7dffa0"}[k]||"#ffd34d";
   const mode=t[2]==="Q"?"🎴 di Bandar QQ":fr?"🎁 di SCATTER MODE":"di spin biasa";
   let l1;
   if(k==="FULL")l1=`🖼️ ${nm} FULL GAMBAR${an}`;
   else if(k==="SUPER"||k==="MEGA"||k==="BIG")l1=`🏆 ${nm} ${k} WIN${an}`;
   else if(k==="LINE")l1=`🏆 ${nm} MENANG BESAR${an}`;
   else if(k==="SIX")l1=`🎴 ${nm} SIX TWINS!`;
+  else if({TWM:"TWIN KIRI",TWB:"TWIN KANAN",QQM:"QIU KIRI",QQB:"QIU KANAN",SERI:"SERI",MERAH:"MERAH MENANG",BIRU:"BIRU MENANG"}[k])l1=`🎴 ${nm} ${({TWM:"TWIN KIRI",TWB:"TWIN KANAN",QQM:"QIU KIRI",QQB:"QIU KANAN",SERI:"SERI",MERAH:"MERAH MENANG",BIRU:"BIRU MENANG"})[k]}!`;
   else if(k==="QQ")l1=`🎴 ${nm} QIU QIU!`;
   else if(k==="WIN")l1=`🏆 ${nm} MENANG BESAR`;
   else l1=`👑 ${nm} JACKPOT KARTU <b>${esc(k.slice(0,6))}</b>`;
@@ -2219,47 +2044,22 @@ function gToast(e){
   setTimeout(()=>d.remove(),6600);
   try{coinPing(.05,.09)}catch(_){}
 }
-/* akun SERVER: feed jackpot resmi dari server (tidak bisa dipalsukan). Akun lokal: Firestore/antar-tab. */
-function gOnEvent(e){
-  if(!e||!e.ts||e.ts<=G.seen||e.ts<G.start-2000)return;
-  if(acct&&acct.server)return;   // akun server hanya percaya feed server
-  G.seen=e.ts;
-  if(acct&&e.pid&&String(e.pid)===String(acct.pid))return;
-  gToast(e);
-}
+/* feed jackpot resmi dari server Cloudflare (tidak bisa dipalsukan); akun server & admin */
 async function gPoll(){
-  if(!acct||!acct.server||document.hidden)return;
-  const tok=LS.get("daf_token");if(!tok)return;
+  if(!acct||!(acct.server||isAdmin())||document.hidden)return;
+  const tok=isAdmin()?admToken:LS.get("daf_token");if(!tok)return;
   const r=await apiCall("/feed?since="+G.seq,null,tok);
   if(!(r.ok&&r.j))return;
   const first=G.seq<0;
   if(typeof r.j.last==="number")G.seq=r.j.last;   // server menjamin nomor tidak mundur
   if(first)return;   // panggilan pertama hanya menandai posisi: jackpot lama tidak ditampilkan
-  (r.j.items||[]).forEach(it=>{if(inGame!=="qq"&&String(it.uid)!==String(acct.id))gToast({name:it.name,tier:it.tier,amt:it.amt,av:animals[(parseInt(it.uid,10)||0)%animals.length].e})});
+  (r.j.items||[]).forEach(it=>{if(inGame!=="qq")gToast({name:it.name,tier:it.tier,amt:it.amt,av:animals[(parseInt(it.uid,10)||0)%animals.length].e})});
 }
-async function globalStart(){
-  if(acct&&acct.server){
-    if(!G.tm){G.seq=-1;G.tm=setInterval(gPoll,3000)}
-    gPoll();return;
-  }
-  if(G.un||G.ch)return;
-  G.start=Date.now();
-  try{
-    if(typeof BroadcastChannel!=="undefined"){G.ch=new BroadcastChannel("daf_global");G.ch.onmessage=m=>gOnEvent(m.data)}
-    await Promise.race([fbInit(),sleepRaw(6000).then(()=>false)]);
-    if(FB.ok){
-      G.un=FB.db.collection("rooms").doc("GLOBAL").onSnapshot(x=>{if(x.exists)gOnEvent(x.data())},e=>console.warn("global notif:",e));
-    }
-  }catch(e){console.warn("global notif:",e)}
-}
-function globalSend(tier,amt){
-  if(!acct||acct.server)return;   // akun server: server yang mencatat
-  const ev={k:"jp",tier,amt,name:acct.name,av:avatarOf(acct),pid:String(acct.pid||""),ts:Date.now()};
-  try{if(G.ch)G.ch.postMessage(ev)}catch(_){}
-  try{if(FB.ok)FB.db.collection("rooms").doc("GLOBAL").set(ev).catch(e=>console.warn("global notif:",e))}catch(_){}
+function globalStart(){
+  if(!G.tm){G.seq=-1;G.tm=setInterval(gPoll,3000)}
+  gPoll();
 }
 function roomAfterSpin(i){   // dipanggil di akhir tiap spin
-  if(i.special&&i.special.kind==="jp")globalSend(i.special.tier,i.win);   // global: semua pemain, walau tidak di room
   if(!R)return;
   const sb=i.isFree?0:i.bet;
   R.spins++;R.sessBet+=sb;R.sessWin+=i.win;if(i.win>R.best)R.best=i.win;
@@ -2329,7 +2129,7 @@ document.getElementById("rpCopy").addEventListener("click",()=>{if(!R)return;con
 document.querySelector(".rpReact").addEventListener("click",e=>{const b=e.target.closest("[data-r]");if(b)roomReact(b.dataset.r)});
 window.addEventListener("beforeunload",()=>{if(R){try{R.rt.drop(R.uid)}catch(e){}}});
 makeBoard=function(){seedResult("normal",true);render(false)}; // initial board
-seedResult("normal",true);render(false);updateUI();renderFullTable();loadPhotos();fbInit();loadSettings();showLobby();initAccount();
+seedResult("normal",true);render(false);updateUI();renderFullTable();loadPhotos();loadSettings();showLobby();initAccount();
 (function(){const t0=Date.now();let d=false;const hide=()=>{if(!d){d=true;ldBootActive=false;ldHide()}},fin=()=>setTimeout(hide,Math.max(0,1000-(Date.now()-t0)));if(document.readyState==="complete")fin();else window.addEventListener("load",fin,{once:true});setTimeout(hide,6000)})();   // loading awal   // buka di LOBI; modal login (jika perlu) muncul di atas lobi
 </script>
 </body>
