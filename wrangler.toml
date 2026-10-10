@@ -1,0 +1,9 @@
+name = "daf-api"
+main = "worker.js"
+compatibility_date = "2025-10-01"
+keep_vars = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "daf-db"
+database_id = "9ad62ec6-8ef8-4307-b612-2bd15947a461"
