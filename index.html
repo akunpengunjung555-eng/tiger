@@ -678,6 +678,7 @@ body{padding:5px}
 .qqWrap{position:fixed;inset:0;z-index:90;background:#000;display:none}
 .qqWrap.show{display:block}
 .qqWrap iframe{width:100%;height:100%;border:0;display:block;background:#000}
+body.emb #lobby{display:none!important}
 </style>
 </head>
 <body>
@@ -1083,6 +1084,7 @@ function enterAcct(a){
   afterLogin(a);
 }
 function afterLogin(a){
+  if(EMB)return;
   if(a.server&&a.inboxPending>0&&!inboxNote)inboxNote=`Ada <b>${a.inboxPending}</b> kiriman chip menunggu di INBOX. Buka INBOX lalu tap AMBIL.`;
   const daily=a.lastDaily!==((a.server&&a.today)||dateKey());
   if(inboxNote){openInfo("📥 CHIP MASUK",inboxNote,daily?"openDaily()":"closeModal()");inboxNote=""}
@@ -1595,6 +1597,9 @@ function ldRun(icon,title,sub,min,fn,ready){
   const done=()=>{const w=Math.max(0,min-(Date.now()-t0));ldTimer=setTimeout(ldHide,w)};
   if(p&&p.then){let fin=false;const go=()=>{if(!fin){fin=true;done()}};p.then(go,go);setTimeout(go,8000)}else done();
 }
+/* mode embed: dibuka dari DAF Pets (?g=daf|qq&embed=1) -> langsung masuk game tanpa lobi; keluar = kabari halaman Pets */
+const EMB=(()=>{try{const q=new URLSearchParams(location.search),g=q.get("g");return q.get("embed")==="1"&&(g==="daf"||g==="qq")?g:""}catch(e){return ""}})();
+if(EMB)document.body.classList.add("emb");
 const GAMES=[
   {id:"daf",name:"Dragon Animal Fortune",tag:"MAX WIN • SOLO & MABAR",icon:"🐉",multi:true,c1:"#b3203f",c2:"#4a0612",c3:"#ffb02e",badge:"🔥 HOT",live:true,
    ticker:()=>{const e=document.querySelector("#jp-GRAND strong");return e?"👑 GRAND "+e.textContent:""},
@@ -1607,7 +1612,8 @@ const GAMES=[
    howto:"• Pasang chip ke <b>MERAH</b> atau <b>BIRU</b>. Tiap sisi dapat 2 kartu domino; nilai = jumlah titik, ambil angka satuannya (maks <b>9 = QIU</b>).<br>• <b>MERAH / BIRU</b> bayar 1:1 (seri = taruhan kembali). <b>SERI</b> 1:8.<br>• <b>QIU</b> (satu sisi 9) 1:8 • <b>TWIN</b> (kedua kartu sisi itu balak) 1:15.<br>• <b>QIU QIU</b> (Merah &amp; Biru sama-sama 9) 1:88 • <b>SIX/TWINS</b> (kedua sisi twin) 1:500.<br>• Kartu dikocok &amp; dihitung di server untuk akun login.",
    onEnter(){qqOpen()},onExit(){qqClose()},
    ready:()=>new Promise(res=>{const f=qqFrame();if(f)f.addEventListener("load",res,{once:true});else res()})},
-  {id:"soon1",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎰",live:false},
+  {id:"pets",name:"DAF Pets",tag:"KANDANG • TELUR • LELANG",icon:"🐾",c1:"#1f6f3a",c2:"#062a14",c3:"#ffd34d",badge:"🐾 NEW",live:true,href:"DAF_Pets.html",
+   howto:"• Pelihara hewan di kandang 3D, tetaskan telur, dan <b>ambil chip</b> yang dihasilkan hewan.<br>• Chip Pets <b>sama</b> dengan chip game lain (satu saldo akun, tersimpan di server).<br>• Butuh chip? Tombol <b>Tempat Berburu Chip</b> di dalam Pets membuka DAF &amp; Bandar QQ."},
   {id:"soon2",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎲",live:false}
 ];
 function renderGames(){
@@ -1619,12 +1625,13 @@ function renderGames(){
 function openGame(id){
   const g=GAMES.find(x=>x.id===id);if(!g||!g.live)return;
   try{unlockAudio()}catch(e){}
+  if(g.href){try{saveGame()}catch(e){}ldRun(g.icon,g.name,"Membuka…",900,()=>{setTimeout(()=>{location.href=g.href},700)});return}
   ldRun(g.icon,g.name,"Memuat game…",900,()=>{hideLobby();inGame=id;if(g.onEnter)g.onEnter()},g.ready);
 }
 function exitGame(){
   const g=GAMES.find(x=>x.id===inGame);if(!g)return;
   if(g.canExit&&!g.canExit())return;
-  ldRun("🏠","DAF Arena","Kembali ke lobi…",600,()=>{roomLeave();if(g.onExit)g.onExit();inGame=null;showLobby()});
+  ldRun("🏠","DAF Arena","Kembali ke lobi…",600,()=>{roomLeave();if(g.onExit)g.onExit();inGame=null;if(EMB){try{parent.postMessage({t:"pets-exit"},location.origin==="null"?"*":location.origin)}catch(e){}return}showLobby()});
 }
 let lbTimer=null;
 function realChips(){return (freeMode&&stash)?stash.balance:balance}
@@ -2129,7 +2136,7 @@ document.getElementById("rpCopy").addEventListener("click",()=>{if(!R)return;con
 document.querySelector(".rpReact").addEventListener("click",e=>{const b=e.target.closest("[data-r]");if(b)roomReact(b.dataset.r)});
 window.addEventListener("beforeunload",()=>{if(R){try{R.rt.drop(R.uid)}catch(e){}}});
 makeBoard=function(){seedResult("normal",true);render(false)}; // initial board
-seedResult("normal",true);render(false);updateUI();renderFullTable();loadPhotos();loadSettings();showLobby();initAccount();
+seedResult("normal",true);render(false);updateUI();renderFullTable();loadPhotos();loadSettings();showLobby();initAccount().then(()=>{if(EMB)openGame(EMB)},()=>{if(EMB)openGame(EMB)});
 (function(){const t0=Date.now();let d=false;const hide=()=>{if(!d){d=true;ldBootActive=false;ldHide()}},fin=()=>setTimeout(hide,Math.max(0,1000-(Date.now()-t0)));if(document.readyState==="complete")fin();else window.addEventListener("load",fin,{once:true});setTimeout(hide,6000)})();   // loading awal   // buka di LOBI; modal login (jika perlu) muncul di atas lobi
 </script>
 </body>

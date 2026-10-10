@@ -209,6 +209,14 @@ async function qqSettle(env, room, uid, closedN) {
     }
   }
 }
+/* ===== DAF PETS: simpan state kandang per akun + sinkron saldo chip (chip Pets = chip game lain) ===== */
+const PETS_BURST = 2e12, PETS_RATE = 5e8, PETS_MAX_STATE = 400000;   // batas kenaikan chip per sinkron: PETS_BURST + detik_sejak_sinkron_terakhir * PETS_RATE (atur sesuai ekonomi)
+let petsReady = false;
+async function petsEnsure(env) {
+  if (petsReady) return;
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS pets_state (id TEXT PRIMARY KEY, state TEXT, at INTEGER)").run();
+  petsReady = true;
+}
 let roomReady = false;   // Mabar room slot (pengganti Firestore rooms)
 async function roomEnsure(env) {
   if (roomReady) return;
@@ -249,7 +257,7 @@ const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
 const auth = await verifyTok(env, (req.headers.get("Authorization") || "").replace(/^Bearer /, ""));
 const now = Date.now();
 
-if (path === "/") return json(env, { ok: true, service: "daf-api", v: 12, room: true });
+if (path === "/") return json(env, { ok: true, service: "daf-api", v: 12, room: true, pets: true });
 
 if (path === "/register" && req.method === "POST") {
 const name = String(body.name || "").trim(), pass = String(body.pass || "");
@@ -551,6 +559,36 @@ if (!Number.isFinite(since) || since < 0) return json(env, { last, items: [] });
 if (since > last) return json(env, { last, items: [] });   // nomor klien lebih besar dari server (tabel di-reset): sinkronkan ulang
 const r = await env.DB.prepare("SELECT rowid AS seq,uid,name,tier,amt,at FROM jp_feed WHERE rowid>? ORDER BY rowid ASC LIMIT 20").bind(since).all();
 return json(env, { last: r.results.length ? r.results[r.results.length - 1].seq : last, items: r.results });
+}
+
+if (path === "/pets/load" || path === "/pets/sync") {
+if (auth.adm) return bad(env, "Admin tidak memakai Pets");
+await petsEnsure(env);
+const acc = await env.DB.prepare("SELECT balance,username FROM accounts WHERE id=?").bind(auth.id).first();
+if (!acc) return bad(env, "Akun tidak ditemukan", 404);
+const prev = await env.DB.prepare("SELECT state,at FROM pets_state WHERE id=?").bind(auth.id).first();
+if (path === "/pets/load") {
+let st = null; try { st = prev ? JSON.parse(prev.state) : null; } catch (e) {}
+return json(env, { balance: acc.balance, name: acc.username, state: st });
+}
+if (req.method !== "POST") return bad(env, "Metode salah", 405);
+let d = Math.trunc(Number(body.d) || 0);
+if (!Number.isFinite(d)) return bad(env, "Jumlah tidak valid");
+const st = body.state;
+let js = null;
+if (st && typeof st === "object" && Array.isArray(st.pets)) { js = JSON.stringify(st); if (js.length > PETS_MAX_STATE) return bad(env, "State Pets terlalu besar", 413); }
+let capped = false;
+const maxGain = PETS_BURST + Math.min(86400, Math.max(0, (now - ((prev && prev.at) || now)) / 1000)) * PETS_RATE;
+if (d > maxGain) { d = Math.floor(maxGain); capped = true; }
+if (d < 0 && acc.balance + d < 0) return json(env, { error: "Chip tidak cukup", balance: acc.balance }, 400);
+if (d !== 0) {
+const r = await env.DB.prepare("UPDATE accounts SET balance=balance+?1 WHERE id=?2 AND balance+?1>=0").bind(d, auth.id).run();
+if (!r.meta.changes) { const cur = await env.DB.prepare("SELECT balance FROM accounts WHERE id=?").bind(auth.id).first(); return json(env, { error: "Chip tidak cukup", balance: cur ? cur.balance : 0 }, 400); }
+}
+if (js) await env.DB.prepare("INSERT OR REPLACE INTO pets_state (id,state,at) VALUES (?1,?2,?3)").bind(auth.id, js, now).run();
+else if (prev) await env.DB.prepare("UPDATE pets_state SET at=?1 WHERE id=?2").bind(now, auth.id).run();
+const me = await env.DB.prepare("SELECT balance FROM accounts WHERE id=?").bind(auth.id).first();
+return json(env, { ok: true, balance: me.balance, capped });
 }
 
 if (path === "/daily" && req.method === "POST") {
