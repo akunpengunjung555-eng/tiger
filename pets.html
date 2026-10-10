@@ -167,6 +167,9 @@ h2:after{content:"";flex:1;height:2px;border-radius:2px;background:linear-gradie
 /* ===== TANPA DOBEL: di dalam lobi, suara/Harian/chip sudah ada di bar lobi ===== */
 html.host #bgmBtn,html.host header [data-a=daily],html.host header .chips{display:none!important}
 html.host header{justify-content:center}
+.sec{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:46px;margin:12px 0 8px;padding:0 14px;border:2px solid #ffd34d99;border-radius:14px;background:linear-gradient(#8f1a30,#4a0916);color:#ffe36a;font-weight:800;font-size:15px;cursor:pointer;box-shadow:inset 0 1px #fff3,0 3px 0 #2a0408}
+.sec i{font-style:normal;font-size:12px;color:#ffd9a8;font-weight:700}
+.sec:active{transform:translateY(2px);box-shadow:inset 0 1px #fff3,0 1px 0 #2a0408}
 </style><script>try{if(window.parent!==window)document.documentElement.classList.add('host')}catch(e){document.documentElement.classList.add('host')}</script><script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="daf-sfx.js?v=1"></script></head><body><div class="app">
 <header><h1>🐾 DAF Pets</h1><div class="row"><button class="b" id="bgmBtn" aria-label="Musik" style="min-width:40px;padding:6px 8px">🔊</button><button class="b gd" data-a="daily">🎁 Harian</button><div class="chips">🪙 <b id="chips">0</b></div></div></header>
@@ -377,7 +380,7 @@ hadiah(){
  `<h2>Terima hadiah</h2><input id="rc" placeholder="Tempel kode DAF-..."><div class="btns"><button class="b go" data-a="redeem">Klaim hadiah</button></div>`}
 };
 function R(){$('#chips').textContent=fmt(ADAPTER.get());
- document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));const h=V[tab](),v=$('#v');if(R.h!==h||R.t!==tab){v.innerHTML=h;R.h=h;R.t=tab}yardShow()}
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));const h=collapse(tab,V[tab]()),v=$('#v');if(R.h!==h||R.t!==tab){v.innerHTML=h;R.h=h;R.t=tab}yardShow()}
 document.addEventListener('click',e=>{
  const n=e.target.closest('nav button');if(n){const t=n.dataset.t;if(t===tab||XB)return;const m=TABM[t]||['🐾','DAF Pets'];xSwap(m[0],m[1],'Membuka '+m[1]+'…',()=>{tab=t;R();const v=$('#v');v.classList.remove('tin');void v.offsetWidth;v.classList.add('tin')},160);return}
  const b=e.target.closest('[data-a]');if(!b)return;
@@ -663,7 +666,9 @@ function syncDec2(){const d=decOn(),D=T.D;const add=(k,g,x,y,z)=>{g.position.set
 function harta(){return ADAPTER.get()+Object.keys(S.dec||{}).reduce((a,k)=>a+DEC[k].c,0)+S.pets.reduce((a,p)=>a+av(p.sp,p),0)}
 function decShop(){const h=harta(),tot=Object.keys(S.dec||{}).reduce((a,k)=>a+DEC[k].b,0);
  return `<h2>Harta ${sh(h)} / 1 T${h>=1e12?' ✅ target tercapai':''}</h2><div class="bar"><i style="width:${Math.min(100,h/1e10)}%;background:#ffd34d"></i></div><small>Harta = chip + nilai properti + nilai hewan. Bonus properti sekarang +${Math.round(tot*100)}% chip semua hewan.</small><h2>Properti kandang</h2><div class="grid">`+Object.keys(DEC).map(k=>{const D=DEC[k],has=(S.dec||{})[k];return `<div class="card"><span class="em">${D.e}</span><br><b>${D.n}</b> · +${Math.round(D.b*100)}% chip<div class="btns"><button class="b gd" data-a="buyD" data-i="${k}" ${has?'disabled':''}>${has?'Terpasang':'Beli '+fmt(D.c)}</button></div></div>`}).join('')+'</div>'}
-{const _k=V.kandang,_t=V.toko;V.kandang=()=>eggList()+decOwned()+_k()+mutBook()+careInfo();V.toko=()=>_t().replace(/<h2>Telur misterius<\/h2>[\s\S]*?(?=<h2>Hewan langsung)/,eggShop()).replace(/<h2>Hewan langsung<\/h2>[\s\S]*?(?=<h2>Gabung hewan)/,'<small>Hewan tidak dijual langsung. Dapatkan dari telur, tamu langka, lelang pemain, atau hadiah teman.</small>')+decShop();V.hadiah=(h=>()=>qList()+h())(V.hadiah)}
+{const _k=V.kandang,_t=V.toko;V.kandang=()=>{const k=_k(),g=k.indexOf('<div class="grid" style="margin-top:8px">'),i=k.indexOf('<h2>Koleksi'),pr=decOwned().replace('<h2>Properti saya</h2>','');
+  let body;if(g<0||i<0)body=k;else body=k.slice(0,g)+secBox('hw','🐾 Hewan ('+S.pets.length+')',k.slice(g,i))+(pr?secBox('pr','🏗️ Properti ('+Object.keys(S.dec||{}).filter(x=>S.dec[x]&&DEC[x]).length+')',pr):'')+k.slice(i);
+  return eggList()+'<!--e-->'+body+mutBook()+careInfo()};V.toko=()=>_t().replace(/<h2>Telur misterius<\/h2>[\s\S]*?(?=<h2>Hewan langsung)/,eggShop()).replace(/<h2>Hewan langsung<\/h2>[\s\S]*?(?=<h2>Gabung hewan)/,'<small>Hewan tidak dijual langsung. Dapatkan dari telur, tamu langka, lelang pemain, atau hadiah teman.</small>')+decShop();V.hadiah=(h=>()=>qList()+h())(V.hadiah)}
 
 /* ===== HADIAH HARIAN: akun login memakai hadiah harian SERVER (satu streak, satu klaim/hari, sama dengan tombol Harian di lobi) ===== */
 {const local=A.daily;
@@ -689,11 +694,17 @@ function applyDec(){if(!T||!T.D)return;const on=decOn();
  for(const k in T.D)if(!on[k]){T.sc.remove(T.D[k]);delete T.D[k]}
  for(const k in T.D){const o=(S.dpos||{})[k],g=T.D[k];if(!o)continue;if(o.x!=null){g.position.x=o.x;g.position.z=o.z}if(o.r!=null)g.rotation.y=o.r}
  const h=$('.hint');if(h)h.textContent=MV.k?'Mode pindah: ketuk lokasi untuk '+DEC[MV.k].n+' · geser: putar kamera':'Geser: putar kamera · Ketuk hewan: elus · Ketuk 🪙: ambil'}
+let OPEN={hw:1,pr:1,'kandang:Koleksi':0,'kandang:Buku mutasi':0,'kandang:Biaya perawatan':0};try{Object.assign(OPEN,JSON.parse(localStorage.getItem('dafpets_sec')||'{}'))}catch(e){}
+function secBox(id,t,c){const o=OPEN[id]!==0;return `<button class="sec" data-a="sec" data-i="${id}"><span>${t}</span><i>${o?'▲ Tutup':'▼ Buka'}</i></button>`+(o?c:'')}
+/* semua judul <h2> di setiap tab otomatis jadi bagian yang bisa dibuka/tutup; <!--e--> mengakhiri bagian */
+function collapse(t,h){return h.split(/(?=<h2>)|<!--e-->/).map(c=>{const m=c.match(/^<h2>([\s\S]*?)<\/h2>([\s\S]*)$/);if(!m)return c;
+ const key=t+':'+m[1].replace(/<[^>]*>/g,'').split(/ ·| \(|\d/)[0].trim();return secBox(key,m[1],m[2])}).join('')}
 function decOwned(){const ks=Object.keys(S.dec||{}).filter(k=>S.dec[k]&&DEC[k]);if(!ks.length)return '';
  return '<h2>Properti saya</h2><div class="grid">'+ks.map(k=>{const D=DEC[k],st=((S.dpos||{})[k]||{}).st,mv=MV.k===k;
   return `<div class="card" style="--rc:#ffd34d"><b>${D.e} ${D.n}</b> <small>+${Math.round(D.b*100)}% chip · ${st?'📦 Disimpan':'🏡 Di kandang'}</small><div class="btns"><button class="b ${st?'gd':''}" data-a="toggleD" data-i="${k}">${st?'📤 Letakkan':'📥 Simpan'}</button>`+
   (st?'':`<button class="b ${mv?'go':''}" data-a="moveD" data-i="${k}">${mv?'✅ Selesai':'✥ Pindahkan'}</button><button class="b" data-a="rotD" data-i="${k}">🔄 Putar</button>`)+'</div></div>'}).join('')+'</div>'}
 Object.assign(A,{
+ sec(id){OPEN[id]=OPEN[id]===0?1:0;try{localStorage.setItem('dafpets_sec',JSON.stringify(OPEN))}catch(e){}},
  toggleD(k){if(!DEC[k]||!(S.dec||{})[k])return;const o=dpos(k);o.st=o.st?0:1;if(o.st&&MV.k===k)MV.k=null;SND.ui('ok');toast(DEC[k].n+(o.st?' disimpan':' diletakkan di kandang'))},
  moveD(k){if(MV.k===k){MV.k=null;return toast('Selesai memindahkan')}MV.k=k;toast('Ketuk lokasi di kandang untuk memindahkan '+DEC[k].n)},
  rotD(k){const o=dpos(k),g=T&&T.D&&T.D[k];o.r=(o.r!=null?o.r:(g?g.rotation.y:0))+Math.PI/4},
