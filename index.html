@@ -414,7 +414,7 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .gCard.soon{--c1:#4a3a3f;--c2:#1b1114;border-color:#8a7a60;box-shadow:none;cursor:default}
 .gCard.soon .gi{filter:grayscale(1) drop-shadow(0 4px 6px #000a);opacity:.55;animation:none}
 .gCard.soon .gPlay{background:#3a2d31;color:#bfae93;text-shadow:none}
-.lbNav{display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
+.lbNav{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));
   background:linear-gradient(#35040d,#1a0208);border-top:2px solid #d98a1b}
 .lbNav button{position:relative;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 0;border:0;border-radius:10px;
   background:none;color:#ffe9a6;font-weight:900;font-size:11px;cursor:pointer}
@@ -423,6 +423,7 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .lbNav .dot{position:absolute;top:2px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#ff3b3b;color:#fff;
   font-size:11px;line-height:17px;text-align:center;border:1px solid #fff}
 .lbNav .dot[hidden]{display:none}
+.lbNav button[hidden]{display:none}
 .setRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid #ffd34d33;text-align:left;font-size:14px}
 .setRow b{color:#fff}
 .setRow .ubtn{flex:none;min-width:96px}
@@ -889,6 +890,7 @@ function updateUserBar(){
   document.getElementById("logoutBtn").hidden=!on;
   document.getElementById("freeExitBtn").hidden=!freeMode;
   document.getElementById("voiceTest").hidden=!adm;   // tombol testing hanya untuk admin
+  document.getElementById("nvSend").hidden=!canSend();   // tombol KIRIM hanya untuk admin & akun yang didaftarkan admin
 }
 let inboxNote="";
 function applyAcct(a){
@@ -1196,7 +1198,7 @@ function openProfile(){
   ${adm?"":`<div class="rowin"><input id="pfName" type="text" maxlength="12" value="${esc(acct.name)}" autocomplete="off" autocapitalize="off"><button class="ubtn gold" type="button" onclick="renameUser()">GANTI NAMA</button></div>
   <div id="pfErr" class="hint" style="color:#ff8a8a;font-weight:900"></div>`}
   <button class="btn small" type="button" style="font-size:16px" onclick="openLeaderboard()">🏆 PERINGKAT CHIP</button>
-  ${canSend()?`<button class="btn spin" type="button" style="font-size:18px" onclick="openTransfer()">📤 KIRIM CHIP</button>`:`<p class="pwNote" style="text-align:center">📤 Kirim chip hanya untuk admin &amp; akun yang didaftarkan admin.</p>`}
+  ${canSend()?`<button class="btn spin" type="button" style="font-size:18px" onclick="openTransfer()">📤 KIRIM CHIP</button>`:""}
   ${adm?"":`<button class="btn small" type="button" style="font-size:14px" onclick="openSetPw()">${acct.pw?"🔒 GANTI KATA SANDI":"🔑 BUAT KATA SANDI"}</button>`}
   <div class="txlist"><b style="color:#fff">Riwayat terakhir</b>${tx}</div>
   ${adm?"":`<button class="btn small" type="button" style="font-size:14px;background:linear-gradient(#7d1729,#430713)" onclick="openDeleteConfirm()">🗑️ HAPUS AKUN</button>`}
