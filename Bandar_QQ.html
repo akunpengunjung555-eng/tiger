@@ -114,8 +114,14 @@ button{touch-action:manipulation}
 .cl i.l{color:#ff8a90}.cl i.r{color:#8db8ff}
 #stat{display:none}
 .tl{margin-top:0;padding-top:0;border-top:0}
+.cp{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;height:52%;z-index:60;display:none;flex-direction:column;background:#150810f5;border-top:2px solid #ffd34d;border-radius:14px 14px 0 0;color:#fff}
+.cph{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;font-size:13px}
+.cpl{flex:1;overflow-y:auto;padding:0 12px;font-size:12px;line-height:1.5}
+.cpl div{margin:2px 0;word-break:break-word}.cpl b{color:#ffd34d}.cpl .sy{opacity:.6}
+.cpi{display:flex;gap:6px;padding:8px}.cpi input{flex:1;min-width:0;border-radius:8px;border:1px solid #fff4;background:#0008;color:#fff;padding:8px;font-size:14px}
+.cpi button{border:0;border-radius:8px;background:#ffd34d;color:#000;font-weight:900;padding:0 14px}
 </style></head><body><div class="app">
-<div class="bar"><span class="pill">🪙 <span id="coin"></span></span><span class="pill" id="room"></span><span class="pill">👥 <span id="onl">309</span></span><span style="display:flex;gap:6px"><button class="ib" id="trb">📈</button><button class="ib" id="gear">⚙️</button></span></div>
+<div class="bar"><span class="pill">🪙 <span id="coin"></span></span><span class="pill" id="room"></span><span class="pill">👥 <span id="onl">309</span></span><span style="display:flex;gap:6px"><button class="ib" id="chb" style="display:none">💬<b id="chd" style="display:none;color:#ff5a5a;font-size:9px">●</b></button><button class="ib" id="trb">📈</button><button class="ib" id="gear">⚙️</button></span></div>
 <div class="tp" id="tp"><div id="stat"></div><div class="tl" id="tl"></div></div>
 <div class="menu" id="menu"><button id="mSnd"></button><button id="mVo"></button><button id="mMu"></button><button id="mTv">🔔 Tes Suara</button><button id="mLb">🏠 Lobi</button><button id="mEx" style="display:none">↩ Lobi Utama</button></div>
 <div class="scene" id="scene">
@@ -151,6 +157,7 @@ button{touch-action:manipulation}
 <div class="row"><button class="btn" id="auto"></button><button class="btn" id="redo">🔁 Ulang</button><button class="btn" id="dbl">✖2</button><button class="btn" id="undo">Batal</button></div>
 <div class="note">Koin virtual untuk hiburan, tanpa deposit atau penarikan.</div>
 </div>
+<div class="cp" id="cp"><div class="cph"><b>💬 Chat Global</b><button class="ib" id="cx">✕</button></div><div class="cpl" id="cpl"></div><div class="cpi"><input id="ci" maxlength="120" placeholder="Tulis pesan..." autocomplete="off"><button id="cs">Kirim</button></div></div>
 <div class="rs" id="rs"><div class="rt" id="rt"></div><div class="rh r" id="rr"></div><div class="rh b" id="rbb"></div><div class="rx" id="rx"></div></div>
 <div class="ov" id="ovL"><div class="box"><h3>Lobi</h3><div id="rooms"></div><div class="note" style="text-align:left;margin:6px 0 10px;opacity:.75;font-size:10px">Qiu Qiu menang jika Merah dan Biru sama-sama Qiu (9), Six Twins jika keduanya Twin. Payout Seri dan Qiu masih perkiraan.</div><button class="btn" onclick="ovL.style.display='none'">Tutup</button></div></div>
 <script>
@@ -169,7 +176,7 @@ function toHost(m){try{parent.postMessage(m,HOR)}catch(e){}}
 function hostCall(m){return new Promise(res=>{const id=++_hid;_hp.set(id,res);toHost(Object.assign({id},m));setTimeout(()=>{if(_hp.has(id)){_hp.delete(id);res({ok:false,error:'Server tidak merespons, coba lagi',status:0})}},30000)})}
 const rid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,10);
 window.addEventListener('message',e=>{if(!IN_FRAME||e.source!==parent||e.origin!==location.origin)return;const m=e.data||{};
-if(m.t=='qq-init'){HOST={server:!!m.server,inf:!!m.inf};coins=Math.max(0,+m.balance||0);if(!_started){_started=true;newRound()}else draw()}
+if(m.t=='qq-init'){HOST={server:!!m.server,inf:!!m.inf};coins=Math.max(0,+m.balance||0);if(!_started){_started=true;HOST.server?liveStart():newRound()}else draw()}
 else if(m.t=='qq-reply'){const f=_hp.get(m.id);if(f){_hp.delete(m.id);f(m)}}});
 const bots=[['Dedhy',629e9,'#e6b48f','#2a1a10','#2d5a8a'],['Sultan',464e9,'#c68a60','#111','#7a2a2a'],['Rani',463e9,'#f1c9a5','#4a2210','#8a3a6a'],['Joko',275e9,'#a9744f','#1c1008','#2a6a4a'],['Budi',237e9,'#d9a37c','#222','#555']];
 const me=['Kamu',0,'#e8b890','#3a2214','#1f7a4a'];
@@ -237,7 +244,7 @@ const val=h=>(h[0][0]+h[0][1]+h[1][0]+h[1][1])%10;
 const twin=h=>h[0][0]==h[0][1]&&h[1][0]==h[1][1];
 function stack(v){if(!v)return'';const n=Math.min(6,1+Math.floor(Math.log(v/2e5+1)/Math.log(2.3)));let c=v<2e5?(CH.filter(x=>x[0]<=v).pop()||CH[0])[2]:CH[1][2];for(const x of CH)if(x[0]>=2e5&&x[0]<=v/2)c=x[2];let h='';for(let i=0;i<n;i++)h+=`<div class="chip3d" style="--c:${c};left:${(i%2)}px;top:${-i*2.6}px"></div>`;return `<div class="stk">${h}</div>`}
 function zone(k,cls=''){const d=Zd[k];return `<button class="z ${d[2]} ${cls}${win[k]?' win':''}" data-z="${k}"><i class="pt">${fmt(pot[k]||0)}</i><span>${d[0]}<br><i>${d[1]}</i></span><div class="sb">${stack(pot[k])}</div><span class="mine">${mine[k]?fmt(mine[k]):''}</span></button>`}
-const av=(b,i)=>`<div class="av" data-a="${i}">${avs(b)}${b[0]}<br>🪙${fmt(b[1])}</div>`;
+const av=(b,i)=>`<div class="av" data-a="${i}"${b[5]?' style="opacity:.3"':''}>${avs(b)}${b[5]?'Kosong':b[0]}<br>${b[5]?'&nbsp;':'🪙'+fmt(b[1])}</div>`;
 function fitSel(){const mn=ROOMS[roomI][1];if(coins>=sel&&sel>=mn)return true;const a=CH.filter(x=>x[0]>=mn&&x[0]<=coins);if(!a.length)return false;sel=a[a.length-1][0];return true}
 let _tb=0,_zr={},_sc='',_cc='',_tx={};
 function sT(id,v){if(_tx[id]!==v){_tx[id]=v;$(id).textContent=v}}
@@ -263,10 +270,10 @@ function place(k,i,c){fly(aEl(i),zEl(k),c,520);sfx('chip',i=='me'?1:.5)}
 $('tbl').onclick=e=>{const b=e.target.closest('[data-z]');if(!b||phase!='bet')return;const k=b.dataset.z;
 if(!fitSel()){$('msg').textContent='Koin tidak cukup untuk taruhan minimum.';return}
 const c=CH.find(x=>x[0]==sel)[2];place(k,'me',c);
-coins-=sel;mine[k]=(mine[k]||0)+sel;pot[k]=(pot[k]||0)+sel;fitSel();setTimeout(draw,0)};
+coins-=sel;mine[k]=(mine[k]||0)+sel;pot[k]=(pot[k]||0)+sel;syncBet();fitSel();setTimeout(draw,0)};
 $('chips').onclick=e=>{if(e.target.closest('.me')){react('me',['😎','😂','🔥','👏','😍'][rc++%5]);sfx('heart',.6);return}const b=e.target.closest('[data-v]');if(b){sel=+b.dataset.v;draw()}};
 $('auto').onclick=()=>{auto=!auto;draw()};
-$('undo').onclick=()=>{if(phase!='bet')return;for(const k in mine){coins+=mine[k];pot[k]-=mine[k]}mine={};draw()};
+$('undo').onclick=()=>{if(phase!='bet')return;for(const k in mine){coins+=mine[k];pot[k]-=mine[k]}mine={};syncBet();draw()};
 $('gift').onclick=()=>{if(coins>=5e4){coins-=5e4;$('msg').textContent='Hadiah ❤️ terkirim ke bandar!';sfx('heart');say('Terima kasih atas hadiahnya');draw()}};
 $('gear').onclick=e=>{e.stopPropagation();$('menu').style.display=$('menu').style.display=='block'?'none':'block'};
 document.body.addEventListener('click',()=>{$('menu').style.display='none';$('tp').style.display='none'});
@@ -282,6 +289,7 @@ $('tp').onclick=e=>e.stopPropagation();
 if(IN_FRAME){$('mEx').style.display='block';$('mEx').onclick=()=>toHost({t:'qq-exit'})}
 $('mLb').onclick=()=>{$('rooms').innerHTML=ROOMS.map((r,i)=>`<button class="room${i==roomI?' on':''}" data-r="${i}"><span>${r[0]} (min ${fmt(r[1])})</span><span>👥 ${r[2]}</span></button>`).join('');$('ovL').style.display='block'};
 $('rooms').onclick=e=>{const b=e.target.closest('[data-r]');if(!b)return;const i=+b.dataset.r;if(i==roomI){ovL.style.display='none';return}
+if(LIVE){if(Object.keys(mine).length&&phase!='end'){$('msg').textContent='Selesaikan ronde dulu sebelum pindah room.';ovL.style.display='none';return}roomI=i;if(sel<ROOMS[i][1])sel=ROOMS[i][1];tr=[];ovL.style.display='none';gen++;curN=-1;shownN=-1;mine={};pot={};phase='wait';wantHist=1;lastPoll=0;$('msg').textContent='Pindah room...';draw();poll();return}
 for(const k in mine)coins+=mine[k];roomI=i;if(sel<ROOMS[i][1])sel=ROOMS[i][1];tr=[];ovL.style.display='none';gen++;newRound()};
 let rsT=0;
 const kind=h=>twin(h)?'TWIN (BALAK)':val(h)==9?'QIU (9)':val(h)+' POIN';
@@ -310,8 +318,8 @@ shower(48)}
 function shower(n){for(let i=0;i<n;i++)setTimeout(()=>{const e=document.createElement('div');e.className='chip3d fl';e.style.cssText=`--c:#d4a017;--s:${14+Math.random()*10}px;left:${Math.random()*innerWidth}px;top:-30px;z-index:45`;document.body.appendChild(e);e.animate([{transform:'translate(0,0) rotate(0)'},{transform:`translate(${Math.random()*80-40}px,${innerHeight+40}px) rotate(${Math.random()*720}deg)`}],{duration:1400+Math.random()*900,easing:'cubic-bezier(.3,.1,.7,.6)'}).onfinish=()=>e.remove()},i*40)}
 let rc=0;const react=(i,e)=>floatText(e,'#fff',aEl(i),34);
 function addBet(k,amt){if(coins<amt)return false;coins-=amt;mine[k]=(mine[k]||0)+amt;pot[k]=(pot[k]||0)+amt;return true}
-$('redo').onclick=()=>{if(phase!='bet'||!last)return;let i=0;for(const k in last)if(addBet(k,last[k])){const z=k;setTimeout(()=>place(z,'me','#d4a017'),i++*120)}draw()};
-$('dbl').onclick=()=>{if(phase!='bet')return;let i=0;for(const k of Object.keys(mine)){const z=k;if(addBet(k,mine[k]))setTimeout(()=>place(z,'me','#2563eb'),i++*120)}draw()};
+$('redo').onclick=()=>{if(phase!='bet'||!last)return;let i=0;for(const k in last)if(addBet(k,last[k])){const z=k;setTimeout(()=>place(z,'me','#d4a017'),i++*120)}syncBet();draw()};
+$('dbl').onclick=()=>{if(phase!='bet')return;let i=0;for(const k of Object.keys(mine)){const z=k;if(addBet(k,mine[k]))setTimeout(()=>place(z,'me','#2563eb'),i++*120)}syncBet();draw()};
 function showTrend(){
 const col=w=>w=='m'?'#e5484d':w=='b'?'#3b82f6':'#16a34a';
 $('tl').innerHTML=tr.slice(-14).reverse().map(r=>{const rg=k=>r.w=='t'?' t':r.w==k?' w':'';return `<span class="cl"><i class="l">${r.vr==9?'Q':r.tm?'T':''}</i><span class="dot m${rg('m')}">${r.vr}</span><span class="dot b${rg('b')}">${r.vb}</span><i class="r">${r.vb==9?'Q':r.tb?'T':''}</i></span>`}).join('')||'<span style="opacity:.6">-</span>'}
@@ -323,9 +331,9 @@ if(auto&&last){let tot=0;for(const k in last)tot+=last[k];if(coins>=tot){coins-=
 $('msg').textContent='Pasang taruhan! Tap zona untuk menaruh chip.';
 $('onl').textContent=ROOMS[roomI][2]+(Math.random()*40|0);draw();tick(g)}
 function tick(g){if(g!=gen)return;$('tm').textContent=t;if(t>0&&t<29&&t%2==0)botBet();draw();if(t==30){sfx('start');setTimeout(()=>say('Silakan pasang taruhan'),300)}if(t<=5&&t>0)sfx('warn',t);if(t==3)say('Waktu hampir habis');if(t==0)sfx('end');$('tm').classList.toggle('urgent',t<=5&&t>0);if(t--<=0){go(g);return}setTimeout(()=>tick(g),1000)}
-async function go(g){phase='deal';if(Object.keys(mine).length)last={...mine};
+async function go(g,S){phase='deal';if(Object.keys(mine).length)last={...mine};
 SRV=null;
-if(HOST&&HOST.server&&Object.keys(mine).length){
+if(S){H=S.hands;SRV={balance:S.balance};if(S.top)setTimeout(()=>{if(g==gen)floatText('🏆 '+S.top.name+' +'+fmt(S.top.net),'#ffe27a',$('seats'),15)},6500)}else if(false){
 $('msg').textContent='Bandar mengocok kartu...';
 const r=await hostCall({t:'qq-round',bets:{...mine},rid:rid()});
 if(g!=gen)return;
@@ -365,8 +373,65 @@ won.forEach(k=>{for(let i=0;i<4;i++)setTimeout(()=>{fly(dEl(),zEl(k),'#d4a017',6
 if(won.length){sfx('chips');await sleep(1900)}
 if(SRV)coins=SRV.balance;else{coins+=back;if(HOST&&!HOST.server&&!HOST.inf)toHost({t:'qq-bal',balance:coins})}SRV=null;const hp=Object.keys(mine).reduce((a,k)=>res[k]>1?a+mine[k]*(res[k]-1):a,0),hit=hp>0,amt=Math.max(net,hp);if(net>0||hit){shower(amt>=2e7?40:22);if(qq||six)bigWin(six?'SIX TWINS!':'QIU QIU!',amt,six?'six':'qq');else floatText('+'+fmt(amt),'#7dffb0',$('coin'),22);try{navigator.vibrate&&navigator.vibrate([80,40,120])}catch(e){}sfx(six||amt>=1e9?'superwin':qq||amt>=5e8?'megawin':amt>=1e8?'bigwin':'win');setTimeout(()=>say('Kamu menang'),900)}else if(net<0){floatText('-'+fmt(-net),'#ff8a8a',$('coin'),22);sfx('lose');setTimeout(()=>say('Kamu kalah'),900)}
 $('msg').textContent=(w=='t'?'SERI!':w=='m'?'MERAH menang!':'BIRU menang!')+(Object.keys(mine).length?(hit&&net<0?` Menang +${fmt(hp)} (bersih -${fmt(-net)})`:` Hasilmu: ${net>=0?'+':'-'}${fmt(Math.abs(net))}`):'');
-bots.forEach(b=>b[1]+=Math.round((Math.random()-.45)*b[1]*.02));
-pot={};phase='end';if(ERRM){$('msg').textContent='⚠ '+ERRM+' — taruhan tidak dipotong';ERRM=''}draw();await sleep(1800);if(g==gen)newRound()}
+if(!LIVE)bots.forEach(b=>b[1]+=Math.round((Math.random()-.45)*b[1]*.02));
+pot={};phase='end';if(ERRM){$('msg').textContent='⚠ '+ERRM+' — taruhan tidak dipotong';ERRM=''}draw();await sleep(1800);if(g==gen&&!LIVE)newRound()}
+
+/* ===== MODE ONLINE / MABAR: ronde & kartu SAMA untuk semua pemain di room (server), taruhan 30 dtk, chat global.
+   Hemat kuota gratis: poll tiap 3 dtk saat taruhan, sekali saat hasil, 6 dtk di luar itu. ===== */
+let LIVE=false,curN=-1,shownN=-1,skew=0,lastPoll=0,polling=0,hbT=0,chSeq=0,chUnread=0,sbT=0,sbBusy=0,sbDirty=0,oth={},wantHist=1,lastSec=-1,lvTimer=0;
+const QB=30000,QC=45000,QK=['m','b','t','q','s','qm','qb','tm','tb'],chSeen=new Set();
+const api=(path,body)=>hostCall({t:'qq-api',path,body});
+const eqm=(a,b)=>QK.every(k=>(a[k]||0)===(b[k]||0));
+const hue=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%360;return h};
+const seatOf=n=>{const h=hue(n);return[n,0,`hsl(${h} 45% 70%)`,`hsl(${(h+40)%360} 15% 15%)`,`hsl(${(h+180)%360} 35% 35%)`]};
+const EMPTY=()=>['—',0,'#5a4a6a','#222','#333',1];
+const trOf=h=>{const vr=val(h.r),vb=val(h.b);return{w:vr>vb?'m':vb>vr?'b':'t',q:vr==9||vb==9,tw:twin(h.r)||twin(h.b),tm:twin(h.r),tb:twin(h.b),vr,vb}};
+function liveStart(){LIVE=true;bots.length=0;for(let i=0;i<5;i++)bots.push(EMPTY());$('gift').style.display='none';$('chb').style.display='';ROOMS.forEach(r=>r[2]=0);phase='wait';$('msg').textContent='Menghubungkan ke meja...';draw();lvTimer=setInterval(liveTick,250);poll()}
+async function poll(){if(polling)return;polling=1;lastPoll=Date.now();const hb=Date.now()-hbT>12000;if(hb)hbT=Date.now();
+const r=await api('/qq/state',{room:roomI,since:chSeq,hb:hb?1:0,h:wantHist});polling=0;
+if(r.ok&&r.j&&r.j.n!==undefined&&r.j.room===roomI)onState(r.j)}
+function onState(s){skew=s.t-Date.now();
+(s.rooms||[]).forEach((c,i)=>{if(ROOMS[i])ROOMS[i][2]=c});$('onl').textContent=s.onl||1;
+bots.length=0;(s.seats||[]).slice(0,5).forEach(x=>{const a=seatOf(x.name);a[1]=x.bal;bots.push(a)});while(bots.length<5)bots.push(EMPTY());
+(s.chat||[]).forEach(addChat);if(typeof s.clast==='number')chSeq=s.clast;
+if(s.hist){tr=s.hist.map(trOf);wantHist=0}
+if(!s.hands){if(curN!==s.n)liveRound(s);else mergePot(s);return}
+if(shownN===s.n)return;shownN=s.n;
+if(curN===s.n||Object.keys(s.mine||{}).length){curN=s.n;mine={...s.mine};pot=s.pot||{};go(gen,s)}
+else{phase='wait';$('msg').textContent='Ronde sedang berjalan... tunggu ronde berikutnya.';draw()}}
+function liveRound(s){gen++;curN=s.n;if(SS)speechSynthesis.cancel();phase='bet';vt=0;mine={...s.mine};win={};H=null;oth={};pot={};
+for(const k of QK){oth[k]=(s.pot[k]||0)-(mine[k]||0);pot[k]=s.pot[k]||0}coins=s.balance;
+$('hr').innerHTML=$('hbl').innerHTML='';$('lr').textContent='MERAH';$('lb').textContent='BIRU';
+if(auto&&last&&!Object.keys(mine).length){let tot=0;for(const k in last)tot+=last[k];if(coins>=tot){coins-=tot;for(const k in last){mine[k]=last[k];pot[k]=(pot[k]||0)+last[k]}syncBet()}}
+$('msg').textContent='Pasang taruhan! Tap zona untuk menaruh chip.';lastSec=-1;sfx('start');setTimeout(()=>say('Silakan pasang taruhan'),300);draw()}
+function mergePot(s){const sm=s.mine||{},np={};let c=0;
+for(const k of QK){const o=(s.pot[k]||0)-(sm[k]||0);np[k]=o+(mine[k]||0);
+if(o>(oth[k]||0)&&phase=='bet'&&c++<3){const ix=bots.map((b,i)=>b[5]?-1:i).filter(i=>i>=0);if(ix.length)place(k,ix[Math.random()*ix.length|0],CH[1+(Math.random()*5|0)][2])}
+oth[k]=o}
+pot=np;if(!sbBusy&&!sbDirty&&eqm(sm,mine))coins=s.balance;draw()}
+function liveTick(){if(!LIVE)return;
+const sn=Date.now()+skew,n=Math.floor(sn/QC),st=n*QC,left=st+QB-sn,sec=Math.max(0,Math.ceil(left/1000)),age=Date.now()-lastPoll;
+if(left>0){$('tm').textContent=sec;$('tm').classList.toggle('urgent',sec<=5&&sec>0);
+if(phase=='bet'&&sec!==lastSec){lastSec=sec;if(sec<=5&&sec>0)sfx('warn',sec);if(sec==3)say('Waktu hampir habis')}
+if(curN!==n?age>500:age>3000)poll()}
+else{if(phase=='bet'){phase='lock';sfx('end');$('msg').textContent='Taruhan ditutup. Membuka kartu...';draw()}
+$('tm').classList.remove('urgent');$('tm').textContent=phase=='wait'?Math.ceil((st+QC-sn)/1000):0;
+if(phase=='lock'?(age>1200&&left<-250):age>6000)poll()}}
+function syncBet(){if(!LIVE)return;sbDirty=1;clearTimeout(sbT);sbT=setTimeout(doSync,250)}
+async function doSync(){if(sbBusy){sbT=setTimeout(doSync,200);return}
+sbDirty=0;sbBusy=1;const n=curN,sent={...mine};const r=await api('/qq/bet',{room:roomI,n,bets:sent});sbBusy=0;
+if(n!==curN||!LIVE)return;const j=r.j||{};
+if(r.ok){if(!sbDirty&&eqm(sent,mine)&&typeof j.balance==='number')coins=j.balance}
+else if(r.status===0){setTimeout(syncBet,1500);return}
+else{if(r.status===401)return;if(j.mine){mine={...j.mine};for(const k of QK)pot[k]=(oth[k]||0)+(mine[k]||0)}if(typeof j.balance==='number')coins=j.balance;$('msg').textContent='⚠ '+(j.error||'Taruhan gagal')}
+draw()}
+function addChat(m){if(chSeen.has(m.seq))return;chSeen.add(m.seq);const d=document.createElement('div'),b=document.createElement('b');b.textContent=m.name+': ';d.appendChild(b);d.appendChild(document.createTextNode(m.msg));const l=$('cpl');l.appendChild(d);while(l.children.length>60)l.removeChild(l.firstChild);l.scrollTop=l.scrollHeight;
+if($('cp').style.display!='flex'){chUnread++;$('chd').style.display=''}}
+function sysChat(t){const d=document.createElement('div');d.className='sy';d.textContent=t;$('cpl').appendChild(d);$('cpl').scrollTop=1e9}
+async function sendChat(){const i=$('ci'),v=i.value.trim();if(!v)return;i.value='';const r=await api('/qq/chat',{msg:v});if(!r.ok)sysChat((r.j&&r.j.error)||'Gagal mengirim');else{lastPoll=0;poll()}}
+$('chb').onclick=e=>{e.stopPropagation();$('cp').style.display='flex';chUnread=0;$('chd').style.display='none';$('cpl').scrollTop=1e9;$('menu').style.display='none'};
+$('cx').onclick=()=>{$('cp').style.display='none'};$('cs').onclick=sendChat;$('ci').onkeydown=e=>{if(e.key==='Enter')sendChat()};
+$('cp').onclick=e=>e.stopPropagation();
 if(IN_FRAME){toHost({t:'qq-ready'});setTimeout(()=>{if(!_started){_started=true;HOST={server:false,inf:false};coins=1e9;newRound()}},2500)}else newRound();
 
 

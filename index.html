@@ -1972,12 +1972,21 @@ async function qqRound(m){
   if(r.status===401){LS.del("daf_token");reply({ok:false,error:"Sesi habis, silakan login lagi",status:401,balance});exitGame();resetSession("Sesi habis, silakan login lagi");openWelcome();return}
   reply({ok:false,error:(r.j&&r.j.error)||"Taruhan gagal, coba lagi",status:r.status,balance});
 }
+async function qqApi(m){   // jembatan mabar: state / bet / chat
+  const reply=o=>qqPost(Object.assign({t:"qq-reply",id:m.id},o));
+  if(!qqSrv()||!/^\/qq\/(state|bet|chat)$/.test(m.path||"")){reply({ok:false,status:0,j:{error:"Mode server tidak aktif"}});return}
+  const r=await apiCall(m.path,m.body||{},LS.get("daf_token"));
+  if(r.j&&typeof r.j.balance==="number"&&inGame==="qq"){balance=r.j.balance;updateUI()}
+  if(r.status===401){LS.del("daf_token");reply({ok:false,status:401,j:r.j});exitGame();resetSession("Sesi habis, silakan login lagi");openWelcome();return}
+  reply({ok:r.ok,status:r.status,j:r.j});
+}
 window.addEventListener("message",e=>{
   const f=qqFrame();if(!f||inGame!=="qq"||e.source!==f.contentWindow||e.origin!==location.origin)return;
   const m=e.data||{};
   if(m.t==="qq-ready")qqInit();
   else if(m.t==="qq-exit")exitGame();
   else if(m.t==="qq-round")qqRound(m);
+  else if(m.t==="qq-api")qqApi(m);
   else if(m.t==="qq-bal"){if(qqSrv()||isAdmin()||typeof m.balance!=="number"||!isFinite(m.balance))return;balance=Math.max(0,Math.floor(m.balance));updateUI();saveGame()}
 });
 
@@ -2174,12 +2183,15 @@ function gParse(e){
   const t=String(e.tier||"").split("|"),k=t[0],a=animals[+t[1]],fr=t[2]==="1";
   const an=a?` ${a.e} <b>${esc(a.n.toUpperCase())}</b>`:"";
   const amt=money(Number(e.amt)||0),nm=`<b>${esc(String(e.name||"?").slice(0,12))}</b>`;
-  const col={MINI:"#2fe36b",MINOR:"#29a8ff",MAJOR:"#d84dff",GRAND:"#ffd34d",FULL:"#ff7a3d",SUPER:"#ff4d6d",MEGA:"#ffb02e",BIG:"#ffd34d",LINE:"#7dffa0"}[k]||"#ffd34d";
-  const mode=fr?"🎁 di SCATTER MODE":"di spin biasa";
+  const col={MINI:"#2fe36b",MINOR:"#29a8ff",MAJOR:"#d84dff",GRAND:"#ffd34d",FULL:"#ff7a3d",SIX:"#7df9ff",QQ:"#ff7ad9",WIN:"#ffd34d",SUPER:"#ff4d6d",MEGA:"#ffb02e",BIG:"#ffd34d",LINE:"#7dffa0"}[k]||"#ffd34d";
+  const mode=t[2]==="Q"?"🎴 di Bandar QQ":fr?"🎁 di SCATTER MODE":"di spin biasa";
   let l1;
   if(k==="FULL")l1=`🖼️ ${nm} FULL GAMBAR${an}`;
   else if(k==="SUPER"||k==="MEGA"||k==="BIG")l1=`🏆 ${nm} ${k} WIN${an}`;
   else if(k==="LINE")l1=`🏆 ${nm} MENANG BESAR${an}`;
+  else if(k==="SIX")l1=`🎴 ${nm} SIX TWINS!`;
+  else if(k==="QQ")l1=`🎴 ${nm} QIU QIU!`;
+  else if(k==="WIN")l1=`🏆 ${nm} MENANG BESAR`;
   else l1=`👑 ${nm} JACKPOT KARTU <b>${esc(k.slice(0,6))}</b>`;
   return{col,html:`${l1}<small>+${amt} • ${mode}</small>`};
 }
