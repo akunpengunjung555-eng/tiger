@@ -610,7 +610,7 @@ body{padding:5px}
     <button id="lbLogin" class="ubtn gold" type="button">LOGIN</button>
   </div>
   <div class="lbBody"><div class="lbWrap">
-    <div class="lbHero"><h1>🎰 LOBI SLOT 🎰</h1><p>PILIH PERMAINAN</p></div>
+    <div class="lbHero"><h1>🎰 LOBI GAME 🎰</h1><p>PILIH PERMAINAN</p></div>
     <button id="lbDaily" class="lbDaily" type="button"><span class="ic">🎁</span><span id="lbDailyTxt"></span></button>
     <div class="lbSec">PERMAINAN</div>
     <div id="lbGames" class="lbGames"></div>
@@ -1720,7 +1720,7 @@ function needAcct(fn){if(!acct){openWelcome();return}fn()}
 /* ----- inbox: riwayat chip masuk & keluar ----- */
 async function openInboxSrv(f){
   f=f||"all";
-  openModal(`<h2>📥 INBOX CHIP</h2><div class="hint">Memuat…</div>`);
+  openModal(`<h2>📥 INBOX</h2><div class="hint">Memuat…</div>`);
   const r=await apiCall("/inbox",null,LS.get("daf_token"));
   if(!(r.ok&&r.j&&Array.isArray(r.j.pending))){openInfo("❌ GAGAL",esc((r.j&&r.j.error)||"Gagal memuat inbox"),"closeModal()");return}
   const pend=r.j.pending,hist=r.j.history||[];
@@ -1734,7 +1734,7 @@ async function openInboxSrv(f){
   const list=hist.filter(t=>f==="all"||t.dir===f);
   const tin=hist.filter(t=>t.dir==="in").reduce((a,t)=>a+t.net,0),tout=hist.filter(t=>t.dir==="out").reduce((a,t)=>a+t.amount,0);
   const tab=(k,l)=>`<button class="ubtn ${f===k?"on":""}" type="button" onclick="openInbox('${k}')">${l}</button>`;
-  openModal(`<h2>📥 INBOX CHIP</h2>
+  openModal(`<h2>📥 INBOX</h2>
     ${pend.length?`<div class="inbSum"><div>MENUNGGU DIAMBIL (${pend.length})<strong>+${money(tot)}</strong></div></div>
       <div class="inbList">${pend.map(pRow).join("")}</div>
       <button class="btn spin" type="button" style="font-size:18px" onclick="claimInboxSrv()">💰 AMBIL +${money(tot)}</button>`
@@ -1742,7 +1742,7 @@ async function openInboxSrv(f){
     <div class="inbSum"><div>DITERIMA<strong>+${money(tin)}</strong></div><div>DIKIRIM<strong>−${money(tout)}</strong></div></div>
     <div class="inbTabs">${tab("all","SEMUA")}${tab("in","MASUK")}${tab("out","KELUAR")}</div>
     <div class="inbList">${list.map(hRow).join("")||"<div>Belum ada transaksi</div>"}</div>
-    <button class="btn small" type="button" style="font-size:16px" onclick="openTransfer()">📤 KIRIM CHIP</button>
+    ${canSend()?`<button class="btn small" type="button" style="font-size:16px" onclick="openTransfer()">📤 KIRIM CHIP</button>`:""}
     <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
   lobbySync();
 }
@@ -1757,7 +1757,7 @@ async function claimInboxSrv(){
 }
 function openInbox(f){
   if(!acct){openWelcome();return}
-  if(isAdmin()){openInfo("📥 INBOX","Akun admin tidak punya inbox chip.","closeModal()");return}
+  if(isAdmin()){openInfo("📥 INBOX","Akun admin tidak punya inbox.","closeModal()");return}
   f=f||"all";
   if(acct.server){openInboxSrv(f);return}
   const all=acct.tx||[];
@@ -1771,11 +1771,11 @@ function openInbox(f){
       :`<div>📥 <b style="color:#7dffa0">+${money(t.net)}</b> dari ${esc(t.peer)}<small>${d}</small></div>`;
   };
   const tab=(k,l)=>`<button class="ubtn ${f===k?"on":""}" type="button" onclick="openInbox('${k}')">${l}</button>`;
-  openModal(`<h2>📥 INBOX CHIP</h2>
+  openModal(`<h2>📥 INBOX</h2>
     <div class="inbSum"><div>TOTAL DITERIMA<strong>+${money(tin)}</strong></div><div>TOTAL DIKIRIM<strong>−${money(tout)}</strong></div></div>
     <div class="inbTabs">${tab("all","SEMUA")}${tab("in","MASUK")}${tab("out","KELUAR")}</div>
     <div class="inbList">${list.map(row).join("")||"<div>Belum ada transaksi</div>"}</div>
-    <button class="btn spin" type="button" style="font-size:18px" onclick="openTransfer()">📤 KIRIM CHIP</button>
+    ${canSend()?`<button class="btn spin" type="button" style="font-size:18px" onclick="openTransfer()">📤 KIRIM CHIP</button>`:""}
     <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">TUTUP</button>`);
   acct.inboxSeen=Date.now();saveGame();
   lobbySync();
