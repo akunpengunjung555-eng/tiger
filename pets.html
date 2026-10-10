@@ -313,8 +313,8 @@ const A={
  play(id){const p=S.pets.find(x=>x.id==id);if(p&&spend(playCost(p))){p.j=Math.min(100,p.j+25);p.f=Math.max(0,p.f-5);xp(p)}},
  pat(id){const p=S.pets.find(x=>x.id==id);if(p){p.j=Math.min(100,p.j+8);fx(id,'❤️')}},
  feedAll(){const n=S.pets.length;const c=feedAllCost();if(!c)return toast('Semua hewan masih kenyang');if(spend(c)){S.pets.filter(p=>p.f<85).forEach(p=>{p.f=Math.min(100,p.f+40);xp(p)});toast('Mangkuk terisi, hewan yang lapar makan (-'+fmt(c)+')')}},
- claim(id){const p=S.pets.find(x=>x.id==id);if(p&&p.acc>=1){const g=Math.floor(p.acc);ADAPTER.add(g);p.acc-=g;toast('+'+fmt(g)+' chip')}},
- claimAll(){let g=0;S.pets.forEach(p=>{const q=Math.floor(p.acc);g+=q;p.acc-=q});ADAPTER.add(g);toast('+'+fmt(g)+' chip dari semua hewan')},
+ claim(id){const p=S.pets.find(x=>x.id==id);if(p&&p.acc>=1){const g=Math.floor(p.acc);ADAPTER.add(g);p.acc-=g;p.ct=Date.now()+6e5;toast('+'+fmt(g)+' chip')}},
+ claimAll(){let g=0;S.pets.forEach(p=>{const q=Math.floor(p.acc);g+=q;p.acc-=q;if(q>=1)p.ct=Date.now()+6e5});ADAPTER.add(g);toast('+'+fmt(g)+' chip dari semua hewan')},
  buy(){toast('Hewan tidak dijual langsung: dapatkan dari telur, lelang, atau hadiah')},
  up(){const y=S.yl||0;if(y>=6)return;if(spend(125000000*(y+1)**2)){S.yl=y+1;toast('Kandang diperbesar: maks '+cap()+' hewan')}},
  daily(){const f=d=>new Date(d).toISOString().slice(0,10),td=f(Date.now()),dl=S.dl;if(dl.d===td)return toast('Hadiah harian sudah diambil, kembali besok');
@@ -510,9 +510,9 @@ function yardShow(){const yd=$('#yard');yd.hidden=tab!=='kandang';if(yd.hidden)r
  if(S.vis&&!T.V){const w=mk(S.vis.sp,1);w.userData.vis=1;addFx(w,{sp:S.vis.sp,mu:''},1);w.position.set(6,0,-4);w.rotation.y=Math.atan2(-6,4);const s=nameLab('Tamu langka: '+SP[S.vis.sp][1],'#ffd34d');s.position.y=w.userData.h;w.add(s);T.sc.add(w);T.V={w,e:{ph:0,sl:0,id:99}}}
  if(!S.vis&&T.V){T.sc.remove(T.V.w);T.V=null}
  syncEggs();syncDec();syncDec2();updBub()}
-function updBub(){if(!T)return;for(const id in T.E){const e=T.E[id],p=e.p;{const n=petName(p),k=n.t+'|'+n.c;if(e.nk!==k){e.nk=k;if(e.nl){e.w.remove(e.nl);e.nl.material.map.dispose();e.nl.material.dispose()}e.nl=nameLab(n.t,n.c);e.nl.position.y=e.w.userData.h*(.35+.65*sz(p));e.w.add(e.nl)}}const c=p.acc>=1,tx=c?'🪙 +'+sh(p.acc):p.f<25?'😋':p.j<25?'💤':'';
+function updBub(){if(!T)return;for(const id in T.E){const e=T.E[id],p=e.p;{const n=petName(p),k=n.t+'|'+n.c;if(e.nk!==k){e.nk=k;if(e.nl){e.w.remove(e.nl);e.nl.material.map.dispose();e.nl.material.dispose()}e.nl=nameLab(n.t,n.c);e.nl.position.y=e.w.userData.h*(.35+.65*sz(p));e.w.add(e.nl)}}const c=p.acc>=1&&Date.now()>=(p.ct||0),tx=c?'🪙 +'+sh(p.acc):p.f<25?'😋':p.j<25?'💤':'';
  if(tx===e.lt)continue;e.lt=tx;if(e.lb){e.w.remove(e.lb);e.lb.material.map.dispose();e.lb.material.dispose();e.lb=null}
- if(tx){const s=lab(tx,c?'#ffd34d':'rgba(0,0,0,0)');s.userData.coin=c;s.position.y=e.w.userData.h*(.35+.65*sz(p))+.7;e.w.add(s);e.lb=s}}}
+ if(tx){const s=lab(tx,c?'#ffd34d':'rgba(0,0,0,0)');if(c)s.scale.set(1.05,.4,1);s.userData.coin=c;s.position.y=e.w.userData.h*(.35+.65*sz(p))+.7;e.w.add(s);e.lb=s}}}
 /* jejak kaki: satu langkah tiap kaki menyentuh tanah (ph kelipatan PI); volume menurut jarak ke kamera, panning menurut posisi di layar */
 function stepSnd(e,p){const n=Math.floor(e.ph/Math.PI);if(e.sn===undefined){e.sn=n;return}if(n===e.sn)return;e.sn=n;
  if(!ACT||H.open||tab!=='kandang'||document.hidden||!SND.isSfx())return;
