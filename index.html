@@ -270,6 +270,28 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .mbox input{width:100%;padding:11px;margin:5px 0;border-radius:8px;border:2px solid #f6bf45;background:#2a0409;color:#fff;font-size:16px}
 #admErr{color:#ff8a8a;min-height:18px;font-size:13px;font-weight:900}
 .mbox{max-height:92vh;overflow-y:auto}
+/* ===== tampilan login ===== */
+.wl{position:relative}
+.wlLogo{width:84px;height:84px;margin:-4px auto 6px;border-radius:50%;display:grid;place-items:center;font-size:46px;background:radial-gradient(circle at 35% 30%,#ffe9a6,#ffb02e 55%,#a85b00);border:3px solid #fff3c4;box-shadow:0 0 0 4px #7a0f22,0 0 28px #ffb02e,inset 0 -6px 12px #0004;animation:wlFloat 3s ease-in-out infinite}
+@keyframes wlFloat{50%{transform:translateY(-4px)}}
+.wl h2{font-size:26px;letter-spacing:3px;margin:4px 0 2px}
+.wlSub{font-size:13.5px;color:#ffd9a8;margin:0 0 12px;line-height:1.45}
+.wlPerks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}
+.wlPerks span{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:12px;background:#0003;border:1px solid #ffd34d55;font-size:20px}
+.wlPerks b{font-size:10.5px;color:#ffe9a6;letter-spacing:.5px}
+.wlG{min-height:44px;display:flex;justify-content:center;margin:2px 0}
+.gLoad{font-size:12px;color:#ffd9a8;align-self:center}
+.wlDiv{display:flex;align-items:center;gap:10px;margin:12px 0;color:#ffd9a8;font-size:12px}
+.wlDiv i{flex:1;height:1px;background:linear-gradient(90deg,transparent,#ffd34d99,transparent)}
+.wlRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wlRow .btn{font-size:16px;margin:0}
+.wlGuest{display:block;width:100%;margin-top:10px;padding:10px;background:none;border:0;color:#ffe9a6;font-weight:800;font-size:14px;text-decoration:underline;cursor:pointer}
+.wlAdm{background:none;border:0;color:#ffffff66;font-size:11px;margin-top:2px;cursor:pointer}
+.wlHead{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px}
+.wlHead h2{margin:0}
+.wlHead .ic{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;font-size:24px;background:radial-gradient(circle at 35% 30%,#ffe9a6,#ffb02e 60%,#a85b00);border:2px solid #fff3c4}
+.pwWrap{position:relative}.pwWrap input{padding-right:46px}
+.pwEye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:40px;height:40px;background:none;border:0;font-size:18px;cursor:pointer}
 .prof{display:flex;gap:12px;align-items:center;text-align:left;margin:6px 0 10px}
 .avatar{font-size:42px;width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#ffd34d,#a04a00);border:3px solid #fff3b0;flex:none}
 .prof b{font-size:18px;color:#fff;display:block;word-break:break-all}
@@ -412,6 +434,10 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .lbDaily .ic{font-size:26px}
 .lbDaily.ready{background:linear-gradient(#ffc238,#df6d07);color:#3b1600;animation:lbPulse 1.1s ease-in-out infinite alternate}
 @keyframes lbPulse{from{box-shadow:0 0 6px #ffb000}to{box-shadow:0 0 22px #ffe36a}}
+#lbGames{display:flex;flex-direction:column;gap:12px}#lbGames .lbSec{margin-top:4px}
+.lbSec small{font-size:10px;letter-spacing:1px;color:#ffd9a8;font-weight:700;margin-left:6px}
+.lbSec.lb18{color:#ff9aa8;border-bottom-color:#ff4d6d88}
+.gCard .g18{position:absolute;z-index:4;right:42px;top:9px;padding:3px 8px;border-radius:10px;font-size:11px;font-weight:900;letter-spacing:1px;background:#d1122b;color:#fff;border:2px solid #ffd0d6;box-shadow:0 2px 6px #0008}
 .lbSec{font-size:13px;font-weight:900;letter-spacing:3px;color:#ffe9a6;border-bottom:1px solid #ffd34d55;padding-bottom:4px}
 .lbGames{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .gCard{position:relative;display:flex;flex-direction:column;justify-content:flex-end;aspect-ratio:1/1.12;padding:10px;overflow:hidden;
@@ -697,8 +723,7 @@ body.emb #lobby{display:none!important}
     <button id="lbToPets" class="ubtn gold" type="button" style="width:100%;min-height:44px;margin:0 0 10px">🐾 KEMBALI KE DAF PETS</button>
     <div class="lbHero"><h1>🎯 TEMPAT BERBURU CHIP</h1><p>PILIH GAME • CHIP MASUK KE PETS</p></div>
     <button id="lbDaily" class="lbDaily" type="button"><span class="ic">🎁</span><span id="lbDailyTxt"></span></button>
-    <div class="lbSec">PERMAINAN</div>
-    <div id="lbGames" class="lbGames"></div>
+    <div id="lbGames"></div>
   </div></div>
   <iframe id="petsFrame" title="DAF Pets"></iframe>
   <nav class="lbNav">
@@ -1002,16 +1027,41 @@ function openInfo(title,html,nextJs){
   openModal(`<h2>${title}</h2><p>${html}</p><button class="btn spin" type="button" style="font-size:18px" onclick="${nextJs}">OK</button>`);
 }
 function openWelcome(){
-  openModal(`<h2>🐉 DRAGON ANIMAL FORTUNE</h2>
-  <p>Daftar dengan <b>kata sandi</b> supaya akun (chip, bet, profil) tersimpan di server dan tidak bisa dipakai orang lain.</p>
-  <button class="btn spin" type="button" style="font-size:20px" onclick="openRegister()">➕ DAFTAR AKUN</button>
-  <button class="btn small" type="button" style="font-size:15px" onclick="openLogin()">🔐 MASUK DENGAN KATA SANDI</button>
-  <button class="btn small" type="button" style="font-size:14px" onclick="closeModal()">MAIN TANPA SIMPAN</button>
-  <button class="btn small" type="button" style="font-size:14px" onclick="openAdminLogin()">👑 LOGIN ADMIN</button>`);
+  openModal(`<div class="wl">
+  <div class="wlLogo"><span>🐉</span></div>
+  <h2>DAF ARENA</h2>
+  <p class="wlSub">Masuk supaya chip, hewan, dan hadiah harianmu tersimpan aman di server.</p>
+  <div class="wlPerks"><span>☁️<b>TERSIMPAN</b></span><span>🎁<b>HADIAH HARIAN</b></span><span>🐾<b>DAF PETS</b></span></div>
+  <div id="gBtnWrap" class="wlG"></div>
+  <div class="wlDiv"><i></i><span>atau</span><i></i></div>
+  <div class="wlRow"><button class="btn spin" type="button" onclick="openRegister()">➕ DAFTAR</button><button class="btn" type="button" onclick="openLogin()">🔐 MASUK</button></div>
+  <button class="wlGuest" type="button" onclick="closeModal()">Main tanpa simpan</button>
+  <button class="wlAdm" type="button" onclick="openAdminLogin()">👑 Admin</button>
+  </div>`);
+  gInit();
 }
+/* ----- login Google (Google Identity Services). Isi GOOGLE_CLIENT_ID di bawah; kosong = tombol disembunyikan ----- */
+let gLoading=null;
+function gLoad(){if(window.google&&google.accounts&&google.accounts.id)return Promise.resolve();if(gLoading)return gLoading;
+  return gLoading=new Promise((res,rej)=>{const t=document.createElement("script");t.src="https://accounts.google.com/gsi/client";t.async=true;t.onload=res;t.onerror=()=>{gLoading=null;rej()};document.head.appendChild(t)})}
+function gInit(){const w=document.getElementById("gBtnWrap");if(!w)return;
+  if(!GOOGLE_CLIENT_ID){w.style.display="none";const d=document.querySelector(".wlDiv");if(d)d.style.display="none";return}
+  w.innerHTML='<span class="gLoad">Memuat Google…</span>';
+  gLoad().then(()=>{if(!document.getElementById("gBtnWrap"))return;
+    google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:gCb,auto_select:false});
+    w.innerHTML="";google.accounts.id.renderButton(w,{type:"standard",theme:"filled_blue",size:"large",shape:"pill",text:"continue_with",logo_alignment:"left",width:Math.min(300,w.clientWidth||300),locale:"id"})},
+    ()=>{w.innerHTML='<span class="gLoad">Google tidak bisa dimuat. Cek koneksi.</span>'})}
+async function gCb(resp){if(!resp||!resp.credential)return;
+  ldShow("🔑","GOOGLE","MEMERIKSA AKUN…",2500);
+  const r=await apiCall("/google",{cred:resp.credential});
+  if(!r.ok||!r.j.token){ldHide();setMsg(r.j.error||"Login Google gagal");openWelcome();return}
+  LS.set("daf_token",r.j.token);enterAcct(srvAcct(r.j.account));
+  if(r.j.isNew)setTimeout(()=>setMsg("Akun dibuat dengan username "+r.j.account.name+". Bisa diganti di Profil."),1500)}
+function pwEye(ids){ids.forEach(i=>{const e=document.getElementById(i);if(e)e.type=e.type==="password"?"text":"password"})}
 
 /* ----- admin: satu-satunya akun dengan chip tidak terbatas ----- */
 const ADMIN_USER="admin",ADMIN_CHIPS=999999999999;   // ADMIN_USER hanya nama yang dicadangkan; username/password admin sekarang diperiksa server
+const GOOGLE_CLIENT_ID="";   // <- tempel Client ID dari Google Cloud Console (samakan dengan GOOGLE_CLIENT_ID di Worker)
 const API_URL="https://daf-api.akunpengunjung555.workers.dev";let admToken=null;
 async function apiCall(path,body,tok){const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);try{const r=await fetch(API_URL+path,{method:body?"POST":"GET",signal:ctl.signal,headers:Object.assign({"Content-Type":"application/json"},tok?{Authorization:"Bearer "+tok}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));return{ok:r.ok,status:r.status,j}}catch(e){return{ok:false,status:0,j:{error:"Server tidak terjangkau, coba lagi"}}}finally{clearTimeout(tm)}}
 function srvAcct(x){const p=x.perms||{};return{id:x.id,pid:x.id,name:x.name,balance:x.balance,bet:DEFAULTS.bet,spinCount:x.spins|0,freeSpins:x.freeSpins|0,streak:x.streak|0,inboxPending:x.inbox|0,lastDaily:x.lastDaily||"",today:x.today,yesterday:x.yesterday,created:x.created||Date.now(),tx:[],luck:x.luck,gv:x.gv,perm:{send:!!p.send,full:!!p.full,jp:!!p.jp},server:true}}
@@ -1147,9 +1197,9 @@ function doPwEnter(id){
   enterAcct(a);
 }
 function openLogin(){
-  openModal(`<h2>🔐 MASUK AKUN</h2>
+  openModal(`<div class="wlHead"><span class="ic">🔐</span><h2>MASUK AKUN</h2></div>
   <input id="lgUser" type="text" placeholder="Username atau ID pemain" autocomplete="username" autocapitalize="off">
-  <input id="lgPass" type="password" placeholder="Kata sandi" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+  <div class="pwWrap"><input id="lgPass" type="password" placeholder="Kata sandi" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"><button class="pwEye" type="button" onclick="pwEye(['lgPass'])" aria-label="Tampilkan kata sandi">👁</button></div>
   <div id="pwErr" class="pwErr"></div>
   <button class="btn spin" type="button" style="font-size:18px" onclick="doLogin()">MASUK</button>
   <button class="btn small" type="button" style="font-size:14px" onclick="openWelcome()">KEMBALI</button>`);
@@ -1165,10 +1215,10 @@ async function doLogin(){
   enterAcct(srvAcct(r.j.account));
 }
 function openRegister(){
-  openModal(`<h2>➕ DAFTAR AKUN</h2>
+  openModal(`<div class="wlHead"><span class="ic">➕</span><h2>DAFTAR AKUN</h2></div>
   <p class="pwNote">Buat username &amp; kata sandi supaya akun tidak mudah dipakai orang lain. Akun disimpan di server.</p>
   <input id="rgUser" type="text" maxlength="12" placeholder="Username (3–12: huruf/angka/_)" autocomplete="username" autocapitalize="off">
-  <input id="rgPass" type="password" placeholder="Kata sandi (min. 4 karakter)" autocomplete="new-password">
+  <div class="pwWrap"><input id="rgPass" type="password" placeholder="Kata sandi (min. 4 karakter)" autocomplete="new-password"><button class="pwEye" type="button" onclick="pwEye(['rgPass','rgPass2'])" aria-label="Tampilkan kata sandi">👁</button></div>
   <input id="rgPass2" type="password" placeholder="Ulangi kata sandi" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
   <div id="pwErr" class="pwErr"></div>
   <button class="btn spin" type="button" style="font-size:18px" onclick="doRegister()">DAFTAR &amp; MASUK</button>
@@ -1608,28 +1658,59 @@ function ldRun(icon,title,sub,min,fn,ready){
 const EMB=(()=>{try{const q=new URLSearchParams(location.search),g=q.get("g");return q.get("embed")==="1"&&(g==="daf"||g==="qq")?g:""}catch(e){return ""}})();
 if(EMB)document.body.classList.add("emb");
 const GAMES=[
-  {id:"daf",name:"Dragon Animal Fortune",tag:"MAX WIN • SOLO & MABAR",icon:"🐉",multi:true,c1:"#b3203f",c2:"#4a0612",c3:"#ffb02e",badge:"🔥 HOT",live:true,
+  {id:"daf",name:"Dragon Animal Fortune",tag:"MAX WIN • SOLO & MABAR",icon:"🐉",multi:true,adult:true,c1:"#b3203f",c2:"#4a0612",c3:"#ffb02e",badge:"🔥 HOT",live:true,
    ticker:()=>{const e=document.querySelector("#jp-GRAND strong");return e?"👑 GRAND "+e.textContent:""},
    howto:"• Putar untuk mencocokkan gambar hewan di papan 6×5.<br>• <b>FULL GAMBAR</b>: satu papan penuh gambar sama = hadiah besar.<br>• <b>HORIZONTAL &amp; DIAGONAL</b>: 3–5 gambar sama dari kiri ke kanan.<br>• <b>JACKPOT</b> (MINI/MINOR/MAJOR/GRAND): buka kartu satu per satu dari 12 kartu sampai ada 3 simbol sama = hadiah.<br>• <b>AUTO SPIN</b>: tahan tombol SPIN (atau tekan ▾) lalu pilih 10 / 20 / 50 / 100 / 200 / 500 spin.<br>• Chip habis? Main <b>MODE GRATIS</b> untuk latihan.",
    canExit(){if(busy){setMsg("Tunggu spin selesai dulu");return false}return true},
    onEnter(){unlockAudio();if(voiceOn&&!bgmTimer)startBgm();window.scrollTo(0,0)},
    onExit(){stopAuto();stopBgm();stopVoices();saveGame()}},
-  {id:"qq",name:"Bandar QQ",tag:"DOMINO • MERAH vs BIRU",icon:"🎴",c1:"#0f5132",c2:"#052e1a",c3:"#38d481",badge:"🎴 NEW",live:true,
+  {id:"qq",name:"Bandar QQ",tag:"DOMINO • MERAH vs BIRU",icon:"🎴",adult:true,c1:"#0f5132",c2:"#052e1a",c3:"#38d481",badge:"🎴 NEW",live:true,
    art:`<svg viewBox="0 0 160 100" aria-hidden="true"><defs><linearGradient id="qqT" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d8cfb8"/></linearGradient></defs><g transform="translate(54 48) rotate(-16)"><rect x="-17" y="-32" width="34" height="64" rx="6" fill="url(#qqT)" stroke="#1a1a1a" stroke-width="2"/><line x1="-17" y1="0" x2="17" y2="0" stroke="#1a1a1a" stroke-width="2"/><g fill="#1a1a1a"><circle cx="-8" cy="-24" r="3.4"/><circle cx="8" cy="-24" r="3.4"/><circle cx="-8" cy="-16" r="3.4"/><circle cx="8" cy="-16" r="3.4"/><circle cx="-8" cy="-8" r="3.4"/><circle cx="8" cy="-8" r="3.4"/></g><g fill="#d3142a"><circle cx="-8" cy="9" r="3.6"/><circle cx="8" cy="9" r="3.6"/><circle cx="-8" cy="24" r="3.6"/><circle cx="8" cy="24" r="3.6"/></g></g><g transform="translate(106 46) rotate(14)"><rect x="-17" y="-32" width="34" height="64" rx="6" fill="url(#qqT)" stroke="#1a1a1a" stroke-width="2"/><line x1="-17" y1="0" x2="17" y2="0" stroke="#1a1a1a" stroke-width="2"/><g fill="#1a1a1a"><circle cx="-8" cy="-24" r="3.4"/><circle cx="8" cy="-24" r="3.4"/><circle cx="0" cy="-16" r="3.4"/><circle cx="-8" cy="-8" r="3.4"/><circle cx="8" cy="-8" r="3.4"/></g><g fill="#d3142a"><circle cx="0" cy="16" r="3.6"/></g></g><g><circle cx="30" cy="86" r="11" fill="#d3142a" stroke="#fff" stroke-width="2"/><circle cx="30" cy="86" r="7" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="130" cy="86" r="11" fill="#1f5fd6" stroke="#fff" stroke-width="2"/><circle cx="130" cy="86" r="7" fill="none" stroke="#fff" stroke-width="1.6" stroke-dasharray="3 3"/><circle cx="80" cy="90" r="9" fill="#e9b61a" stroke="#fff" stroke-width="2"/><circle cx="80" cy="90" r="5.5" fill="none" stroke="#fff" stroke-width="1.5" stroke-dasharray="3 3"/></g></svg>`,
    howto:"• Pasang chip ke <b>MERAH</b> atau <b>BIRU</b>. Tiap sisi dapat 2 kartu domino; nilai = jumlah titik, ambil angka satuannya (maks <b>9 = QIU</b>).<br>• <b>MERAH / BIRU</b> bayar 1:1 (seri = taruhan kembali). <b>SERI</b> 1:8.<br>• <b>QIU</b> (satu sisi 9) 1:8 • <b>TWIN</b> (kedua kartu sisi itu balak) 1:15.<br>• <b>QIU QIU</b> (Merah &amp; Biru sama-sama 9) 1:88 • <b>SIX/TWINS</b> (kedua sisi twin) 1:500.<br>• Kartu dikocok &amp; dihitung di server untuk akun login.",
    onEnter(){qqOpen()},onExit(){qqClose()},
    ready:()=>new Promise(res=>{const f=qqFrame();if(f)f.addEventListener("load",res,{once:true});else res()})},
-  {id:"soon1",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎰",live:false},
-  {id:"soon2",name:"SEGERA HADIR",tag:"Slot baru",icon:"🎲",live:false}
+  {id:"soon1",name:"SEGERA HADIR",tag:"Game umum baru",icon:"🎰",live:false},
+  {id:"soon2",name:"SEGERA HADIR",tag:"Game umum baru",icon:"🎲",live:false}
 ];
 function renderGames(){
   const sp='<span class="sp sp1">✦</span><span class="sp sp2">✦</span><span class="sp sp3">✦</span>';
-  document.getElementById("lbGames").innerHTML=GAMES.map((g,i)=>g.live
-    ?`<button class="gCard" type="button" style="--n:${i};--c1:${g.c1};--c2:${g.c2};--c3:${g.c3||"#ffcf5a"}" data-g="${g.id}"><span class="gArt"><span class="gRays"></span>${g.art||`<span class="gi">${g.icon}</span>`}${sp}</span>${g.badge?`<span class="gBadge">${esc(g.badge)}</span>`:""}<span class="gInfo" data-info="${g.id}">i</span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gTick" data-tick="${g.id}"></span><span class="gPlay">▶ MAIN</span></span><span class="gShine"></span></button>`
-    :`<div class="gCard soon" style="--n:${i}"><span class="gArt"><span class="gi">${g.icon}</span></span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gPlay">🔒 SEGERA</span></span></div>`).join("");
+  const cardOf=(g,i)=>g.live
+    ?`<button class="gCard" type="button" style="--n:${i};--c1:${g.c1};--c2:${g.c2};--c3:${g.c3||"#ffcf5a"}" data-g="${g.id}"><span class="gArt"><span class="gRays"></span>${g.art||`<span class="gi">${g.icon}</span>`}${sp}</span>${g.badge?`<span class="gBadge">${esc(g.badge)}</span>`:""}${g.adult?'<span class="g18">18+</span>':""}<span class="gInfo" data-info="${g.id}">i</span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gTick" data-tick="${g.id}"></span><span class="gPlay">▶ MAIN</span></span><span class="gShine"></span></button>`
+    :`<div class="gCard soon" style="--n:${i}"><span class="gArt"><span class="gi">${g.icon}</span></span><span class="gBody"><b>${esc(g.name)}</b><small>${esc(g.tag)}</small><span class="gPlay">🔒 SEGERA</span></span></div>`;
+  const grp=f=>GAMES.map((g,i)=>[g,i]).filter(([g])=>f(g)).map(([g,i])=>cardOf(g,i)).join("");
+  document.getElementById("lbGames").innerHTML=
+    `<div class="lbSec">🎮 GAME UMUM</div><div class="lbGames">${grp(g=>!g.adult)}</div>`+
+    `<div class="lbSec lb18">🔞 GAME 18+ <small>wajib verifikasi umur</small></div><div class="lbGames">${grp(g=>g.adult)}</div>`;
 }
+/* ===== VERIFIKASI UMUR 18+ (slot & Bandar QQ) ===== */
+const AGE_MIN=18,ageCache={};
+function ageFromDob(s){const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||"");if(!m)return -1;const y=+m[1],mo=+m[2],d=+m[3],t=new Date();if(mo<1||mo>12||d<1||d>31||y<1900)return -1;let a=t.getFullYear()-y;if(t.getMonth()+1<mo||(t.getMonth()+1===mo&&t.getDate()<d))a--;return a}
+function ageOk(){if(isAdmin())return true;if(acct&&acct.server)return ageCache[String(acct.id)]===true;return ageFromDob(LS.get("daf_dob"))>=AGE_MIN}
+function ageCancel(){closeModal();if(EMB){try{parent.postMessage({t:"pets-exit"},location.origin==="null"?"*":location.origin)}catch(e){}}}
+function ageDeny(){openModal(`<h2>🔞 KHUSUS 18+</h2><p>Maaf, game ini hanya untuk pemain berusia 18 tahun ke atas. Kamu tetap bisa main game umum dan DAF Pets.</p><button class="btn small" type="button" style="font-size:14px" onclick="ageCancel()">MENGERTI</button>`)}
+function ageForm(cb){window._ageCb=cb;const t=new Date(),mx=t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0")+"-"+String(t.getDate()).padStart(2,"0");
+  openModal(`<h2>🔞 VERIFIKASI UMUR</h2><p>Game ini khusus 18+. Isi tanggal lahirmu. Setelah disimpan, tanggal lahir <b>tidak bisa diubah</b>.</p>
+  <input id="ageDob" type="date" min="1900-01-01" max="${mx}">
+  <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin:8px 0;text-align:left"><input id="ageChk" type="checkbox" style="width:auto;flex:none"> Saya menyatakan data ini benar</label>
+  <div id="ageErr" style="color:#ff9aa8;min-height:18px;font-size:13px"></div>
+  <button class="btn spin" type="button" style="font-size:18px" onclick="ageSubmit()">KONFIRMASI</button>
+  <button class="btn small" type="button" style="font-size:14px" onclick="ageCancel()">BATAL</button>`)}
+async function ageSubmit(){const dob=(document.getElementById("ageDob").value||"").trim(),er=document.getElementById("ageErr"),a=ageFromDob(dob),cb=window._ageCb;
+  if(a<0||a>120){er.textContent="Isi tanggal lahir dengan benar";return}
+  if(!document.getElementById("ageChk").checked){er.textContent="Centang pernyataan dulu";return}
+  if(acct&&acct.server){const r=await apiCall("/age",{dob},LS.get("daf_token"));if(!r.ok){er.textContent=(r.j&&r.j.error)||"Gagal menyimpan, coba lagi";return}
+    if(r.j.adult){ageCache[String(acct.id)]=true;closeModal();if(cb)cb()}else ageDeny();return}
+  LS.set("daf_dob",dob);if(a>=AGE_MIN){closeModal();if(cb)cb()}else ageDeny()}
+async function ageGate(cb){if(ageOk()){cb();return}
+  if(acct&&acct.server){const r=await apiCall("/age",null,LS.get("daf_token"));
+    if(!r.ok){setMsg((r.j&&r.j.error)||"Server tidak terjangkau, coba lagi");return}
+    if(r.j.adult){ageCache[String(acct.id)]=true;cb();return}
+    if(r.j.has){ageDeny();return}}
+  else{const a=ageFromDob(LS.get("daf_dob"));if(a>=0&&a<AGE_MIN){ageDeny();return}}
+  ageForm(cb)}
 function openGame(id){
   const g=GAMES.find(x=>x.id===id);if(!g||!g.live)return;
+  if(g.adult&&!ageOk()){ageGate(()=>openGame(id));return}
   try{unlockAudio()}catch(e){}
   if(g.href){try{saveGame()}catch(e){}ldRun(g.icon,g.name,"Membuka…",900,()=>{setTimeout(()=>{location.href=g.href},700)});return}
   ldRun(g.icon,g.name,"Memuat game…",900,()=>{hideLobby();inGame=id;if(g.onEnter)g.onEnter()},g.ready);
@@ -1917,6 +1998,7 @@ function rtServer(code){   // room mabar lewat Worker (D1), polling 3 dtk
 /* ----- pilih mode ----- */
 function openMode(id){
   const g=GAMES.find(x=>x.id===id);if(!g)return;
+  if(g.adult&&!ageOk()){closeModal();ageGate(()=>openMode(id));return}
   openModal(`<h2>${g.icon} ${esc(g.name)}</h2><p>Pilih mode main</p>
   <button class="btn spin modeBtn" type="button" style="font-size:20px" onclick="startSolo('${id}')">🎮 MODE SOLO<small>Main sendiri, santai</small></button>
   <button class="btn modeBtn" type="button" style="font-size:20px" onclick="openRoomMenu('${id}')">👥 MODE MABAR<small>Satu room bareng teman (maks ${ROOM_MAX} pemain)</small></button>

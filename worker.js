@@ -217,6 +217,29 @@ async function petsEnsure(env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS pets_state (id TEXT PRIMARY KEY, state TEXT, at INTEGER)").run();
   petsReady = true;
 }
+/* ===== VERIFIKASI UMUR 18+: tanggal lahir terkunci setelah diisi; slot/QQ/mabar ditolak server kalau belum 18+ ===== */
+const AGE_MIN = 18;
+let ageReady = false;
+async function ageEnsure(env) {
+  if (ageReady) return;
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS age_verify (id TEXT PRIMARY KEY, dob TEXT, at INTEGER)").run();
+  ageReady = true;
+}
+const ageOn = (dob, ms) => {   // umur (tahun) per tanggal WIB; -1 kalau tanggal tidak valid
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob || ""); if (!m) return -1;
+  const y = +m[1], mo = +m[2], d = +m[3], c = new Date(Date.UTC(y, mo - 1, d));
+  if (y < 1900 || c.getUTCFullYear() !== y || c.getUTCMonth() !== mo - 1 || c.getUTCDate() !== d) return -1;
+  const t = new Date(ms + 7 * 36e5); if (c.getTime() > t.getTime()) return -1;
+  let a = t.getUTCFullYear() - y; if (t.getUTCMonth() + 1 < mo || (t.getUTCMonth() + 1 === mo && t.getUTCDate() < d)) a--;
+  return a;
+};
+/* ===== LOGIN GOOGLE: token ID diverifikasi ke Google; akun ditautkan lewat "sub" Google ===== */
+let googleReady = false;
+async function googleEnsure(env) {
+  if (googleReady) return;
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS google_links (sub TEXT PRIMARY KEY, id TEXT, email TEXT, at INTEGER)").run();
+  googleReady = true;
+}
 let roomReady = false;   // Mabar room slot (pengganti Firestore rooms)
 async function roomEnsure(env) {
   if (roomReady) return;
@@ -257,7 +280,7 @@ const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
 const auth = await verifyTok(env, (req.headers.get("Authorization") || "").replace(/^Bearer /, ""));
 const now = Date.now();
 
-if (path === "/") return json(env, { ok: true, service: "daf-api", v: 12, room: true, pets: true });
+if (path === "/") return json(env, { ok: true, service: "daf-api", v: 12, room: true, pets: true, age: true, google: !!env.GOOGLE_CLIENT_ID });
 
 if (path === "/register" && req.method === "POST") {
 const name = String(body.name || "").trim(), pass = String(body.pass || "");
@@ -298,6 +321,45 @@ const a = await env.DB.prepare(ACC_SQL + " WHERE a.id=?").bind(row.id).first();
 return json(env, { token: await signTok(env, { id: row.id, exp: now + 400 * 864e5 }), account: shape(a) });
 }
 
+if (path === "/google" && req.method === "POST") {
+const cid = env.GOOGLE_CLIENT_ID;
+if (!cid) return bad(env, "Login Google belum diaktifkan di server", 503);
+const cred = String(body.cred || "");
+if (cred.length < 100 || cred.length > 4000) return bad(env, "Token tidak valid");
+let g;
+try {
+const gr = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(cred));
+if (!gr.ok) return bad(env, "Token Google ditolak", 401);
+g = await gr.json();
+} catch (e) { return bad(env, "Google tidak terjangkau, coba lagi", 502); }
+const okIss = g.iss === "accounts.google.com" || g.iss === "https://accounts.google.com";
+const okMail = g.email_verified === true || g.email_verified === "true";
+if (!g || g.aud !== cid || !okIss || !okMail || !g.sub || !(Number(g.exp) * 1000 > now)) return bad(env, "Token Google tidak valid", 401);
+await googleEnsure(env);
+let link = await env.DB.prepare("SELECT id FROM google_links WHERE sub=?").bind(g.sub).first(), id = link && link.id, isNew = false;
+if (id && !(await env.DB.prepare("SELECT 1 FROM accounts WHERE id=?").bind(id).first())) { await env.DB.prepare("DELETE FROM google_links WHERE sub=?").bind(g.sub).run(); id = null; }
+if (!id) {
+const base = (String(g.given_name || String(g.email || "").split("@")[0] || "").replace(/[^A-Za-z0-9_]/g, "").slice(0, 7) || "Player").padEnd(3, "x");
+const salt = hex(crypto.getRandomValues(new Uint8Array(16))), luck = genLuck(), gv = genGv();
+for (let i = 0; i < 12 && !id; i++) {
+const name = base + String(Math.floor(rand() * 90000) + 10000).slice(0, 12 - base.length);
+if (name.toLowerCase() === "admin" || name.toLowerCase() === String(env.ADMIN_USER || "\0").toLowerCase()) continue;
+if (await env.DB.prepare("SELECT 1 FROM accounts WHERE username=? COLLATE NOCASE").bind(name).first()) continue;
+const c = String(Math.floor(20000000 + rand() * 80000000));
+try {
+await env.DB.prepare("INSERT INTO accounts (id,name,username,pw_salt,pw_hash,balance,luck,gv,created_at) VALUES (?1,?2,?2,?3,'',?4,?5,?6,?7)").bind(c, name, salt, START_CHIPS, luck, gv, now).run();
+id = c; isNew = true;
+} catch (e) { if (!/UNIQUE|constraint/i.test(String(e && e.message))) throw e; }
+}
+if (!id) return bad(env, "Coba lagi", 500);
+await env.DB.prepare("INSERT OR IGNORE INTO google_links (sub,id,email,at) VALUES (?1,?2,?3,?4)").bind(g.sub, id, String(g.email || ""), now).run();
+link = await env.DB.prepare("SELECT id FROM google_links WHERE sub=?").bind(g.sub).first();
+if (link && link.id !== id) { await env.DB.prepare("DELETE FROM accounts WHERE id=?").bind(id).run(); id = link.id; isNew = false; }   // dua login bersamaan: pakai akun yang menang
+}
+const a = await env.DB.prepare(ACC_SQL + " WHERE a.id=?").bind(id).first();
+return json(env, { token: await signTok(env, { id, exp: now + 400 * 864e5 }), account: shape(a), isNew });
+}
+
 if (path === "/admin/login" && req.method === "POST") {
 const ok = safeEq(String(body.user || ""), String(env.ADMIN_USER || "\0")) && safeEq(String(body.pass || ""), String(env.ADMIN_PASS || "\0"));
 if (!ok) return bad(env, "Username atau password salah", 401);
@@ -310,6 +372,24 @@ return json(env, { top: r.results.map((x) => ({ name: x.username, balance: x.bal
 }
 
 if (!auth) return bad(env, "Belum login", 401);
+
+if (path === "/age") {   // GET = status, POST {dob:"YYYY-MM-DD"} = isi sekali (terkunci, tidak bisa diubah)
+if (auth.adm) return json(env, { has: true, adult: true });
+await ageEnsure(env);
+const arow = await env.DB.prepare("SELECT dob FROM age_verify WHERE id=?").bind(auth.id).first();
+if (req.method === "POST" && !arow) {
+const dob = String(body.dob || ""), a = ageOn(dob, now);
+if (a < 0 || a > 120) return bad(env, "Tanggal lahir tidak valid");
+await env.DB.prepare("INSERT OR IGNORE INTO age_verify (id,dob,at) VALUES (?1,?2,?3)").bind(auth.id, dob, now).run();
+return json(env, { has: true, adult: a >= AGE_MIN });
+}
+return json(env, { has: !!arow, adult: !!arow && ageOn(arow.dob, now) >= AGE_MIN });
+}
+if (!auth.adm && (path === "/spin" || path === "/jp/open" || path.startsWith("/qq/") || path.startsWith("/room/"))) {
+await ageEnsure(env);
+const arow = await env.DB.prepare("SELECT dob FROM age_verify WHERE id=?").bind(auth.id).first();
+if (!arow || ageOn(arow.dob, now) < AGE_MIN) return json(env, { error: "Game ini khusus 18+. Verifikasi umur dulu.", age: true }, 403);
+}
 
 if (path === "/me") {
 if (auth.adm) return json(env, { id: "ADMIN", admin: true, perms: { send: true, full: true, jp: true } });
