@@ -705,6 +705,11 @@ body{padding:5px}
 .qqWrap{position:fixed;inset:0;z-index:90;background:#000;display:none}
 .qqWrap.show{display:block}
 .qqWrap iframe{width:100%;height:100%;border:0;display:block;background:#000}
+/* MANCING LAUT DALAM (iframe). z-index di bawah pil/panel room (60/92) supaya mabar tetap terlihat */
+.fishWrap{position:fixed;inset:0;z-index:58;background:#04202e;display:none}
+.fishWrap.show{display:block;animation:fwIn .45s ease}
+@keyframes fwIn{from{opacity:0}to{opacity:1}}
+.fishWrap iframe{width:100%;height:100%;border:0;display:block;background:#04202e}
 body.emb #lobby{display:none!important}
 #petsFrame{flex:1;min-height:0;width:100%;border:0;background:#190208;display:block}
 .lobby.vp .lbBody{display:none}
@@ -850,6 +855,7 @@ body.emb #lobby{display:none!important}
   <div id="jpParticles" class="jpParticles"></div>
 </div>
 <div id="qqWrap" class="qqWrap"><iframe id="qqFrame" title="Bandar QQ" allow="autoplay"></iframe></div>
+<div id="fishWrap" class="fishWrap"><iframe id="fishFrame" title="Mancing Laut Dalam" allow="autoplay"></iframe></div>
 <div id="modal" class="modal"><div id="mbox" class="mbox"></div></div>
 
 <script src="daf-sfx.js?v=1"></script>
@@ -1672,7 +1678,11 @@ const GAMES=[
    howto:"• Pasang chip ke <b>MERAH</b> atau <b>BIRU</b>. Tiap sisi dapat 2 kartu domino; nilai = jumlah titik, ambil angka satuannya (maks <b>9 = QIU</b>).<br>• <b>MERAH / BIRU</b> bayar 1:1 (seri = taruhan kembali). <b>SERI</b> 1:8.<br>• <b>QIU</b> (satu sisi 9) 1:8 • <b>TWIN</b> (kedua kartu sisi itu balak) 1:15.<br>• <b>QIU QIU</b> (Merah &amp; Biru sama-sama 9) 1:88 • <b>SIX/TWINS</b> (kedua sisi twin) 1:500.<br>• Kartu dikocok &amp; dihitung di server untuk akun login.",
    onEnter(){qqOpen()},onExit(){qqClose()},
    ready:()=>new Promise(res=>{const f=qqFrame();if(f)f.addEventListener("load",res,{once:true});else res()})},
-  {id:"soon1",name:"SEGERA HADIR",tag:"Game umum baru",icon:"🎰",live:false},
+  {id:"mancing",name:"Mancing Laut Dalam",tag:"MANCING • SOLO & MABAR",icon:"🎣",multi:true,c1:"#0a6f86",c2:"#041f2e",c3:"#3be0d0",badge:"🌊 NEW",live:true,
+   art:`<svg viewBox="0 0 160 100" aria-hidden="true"><defs><linearGradient id="fsW" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2fd0d8"/><stop offset="1" stop-color="#0a4a6e"/></linearGradient></defs><rect x="0" y="52" width="160" height="48" fill="url(#fsW)" opacity=".85"/><path d="M0 52q20-6 40 0t40 0 40 0 40 0" fill="none" stroke="#e3faf5" stroke-width="3" opacity=".7"/><path d="M134 6L98 34" stroke="#c9a35a" stroke-width="4" stroke-linecap="round"/><path d="M98 34Q92 50 86 60" fill="none" stroke="#fff" stroke-width="1.6"/><circle cx="90" cy="54" r="5" fill="#ff4a3a" stroke="#fff" stroke-width="2"/><g transform="translate(50 72)"><path d="M0 0c8-12 26-12 36-2l12-8v20l-12-8C26 12 8 12 0 0z" fill="#ffc93c" stroke="#a86a00" stroke-width="2"/><circle cx="8" cy="-2" r="2.4" fill="#031722"/></g></svg>`,
+   howto:"• Tahan tombol <b>LEMPAR</b>, geser untuk membidik, lepas untuk melempar. Makin jauh = makin dalam = ikan makin langka.<br>• Lempar tepat ke <b>titik harta</b> emas untuk peluang ikan langka lebih besar.<br>• Saat tombol merah, tahan cepat untuk menarik, lalu jaga ikan di <b>zona hijau</b> sampai bar penuh.<br>• Hasil tangkapan jadi <b>chip</b> yang sama dengan game lain. Chip dipakai di Toko untuk joran, umpan, dan upgrade.<br>• Ikan Legendaris &amp; Berkilau langka diumumkan ke semua pemain. <b>MABAR</b>: satu room bareng teman, lihat tangkapan dan peringkat sesi.",
+   onEnter(){fishOpen()},onExit(){fishClose()},
+   ready:()=>new Promise(res=>{window._fishRes=res})},
   {id:"soon2",name:"SEGERA HADIR",tag:"Game umum baru",icon:"🎲",live:false}
 ];
 function renderGames(){
@@ -1963,6 +1973,47 @@ window.addEventListener("message",e=>{
 });
 
 
+/* ===== MANCING LAUT DALAM: game di iframe (mancing.html, satu folder dengan index.html).
+   Akun SERVER -> chip & state kandang disimpan lewat Worker (/fish/load, /fish/sync). Tamu/akun lokal/mode gratis/admin -> main lokal. ===== */
+const FISH_SRC="mancing.html";
+const fishSrv=()=>!!(acct&&acct.server&&!freeMode&&!isAdmin());
+function fishFrame(){return document.getElementById("fishFrame")}
+function fishPost(m){const f=fishFrame();if(f&&f.contentWindow)f.contentWindow.postMessage(m,QQ_ORIGIN)}
+function fishOpen(){
+  document.getElementById("game").style.display="none";
+  document.getElementById("fishWrap").classList.add("show");
+  fishFrame().src=FISH_SRC;
+}
+function fishClose(){
+  document.getElementById("fishWrap").classList.remove("show");
+  fishFrame().src="about:blank";
+  document.getElementById("game").style.display="";
+  window._fishRes=null;
+  updateUI();
+}
+function fishInit(){
+  const adm=isAdmin(),srv=fishSrv();
+  fishPost({t:"fish-init",server:srv,inf:adm,balance:adm?1e12:Math.max(0,Math.floor(balance)),acc:(acct?String(acct.id):"guest")+(freeMode?"-free":"")});
+}
+async function fishApi(m){
+  const reply=o=>fishPost(Object.assign({t:"fish-reply",id:m.id},o));
+  if(!fishSrv()||!/^\/fish\/(load|sync)$/.test(m.path||"")){reply({ok:false,status:0,j:{error:"Mode server tidak aktif"}});return}
+  const r=await apiCall(m.path,m.body||{},LS.get("daf_token"));
+  if(r.j&&typeof r.j.balance==="number"&&inGame==="mancing"){balance=r.j.balance;stateRev++;clampBet();updateUI()}
+  if(r.status===401){LS.del("daf_token");reply({ok:false,status:401,j:r.j});exitGame();resetSession("Sesi habis, silakan login lagi");openWelcome();return}
+  reply({ok:r.ok,status:r.status,j:r.j});
+}
+window.addEventListener("message",e=>{
+  const f=fishFrame();if(!f||inGame!=="mancing"||e.source!==f.contentWindow||e.origin!==location.origin)return;
+  const m=e.data||{};
+  if(m.t==="fish-ready")fishInit();
+  else if(m.t==="fish-loaded"){if(window._fishRes){const r=window._fishRes;window._fishRes=null;r()}}
+  else if(m.t==="fish-exit")exitGame();
+  else if(m.t==="fish-api")fishApi(m);
+  else if(m.t==="fish-catch")roomAfterFish(m);
+  else if(m.t==="fish-bal"){if(fishSrv()||isAdmin()||typeof m.balance!=="number"||!isFinite(m.balance))return;balance=Math.max(0,Math.floor(m.balance));updateUI();saveGame()}
+});
+
 /* ===== MODE SOLO & MABAR (ROOM) =====
    Mabar = beberapa pemain di satu room (kode 5 huruf), tiap pemain putar slot sendiri dengan chip sendiri,
    tapi saling lihat: papan peringkat sesi, kemenangan besar/jackpot, reaksi & chat.
@@ -1972,9 +2023,9 @@ let R=null,roomBusy=false,lastChat=0;
 function genCode(){let c="";for(let i=0;i<5;i++)c+=ROOM_CHARS[Math.floor(Math.random()*ROOM_CHARS.length)];return c}
 function cleanCode(v){return String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5)}
 
-function rtServer(code){   // room mabar lewat Worker (D1), polling 3 dtk
+function rtServer(code,game){   // room mabar lewat Worker (D1), polling 3 dtk
   const tok=()=>isAdmin()?admToken:LS.get("daf_token");
-  const call=async(p,b)=>{const r=await apiCall("/room/"+p,Object.assign({code},b),tok());if(!r.ok)throw Object.assign(new Error((r.j&&r.j.error)||"Server room tidak merespons"),{code:r.status});return r.j};
+  const call=async(p,b)=>{const r=await apiCall("/room/"+p,Object.assign({code,game},b),tok());if(!r.ok)throw Object.assign(new Error((r.j&&r.j.error)||"Server room tidak merespons"),{code:r.status});return r.j};
   let tm=null,first=true,bad=false;const seen=new Set();
   return{kind:"online",
     async getMeta(){return(await call("get")).meta},
@@ -2009,6 +2060,7 @@ function openMode(id){
 }
 function startSolo(id){closeModal();openGame(id)}
 function openRoomMenu(id,msg){
+  window._rmGame=id||"daf";
   if(!acct){closeModal();setMsg("Login dulu untuk mode mabar");openWelcome();return}
   openModal(`<h2>👥 MODE MABAR</h2>
   <p>Buat room lalu bagikan kodenya, atau masukkan kode dari temanmu.</p>
@@ -2022,41 +2074,42 @@ function rmSay(t){const e=document.getElementById("rmMsg");if(e)e.textContent=t}
 
 /* ----- hubungkan / buat / gabung ----- */
 async function roomCreate(){
-  for(let t=0;t<3;t++){const r=await roomConnect(genCode(),true);if(r!=="clash")return}
+  for(let t=0;t<3;t++){const r=await roomConnect(genCode(),true,window._rmGame||"daf");if(r!=="clash")return}
   rmSay("Gagal membuat room, coba lagi");
 }
 async function roomJoin(){
   const c=cleanCode((document.getElementById("rmCode")||{}).value);
   if(c.length<5){rmSay("Kode room 5 karakter");return}
-  roomConnect(c,false);
+  roomConnect(c,false,window._rmGame||"daf");
 }
-async function roomConnect(code,create){
+async function roomConnect(code,create,game){
+  game=game||"daf";
   if(roomBusy||R)return "busy";
   roomBusy=true;
   try{
     rmSay("Menghubungkan…");
     if(!(acct.server||isAdmin())){rmSay("Mabar hanya untuk akun server — login dulu");return "no"}
-    const rt=rtServer(code);
+    const rt=rtServer(code,game);
     let meta=await rt.getMeta();
     const uid=isAdmin()?"ADMIN":String(acct.id);
     if(create){
       if(meta)return "clash";
-      meta={game:"daf",host:uid,hostName:acct.name,max:ROOM_MAX,created:Date.now()};
+      meta={game:game,host:uid,hostName:acct.name,max:ROOM_MAX,created:Date.now()};
       await rt.setMeta(meta);
     }else{
       if(!meta){rmSay("Room "+code+" tidak ditemukan");return "no"}
-      if(meta.game!=="daf"){rmSay("Room ini untuk game lain");return "no"}
+      if(meta.game!==game){rmSay("Room ini untuk game lain");return "no"}
     }
     const now=Date.now();
     const list=(await rt.listPlayers()).filter(p=>now-(p.seen||0)<ROOM_STALE);
     if(!create&&!list.some(p=>p.id===uid)&&list.length>=(meta.max||ROOM_MAX)){rmSay("Room penuh ("+list.length+"/"+(meta.max||ROOM_MAX)+")");return "full"}
-    R={code,rt,uid,meta,players:{},feed:[],sessWin:0,sessBet:0,spins:0,best:0,open:false,hb:null};
+    R={code,rt,uid,meta,game,players:{},feed:[],sessWin:0,sessBet:0,spins:0,best:0,open:false,hb:null};
     rt.listen(roomOnPlayers,roomOnFeed,roomOnErr);
     await roomPutSelf();
     await roomEvent({k:"join"});
     R.hb=setInterval(roomBeat,30000);
     closeModal();
-    if(inGame!=="daf")openGame("daf");
+    if(inGame!==game)openGame(game);
     roomUI(true);
     roomToast(`Room <b>${esc(code)}</b> ${create?"dibuat — bagikan kodenya ke teman":"— kamu masuk"}`);
     return "ok";
@@ -2095,6 +2148,7 @@ function evText(e){
     case"win":return `🏆 ${n} menang <b>+${amt}</b> (×${Number(e.mult)||0})`;
     case"full":return `🖼️ ${n} FULL GAMBAR ${e.an?esc(String(e.an).slice(0,10).toUpperCase())+" ":""}<b>+${amt}</b>`;
     case"jp":return `👑 ${n} JACKPOT ${esc(String(e.tier||"").slice(0,6))} <b>+${amt}</b>`;
+    case"fish":return `🎣 ${n} dapat <b>${esc(String(e.fish||"?").slice(0,24))}</b>${e.shiny?" ✨":""} (${esc(String(e.rar||"").slice(0,10))}) <b>+${amt}</b>`;
     case"chat":return `${n}: ${esc(String(e.text||"").slice(0,60))}`;
     case"react":return `${n} ${esc(String(e.text||"").slice(0,4))}`;
   }
@@ -2135,6 +2189,8 @@ const G={tm:null,seq:-1};
 const GQ=[];let gBusy=false,gEl=null;
 function gParse(e){
   const t=String(e.tier||"").split("|"),k=t[0],a=animals[+t[1]],fr=t[2]==="1";
+  if(k==="IKAN"){const RC={legend:"#ffc93c",epic:"#c77bff",rare:"#4fb3ff",common:"#a8c3cf"},RN={legend:"LEGENDARIS",epic:"EPIK",rare:"LANGKA",common:"UMUM"};
+    return{col:RC[t[3]]||"#4fb3ff",html:`🎣 <b>${esc(String(e.name||"?").slice(0,12))}</b> dapat ikan ${RN[t[3]]||""}${t[4]==="1"?" ✨BERKILAU":""} <b>${esc(String(t[1]||"").slice(0,24))}</b><small>+${money(Number(e.amt)||0)} • 🎣 di Mancing Laut Dalam</small>`};}
   const an=a?` ${a.e} <b>${esc(a.n.toUpperCase())}</b>`:"";
   const amt=money(Number(e.amt)||0),nm=`<b>${esc(String(e.name||"?").slice(0,12))}</b>`;
   const col={MINI:"#2fe36b",MINOR:"#29a8ff",MAJOR:"#d84dff",GRAND:"#ffd34d",FULL:"#ff7a3d",SIX:"#7df9ff",QQ:"#ff7ad9",TWM:"#ff6b73",QQM:"#ff6b73",MERAH:"#ff6b73",TWB:"#6aa3ff",QQB:"#6aa3ff",BIRU:"#6aa3ff",SERI:"#4ade80",WIN:"#ffd34d",SUPER:"#ff4d6d",MEGA:"#ffb02e",BIG:"#ffd34d",LINE:"#7dffa0"}[k]||"#ffd34d";
@@ -2203,6 +2259,15 @@ function roomAfterSpin(i){   // dipanggil di akhir tiap spin
   else if(i.bet>0&&i.win>=10*i.bet)roomEvent({k:"win",amt:i.win,mult:Math.round(i.win/i.bet*10)/10});
   roomRender();
 }
+function roomAfterFish(m){   // dipanggil tiap tangkapan di Mancing Laut Dalam
+  if(!R||R.game!=="mancing")return;
+  const v=Math.max(0,Number(m.val)||0),RN={common:"Umum",rare:"Langka",epic:"Epik",legend:"Legendaris"};
+  R.spins++;R.sessWin+=v;if(v>R.best)R.best=v;
+  R.last={bd:"",sb:0,lw:v,fs:0,sm:0,lt:Date.now(),lf:String(m.name||"").slice(0,24)+(m.shiny?" ✨":"")};
+  roomPutSelf();
+  if(m.rar==="legend"||m.rar==="epic"||m.shiny)roomEvent({k:"fish",fish:String(m.name||"").slice(0,24),rar:RN[m.rar]||"",shiny:m.shiny?1:0,amt:v});
+  roomRender();
+}
 function roomChat(){
   const inp=document.getElementById("rpInput"),t=inp.value.trim().slice(0,60);
   if(!t||!R||Date.now()-lastChat<1500)return;
@@ -2234,8 +2299,8 @@ function roomRenderWatch(){
   const ago=p.lt?Math.max(0,Math.round((Date.now()-p.lt)/1000)):null;
   const chips=p.chips==null?"∞":money(Number(p.chips)||0);
   box.innerHTML=`<div class="wh"><span>👀 Layar ${esc(String(p.name||"?").slice(0,12))} ${esc(String(p.av||"").slice(0,4))}</span><button class="ubtn" type="button" onclick="roomWatch(R.watch)">✕ TUTUP</button></div>`
-    +(ok?`<div id="wGrid" class="wGrid">${cells}</div>`:`<div style="padding:18px 0;color:#ffe9a6">Belum ada spin dari pemain ini</div>`)
-    +`<div class="wInfo"><span>BET <b>${money(Number(p.sb)||0)}</b></span><span>WIN <b style="color:#7dffa0">${money(Number(p.lw)||0)}</b></span><span>CHIP <b>${chips}</b></span>`
+    +(ok?`<div id="wGrid" class="wGrid">${cells}</div>`:`<div style="padding:18px 0;color:#ffe9a6">${R.game==="mancing"?(p.lf?"🎣 Tangkapan terakhir: "+esc(p.lf):"Belum ada tangkapan"):"Belum ada spin dari pemain ini"}</div>`)
+    +`<div class="wInfo">${R.game==="mancing"?"":"<span>BET <b>"+money(Number(p.sb)||0)+"</b></span>"}<span>WIN <b style="color:#7dffa0">${money(Number(p.lw)||0)}</b></span><span>CHIP <b>${chips}</b></span>`
     +(p.sm?`<span>🎁 <b>SCATTER MODE</b></span>`:"")+((Number(p.fs)||0)>0?`<span>FREE SPIN <b>${Number(p.fs)}</b></span>`:"")
     +(ago!==null?`<span>spin terakhir <b>${ago<60?ago+" dtk":Math.round(ago/60)+" mnt"} lalu</b></span>`:"")+`</div>`;
   if(ok&&watchBd&&watchBd!==bd){const g=document.getElementById("wGrid");if(g)g.classList.add("flash")}

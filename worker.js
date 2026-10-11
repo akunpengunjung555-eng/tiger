@@ -250,6 +250,29 @@ async function roomEnsure(env) {
   ]) await env.DB.prepare(q).run();
   roomReady = true;
 }
+/* game dari sebuah room: gerbang 18+ hanya berlaku untuk room slot ("daf"); room Mancing terbuka untuk semua umur */
+async function roomGameOf(env, body, path) {
+  await roomEnsure(env);
+  const gm = String(body.game) === "mancing" ? "mancing" : "daf";
+  if (path === "/room/create") return gm;
+  const code = String(body.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 5);
+  const m = code.length === 5 ? await env.DB.prepare("SELECT meta FROM room_meta WHERE code=?").bind(code).first() : null;
+  if (m) { try { return JSON.parse(m.meta).game === "mancing" ? "mancing" : "daf"; } catch (e) {} }
+  return gm;
+}
+/* ===== MANCING LAUT DALAM: state per akun + sinkron chip ===== */
+const FISH_X = 1e6;   // nilai 1 "koin" mancing dalam chip (samakan dengan CHIP di mancing.html)
+const FISH_BURST = 3e9, FISH_RATE = 6e6, FISH_MAX_STATE = 100000;   // batas kenaikan chip per sinkron: FISH_BURST + detik_sejak_sinkron_terakhir * FISH_RATE
+const FISH_SP = { teri: ["Ikan Teri", "common", 8], layang: ["Ikan Layang", "common", 10], kembung: ["Ikan Kembung", "common", 9], kakap: ["Kakap Merah", "common", 12], badut: ["Ikan Badut", "common", 11], kepe: ["Kepe-kepe Kuning", "common", 9], baronang: ["Ikan Baronang", "common", 10],
+  buntal: ["Ikan Buntal", "rare", 28], ubur: ["Ubur-ubur Bulan", "rare", 32], tuna: ["Tuna Sirip Kuning", "rare", 40], barakuda: ["Barakuda", "rare", 36], kerapu: ["Kerapu Macan", "rare", 44], singa: ["Ikan Singa", "rare", 46], napoleon: ["Napoleon Wrasse", "rare", 52], mandarin: ["Ikan Mandarin", "rare", 48],
+  pari: ["Pari Manta", "epic", 90], elang: ["Pari Elang Bintik", "epic", 125], hiu: ["Hiu Karang", "epic", 100], handfish: ["Handfish Merah Muda", "epic", 85], angel: ["Bidadari Kaisar", "epic", 110], idol: ["Ikan Idol Moor", "epic", 105], pedang: ["Ikan Pedang", "epic", 130], mola: ["Ikan Bulan Mola", "epic", 120], lentera: ["Ikan Pemancing Palung", "epic", 140], ubur_api: ["Ubur-ubur Api", "epic", 115],
+  naga: ["Arwana Emas", "legend", 260], abyss: ["Manta Raksasa", "legend", 320], marlin: ["Marlin Biru", "legend", 340], hiupaus: ["Hiu Paus", "legend", 380], opah: ["Ikan Opah Raja", "legend", 360], ubur_kristal: ["Ubur-ubur Kristal", "legend", 400] };
+let fishReady = false;
+async function fishEnsure(env) {
+  if (fishReady) return;
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS fish_state (id TEXT PRIMARY KEY, state TEXT, at INTEGER, feed_at INTEGER DEFAULT 0)").run();
+  fishReady = true;
+}
 const qqFmt = (n) => n >= 1e9 ? (n / 1e9).toFixed(2) + "B" : n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : Math.round(n / 1e3) + "K";
 
 
@@ -280,7 +303,7 @@ const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
 const auth = await verifyTok(env, (req.headers.get("Authorization") || "").replace(/^Bearer /, ""));
 const now = Date.now();
 
-if (path === "/") return json(env, { ok: true, service: "daf-api", v: 12, room: true, pets: true, age: true, google: !!env.GOOGLE_CLIENT_ID });
+if (path === "/") return json(env, { ok: true, service: "daf-api", v: 13, fish: true, room: true, pets: true, age: true, google: !!env.GOOGLE_CLIENT_ID });
 
 if (path === "/register" && req.method === "POST") {
 const name = String(body.name || "").trim(), pass = String(body.pass || "");
@@ -385,7 +408,9 @@ return json(env, { has: true, adult: a >= AGE_MIN });
 }
 return json(env, { has: !!arow, adult: !!arow && ageOn(arow.dob, now) >= AGE_MIN });
 }
-if (!auth.adm && (path === "/spin" || path === "/jp/open" || path.startsWith("/qq/") || path.startsWith("/room/"))) {
+let needAge = path === "/spin" || path === "/jp/open" || path.startsWith("/qq/");
+if (!auth.adm && path.startsWith("/room/")) needAge = (await roomGameOf(env, body, path)) === "daf";
+if (!auth.adm && needAge) {
 await ageEnsure(env);
 const arow = await env.DB.prepare("SELECT dob FROM age_verify WHERE id=?").bind(auth.id).first();
 if (!arow || ageOn(arow.dob, now) < AGE_MIN) return json(env, { error: "Game ini khusus 18+. Verifikasi umur dulu.", age: true }, 403);
@@ -597,7 +622,7 @@ if (path.startsWith("/room/") && req.method === "POST") {   // Mabar room slot: 
   const who = async () => { if (auth.adm) return "ADMIN"; const u = await env.DB.prepare("SELECT username FROM accounts WHERE id=?").bind(uid).first(); return u ? u.username : "?"; };
   if (op === "get") { const m = await env.DB.prepare("SELECT meta FROM room_meta WHERE code=?").bind(code).first(); return json(env, { meta: m ? JSON.parse(m.meta) : null, players: await players() }); }
   if (op === "create") {
-    const meta = { game: "daf", host: uid, hostName: await who(), max: 6, created: now };
+    const meta = { game: String(body.game) === "mancing" ? "mancing" : "daf", host: uid, hostName: await who(), max: 6, created: now };
     const r = await env.DB.prepare("INSERT OR IGNORE INTO room_meta (code,meta,at) VALUES (?1,?2,?3)").bind(code, JSON.stringify(meta), now).run();
     return json(env, { created: !!r.meta.changes });
   }
@@ -667,6 +692,45 @@ if (!r.meta.changes) { const cur = await env.DB.prepare("SELECT balance FROM acc
 }
 if (js) await env.DB.prepare("INSERT OR REPLACE INTO pets_state (id,state,at) VALUES (?1,?2,?3)").bind(auth.id, js, now).run();
 else if (prev) await env.DB.prepare("UPDATE pets_state SET at=?1 WHERE id=?2").bind(now, auth.id).run();
+const me = await env.DB.prepare("SELECT balance FROM accounts WHERE id=?").bind(auth.id).first();
+return json(env, { ok: true, balance: me.balance, capped });
+}
+
+if (path === "/fish/load" || path === "/fish/sync") {
+if (auth.adm) return bad(env, "Admin tidak memakai Mancing");
+await fishEnsure(env);
+const acc = await env.DB.prepare("SELECT balance,username FROM accounts WHERE id=?").bind(auth.id).first();
+if (!acc) return bad(env, "Akun tidak ditemukan", 404);
+const prev = await env.DB.prepare("SELECT state,at,feed_at FROM fish_state WHERE id=?").bind(auth.id).first();
+if (path === "/fish/load") {
+let st = null; try { st = prev ? JSON.parse(prev.state) : null; } catch (e) {}
+return json(env, { balance: acc.balance, name: acc.username, state: st });
+}
+if (req.method !== "POST") return bad(env, "Metode salah", 405);
+let d = Math.trunc(Number(body.d) || 0);
+if (!Number.isFinite(d)) return bad(env, "Jumlah tidak valid");
+const st = body.state;
+let js = null;
+if (st && typeof st === "object" && st.rods && typeof st.rods === "object") { js = JSON.stringify(st); if (js.length > FISH_MAX_STATE) return bad(env, "State Mancing terlalu besar", 413); }
+let capped = false;
+const maxGain = FISH_BURST + Math.min(86400, Math.max(0, (now - ((prev && prev.at) || now)) / 1000)) * FISH_RATE;
+if (d > maxGain) { d = Math.floor(maxGain); capped = true; }
+if (d < 0 && acc.balance + d < 0) return json(env, { error: "Chip tidak cukup", balance: acc.balance }, 400);
+if (d !== 0) {
+const r = await env.DB.prepare("UPDATE accounts SET balance=balance+?1 WHERE id=?2 AND balance+?1>=0").bind(d, auth.id).run();
+if (!r.meta.changes) { const cur = await env.DB.prepare("SELECT balance FROM accounts WHERE id=?").bind(auth.id).first(); return json(env, { error: "Chip tidak cukup", balance: cur ? cur.balance : 0 }, 400); }
+}
+let feedAt = (prev && prev.feed_at) || 0;
+const ev = body.ev && typeof body.ev === "object" ? body.ev : null, sp = ev ? FISH_SP[String(ev.id)] : null;
+if (sp && now - feedAt > 15000) {   // notif global: ikan Legendaris, atau Epik yang Berkilau (maks 1 per 15 dtk per pemain)
+const shiny = !!ev.sh, big = sp[1] === "legend" || (shiny && sp[1] === "epic");
+const amt = Math.min(Math.floor(Number(ev.val) || 0), Math.round(sp[2] * 1.3) * FISH_X * 2);
+if (big && amt > 0) {
+try { await feedAdd(env, auth.id, acc.username, "IKAN|" + sp[0] + "|M|" + sp[1] + "|" + (shiny ? 1 : 0), amt); feedAt = now; } catch (e) {}
+}
+}
+if (js) await env.DB.prepare("INSERT INTO fish_state (id,state,at,feed_at) VALUES (?1,?2,?3,?4) ON CONFLICT(id) DO UPDATE SET state=?2,at=?3,feed_at=?4").bind(auth.id, js, now, feedAt).run();
+else if (prev) await env.DB.prepare("UPDATE fish_state SET at=?1,feed_at=?2 WHERE id=?3").bind(now, feedAt, auth.id).run();
 const me = await env.DB.prepare("SELECT balance FROM accounts WHERE id=?").bind(auth.id).first();
 return json(env, { ok: true, balance: me.balance, capped });
 }
