@@ -1061,7 +1061,7 @@ function pwEye(ids){ids.forEach(i=>{const e=document.getElementById(i);if(e)e.ty
 
 /* ----- admin: satu-satunya akun dengan chip tidak terbatas ----- */
 const ADMIN_USER="admin",ADMIN_CHIPS=999999999999;   // ADMIN_USER hanya nama yang dicadangkan; username/password admin sekarang diperiksa server
-const GOOGLE_CLIENT_ID="";   // <- tempel Client ID dari Google Cloud Console (samakan dengan GOOGLE_CLIENT_ID di Worker)
+const GOOGLE_CLIENT_ID="541349499807-j1u9qiufppjb73kv1ahriboj52eup8gc.apps.googleusercontent.com";   // <- tempel Client ID dari Google Cloud Console (samakan dengan GOOGLE_CLIENT_ID di Worker)
 const API_URL="https://daf-api.akunpengunjung555.workers.dev";let admToken=null;
 async function apiCall(path,body,tok){const ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),12000);try{const r=await fetch(API_URL+path,{method:body?"POST":"GET",signal:ctl.signal,headers:Object.assign({"Content-Type":"application/json"},tok?{Authorization:"Bearer "+tok}:{}),body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));return{ok:r.ok,status:r.status,j}}catch(e){return{ok:false,status:0,j:{error:"Server tidak terjangkau, coba lagi"}}}finally{clearTimeout(tm)}}
 function srvAcct(x){const p=x.perms||{};return{id:x.id,pid:x.id,name:x.name,balance:x.balance,bet:DEFAULTS.bet,spinCount:x.spins|0,freeSpins:x.freeSpins|0,streak:x.streak|0,inboxPending:x.inbox|0,lastDaily:x.lastDaily||"",today:x.today,yesterday:x.yesterday,created:x.created||Date.now(),tx:[],luck:x.luck,gv:x.gv,perm:{send:!!p.send,full:!!p.full,jp:!!p.jp},server:true}}
