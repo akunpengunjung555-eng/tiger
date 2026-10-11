@@ -261,8 +261,8 @@ async function roomGameOf(env, body, path) {
   return gm;
 }
 /* ===== MANCING LAUT DALAM: state per akun + sinkron chip ===== */
-const FISH_X = 1e6;   // nilai 1 "koin" mancing dalam chip (samakan dengan CHIP di mancing.html)
-const FISH_BURST = 3e9, FISH_RATE = 6e6, FISH_MAX_STATE = 100000;   // batas kenaikan chip per sinkron: FISH_BURST + detik_sejak_sinkron_terakhir * FISH_RATE
+const FISH_X = 1e7;   // nilai 1 "koin" mancing dalam chip (samakan dengan CHIP di mancing.html)
+const FISH_BURST = 3e10, FISH_RATE = 6e7, FISH_MAX_STATE = 100000;   // batas kenaikan chip per sinkron: FISH_BURST + detik_sejak_sinkron_terakhir * FISH_RATE
 const FISH_SP = { teri: ["Ikan Teri", "common", 8], layang: ["Ikan Layang", "common", 10], kembung: ["Ikan Kembung", "common", 9], kakap: ["Kakap Merah", "common", 12], badut: ["Ikan Badut", "common", 11], kepe: ["Kepe-kepe Kuning", "common", 9], baronang: ["Ikan Baronang", "common", 10],
   buntal: ["Ikan Buntal", "rare", 28], ubur: ["Ubur-ubur Bulan", "rare", 32], tuna: ["Tuna Sirip Kuning", "rare", 40], barakuda: ["Barakuda", "rare", 36], kerapu: ["Kerapu Macan", "rare", 44], singa: ["Ikan Singa", "rare", 46], napoleon: ["Napoleon Wrasse", "rare", 52], mandarin: ["Ikan Mandarin", "rare", 48],
   pari: ["Pari Manta", "epic", 90], elang: ["Pari Elang Bintik", "epic", 125], hiu: ["Hiu Karang", "epic", 100], handfish: ["Handfish Merah Muda", "epic", 85], angel: ["Bidadari Kaisar", "epic", 110], idol: ["Ikan Idol Moor", "epic", 105], pedang: ["Ikan Pedang", "epic", 130], mola: ["Ikan Bulan Mola", "epic", 120], lentera: ["Ikan Pemancing Palung", "epic", 140], ubur_api: ["Ubur-ubur Api", "epic", 115],

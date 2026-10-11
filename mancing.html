@@ -209,7 +209,7 @@ const angDiff=(a,b)=>{let d=(b-a)%(Math.PI*2);if(d>Math.PI)d-=Math.PI*2;if(d<-Ma
 /* ===== Ekonomi chip (chip yang sama dengan DAF Arena) =====
    CHIP = nilai 1 "koin" lama dalam chip. Naikkan/turunkan untuk menyeimbangkan seluruh ekonomi mancing
    (hasil tangkapan, harga joran, umpan, upgrade, hadiah misi). Samakan FISH_X di worker.js. */
-const CHIP=1000000;
+const CHIP=10000000;
 const MODE={server:false,inf:false,acc:'guest',ready:false,starting:false};
 const fmt=n=>{n=Math.max(0,Math.floor(Number(n)||0));if(n>=1e12)return +(n/1e12).toFixed(2)+'T';if(n>=1e9)return +(n/1e9).toFixed(2)+'B';if(n>=1e6)return +(n/1e6).toFixed(n>=1e8?0:1)+'M';if(n>=1e3)return Math.round(n/1e3)+'K';return String(n);};
 const fmtBal=n=>MODE.inf?'\u221e':fmt(n);
@@ -1446,7 +1446,7 @@ window.addEventListener('message',e=>{
   else if(m.t==='fish-reply'){const f=pendingApi[m.id];if(f){delete pendingApi[m.id];f(m);}}
 });
 if(window.parent!==window){post({t:'fish-ready'});setTimeout(()=>{if(!MODE.ready&&!MODE.starting)bootFail('Tidak terhubung ke DAF Arena. Coba buka ulang game.');},10000);}
-else setTimeout(()=>startUp({server:false,inf:false,balance:100000000,acc:'standalone'}),400);
+else setTimeout(()=>startUp({server:false,inf:false,balance:1000000000,acc:'standalone'}),400);
 })();
 </script>
 
