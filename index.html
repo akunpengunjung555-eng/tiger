@@ -270,6 +270,7 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .mbox input{width:100%;padding:11px;margin:5px 0;border-radius:8px;border:2px solid #f6bf45;background:#2a0409;color:#fff;font-size:16px}
 #admErr{color:#ff8a8a;min-height:18px;font-size:13px;font-weight:900}
 .mbox{max-height:92vh;overflow-y:auto}
+input[type=password]::-ms-reveal,input[type=password]::-ms-clear{display:none}
 /* ===== tampilan login ===== */
 .wl{position:relative}
 .wlHot{position:absolute;right:-8px;bottom:-6px;width:46px;height:46px;z-index:5;-webkit-tap-highlight-color:transparent}
@@ -291,8 +292,7 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .wlHead{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:8px}
 .wlHead h2{margin:0}
 .wlHead .ic{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;font-size:24px;background:radial-gradient(circle at 35% 30%,#ffe9a6,#ffb02e 60%,#a85b00);border:2px solid #fff3c4}
-.pwWrap{position:relative}.pwWrap input{padding-right:46px}
-.pwEye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:40px;height:40px;background:none;border:0;font-size:18px;cursor:pointer}
+
 .prof{display:flex;gap:12px;align-items:center;text-align:left;margin:6px 0 10px}
 .avatar{font-size:42px;width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#ffd34d,#a04a00);border:3px solid #fff3b0;flex:none}
 .prof b{font-size:18px;color:#fff;display:block;word-break:break-all}
@@ -1061,7 +1061,6 @@ async function gCb(resp){if(!resp||!resp.credential)return;
 /* tombol admin tersembunyi: ketuk 7x cepat di pojok kanan bawah kartu login (tanpa tanda), atau buka alamat game dengan #admin di ujungnya */
 var adminShow=/#admin\b/.test(location.hash);let wlN=0,wlT=0;
 function wlTap(){const n=Date.now();if(n-wlT>700)wlN=0;wlT=n;if(++wlN>=7){wlN=0;adminShow=true;const b=document.getElementById("wlAdm");if(b)b.hidden=false;try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}}}
-function pwEye(ids){ids.forEach(i=>{const e=document.getElementById(i);if(e)e.type=e.type==="password"?"text":"password"})}
 
 /* ----- admin: satu-satunya akun dengan chip tidak terbatas ----- */
 const ADMIN_USER="admin",ADMIN_CHIPS=999999999999;   // ADMIN_USER hanya nama yang dicadangkan; username/password admin sekarang diperiksa server
@@ -1203,7 +1202,7 @@ function doPwEnter(id){
 function openLogin(){
   openModal(`<div class="wlHead"><span class="ic">🔐</span><h2>MASUK AKUN</h2></div>
   <input id="lgUser" type="text" placeholder="Username atau ID pemain" autocomplete="username" autocapitalize="off">
-  <div class="pwWrap"><input id="lgPass" type="password" placeholder="Kata sandi" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"><button class="pwEye" type="button" onclick="pwEye(['lgPass'])" aria-label="Tampilkan kata sandi">👁</button></div>
+  <input id="lgPass" type="password" placeholder="Kata sandi" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
   <div id="pwErr" class="pwErr"></div>
   <button class="btn spin" type="button" style="font-size:18px" onclick="doLogin()">MASUK</button>
   <button class="btn small" type="button" style="font-size:14px" onclick="openWelcome()">KEMBALI</button>`);
@@ -1222,7 +1221,7 @@ function openRegister(){
   openModal(`<div class="wlHead"><span class="ic">➕</span><h2>DAFTAR AKUN</h2></div>
   <p class="pwNote">Buat username &amp; kata sandi supaya akun tidak mudah dipakai orang lain. Akun disimpan di server.</p>
   <input id="rgUser" type="text" maxlength="12" placeholder="Username (3–12: huruf/angka/_)" autocomplete="username" autocapitalize="off">
-  <div class="pwWrap"><input id="rgPass" type="password" placeholder="Kata sandi (min. 4 karakter)" autocomplete="new-password"><button class="pwEye" type="button" onclick="pwEye(['rgPass','rgPass2'])" aria-label="Tampilkan kata sandi">👁</button></div>
+  <input id="rgPass" type="password" placeholder="Kata sandi (min. 4 karakter)" autocomplete="new-password">
   <input id="rgPass2" type="password" placeholder="Ulangi kata sandi" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
   <div id="pwErr" class="pwErr"></div>
   <button class="btn spin" type="button" style="font-size:18px" onclick="doRegister()">DAFTAR &amp; MASUK</button>
