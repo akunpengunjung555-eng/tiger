@@ -272,7 +272,7 @@ body.scatter-mode .cell.scatter{box-shadow:0 0 22px #6df5ff,inset 0 0 18px #6df5
 .mbox{max-height:92vh;overflow-y:auto}
 /* ===== tampilan login ===== */
 .wl{position:relative}
-.wlLogo{width:84px;height:84px;margin:-4px auto 6px;border-radius:50%;display:grid;place-items:center;font-size:46px;background:radial-gradient(circle at 35% 30%,#ffe9a6,#ffb02e 55%,#a85b00);border:3px solid #fff3c4;box-shadow:0 0 0 4px #7a0f22,0 0 28px #ffb02e,inset 0 -6px 12px #0004;animation:wlFloat 3s ease-in-out infinite}
+.wlLogo{-webkit-tap-highlight-color:transparent;user-select:none;width:84px;height:84px;margin:-4px auto 6px;border-radius:50%;display:grid;place-items:center;font-size:46px;background:radial-gradient(circle at 35% 30%,#ffe9a6,#ffb02e 55%,#a85b00);border:3px solid #fff3c4;box-shadow:0 0 0 4px #7a0f22,0 0 28px #ffb02e,inset 0 -6px 12px #0004;animation:wlFloat 3s ease-in-out infinite}
 @keyframes wlFloat{50%{transform:translateY(-4px)}}
 .wl h2{font-size:26px;letter-spacing:3px;margin:4px 0 2px}
 .wlSub{font-size:13.5px;color:#ffd9a8;margin:0 0 12px;line-height:1.45}
@@ -982,7 +982,7 @@ function updateUserBar(){
     ?(adm?"👑 ADMIN • chip ∞":avatarOf(acct)+" "+acct.name+" • ID "+acct.pid+(acct.streak?" • 🔥 "+acct.streak:"")+tag)
     :"👤 Belum login — data tidak tersimpan"+tag;
   document.getElementById("loginBtn").hidden=on;
-  document.getElementById("adminBtn").hidden=on;
+  document.getElementById("adminBtn").hidden=on||!adminShow;
   document.getElementById("dailyBtn").hidden=!on||adm;
   document.getElementById("profileBtn").hidden=!on;
   document.getElementById("logoutBtn").hidden=!on;
@@ -1028,7 +1028,7 @@ function openInfo(title,html,nextJs){
 }
 function openWelcome(){
   openModal(`<div class="wl">
-  <div class="wlLogo"><span>🐉</span></div>
+  <div class="wlLogo" onclick="wlTap()"><span>🐉</span></div>
   <h2>DAF ARENA</h2>
   <p class="wlSub">Masuk supaya chip, hewan, dan hadiah harianmu tersimpan aman di server.</p>
   <div class="wlPerks"><span>☁️<b>TERSIMPAN</b></span><span>🎁<b>HADIAH HARIAN</b></span><span>🐾<b>DAF PETS</b></span></div>
@@ -1036,7 +1036,7 @@ function openWelcome(){
   <div class="wlDiv"><i></i><span>atau</span><i></i></div>
   <div class="wlRow"><button class="btn spin" type="button" onclick="openRegister()">➕ DAFTAR</button><button class="btn" type="button" onclick="openLogin()">🔐 MASUK</button></div>
   <button class="wlGuest" type="button" onclick="closeModal()">Main tanpa simpan</button>
-  <button class="wlAdm" type="button" onclick="openAdminLogin()">👑 Admin</button>
+  <button class="wlAdm" id="wlAdm" type="button" onclick="openAdminLogin()" hidden>👑 Admin</button>
   </div>`);
   gInit();
 }
@@ -1057,6 +1057,9 @@ async function gCb(resp){if(!resp||!resp.credential)return;
   if(!r.ok||!r.j.token){ldHide();setMsg(r.j.error||"Login Google gagal");openWelcome();return}
   LS.set("daf_token",r.j.token);enterAcct(srvAcct(r.j.account));
   if(r.j.isNew)setTimeout(()=>setMsg("Akun dibuat dengan username "+r.j.account.name+". Bisa diganti di Profil."),1500)}
+/* tombol admin tersembunyi: ketuk logo naga 5x dalam 3 detik */
+var adminShow=false;let wlN=0,wlT=0;
+function wlTap(){const n=Date.now();if(n-wlT>3000)wlN=0;wlT=n;if(++wlN>=5){wlN=0;adminShow=true;const b=document.getElementById("wlAdm");if(b)b.hidden=false;try{navigator.vibrate&&navigator.vibrate(30)}catch(e){}}}
 function pwEye(ids){ids.forEach(i=>{const e=document.getElementById(i);if(e)e.type=e.type==="password"?"text":"password"})}
 
 /* ----- admin: satu-satunya akun dengan chip tidak terbatas ----- */
