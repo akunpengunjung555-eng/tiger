@@ -89,7 +89,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #start h1 em{font-style:normal;color:var(--gold)}
 #start p{margin:0;max-width:30ch;color:var(--muted);font-size:15px;line-height:1.45}
 #start .btn{font-size:24px;min-height:58px;padding:0 34px;margin-top:6px}
-#sheetWrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end}
+#sheetWrap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;z-index:15}
+#fpsBox{position:absolute;right:16px;top:60px;padding:3px 10px;border-radius:999px;background:var(--glass);border:1px solid var(--line);font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;pointer-events:none}
+@media (max-width:430px){#vBaitN{display:none}}
 .backdrop{position:absolute;inset:0;background:rgba(2,12,18,.6)}
 .sheet{position:relative;max-height:84%;display:flex;flex-direction:column;border-radius:24px 24px 0 0;background:#06293a;border:1px solid var(--line);border-bottom:0;animation:rise .35s ease both}
 .sheet header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px}
@@ -146,8 +148,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <div class="spacer"></div><button class="ibtn" id="bExit" aria-label="Keluar ke lobi"><svg viewBox="0 0 24 24" fill="none" stroke="#e3faf5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H5v16h4"/><path d="M16 8l4 4-4 4M20 12H9"/></svg></button>
     <button class="ibtn" id="bMus" aria-pressed="true" aria-label="Musik"><svg viewBox="0 0 24 24" fill="none" stroke="#e3faf5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button>
     <button class="ibtn" id="bSfx" aria-pressed="true" aria-label="Efek suara"><svg viewBox="0 0 24 24" fill="none" stroke="#e3faf5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg></button>
+    <button class="ibtn" id="bGfx" aria-label="Pengaturan grafik"><svg viewBox="0 0 24 24" fill="none" stroke="#e3faf5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg></button>
   </div>
   <div id="zoneChip" hidden></div>
+  <div id="fpsBox" hidden></div>
   <div id="hint"></div>
   <div id="toast" role="status"></div>
 
@@ -192,7 +196,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <span class="eyebrow">Perburuan Harta Laut</span>
     <h1>Mancing<br><em>Laut Dalam</em></h1>
     <p>Lempar kail ke perairan senja, cari titik harta emas, dan tangkap ikan langka.</p>
-    <button class="btn" id="startBtn">Mulai Memancing</button><button class="btn alt" id="startExit" type="button">Kembali ke Lobi</button>
+    <button class="btn" id="startBtn">Mulai Memancing</button><button class="btn alt" id="startGfx" type="button">Pengaturan Grafik</button><button class="btn alt" id="startExit" type="button">Kembali ke Lobi</button>
   </div>
   <div id="boot"><svg class="bi" viewBox="0 0 64 48" aria-hidden="true"><path d="M6 24c8-12 26-14 38-4l12-8v24l-12-8C32 38 14 36 6 24z" fill="#ffc93c" stroke="#a86a00" stroke-width="2"/><circle cx="16" cy="22" r="2.4" fill="#031722"/></svg><b>Mancing Laut Dalam</b><p id="bootTxt">Menyiapkan laut...</p><div class="bar" id="bootBar"><i></i></div><button class="btn alt" id="bootExit" type="button" hidden>Kembali ke Lobi</button></div><div id="nogl" hidden><p>Perangkat ini tidak mendukung WebGL, jadi tampilan 3D tidak bisa dimuat.</p></div>
 </div>
@@ -435,8 +439,40 @@ function vib(ms){try{if(navigator.vibrate)navigator.vibrate(ms);}catch(e){}}
 /* ===== Dunia 3D ===== */
 const V3=THREE.Vector3;
 const canvas=$('gl'),app=$('app');
+/* ===== Pengaturan grafik: preset kualitas + mode otomatis (turun sendiri kalau lag) ===== */
+const GFX_LV={
+ min:{aa:false,pr:.5,fps:30,water:4,amb:0,fx:.15,glow:false,rays:false,decor:0,lantern:false,rodAnim:3,ambAnim:3},
+ low:{aa:false,pr:.75,fps:30,water:3,amb:5,fx:.35,glow:false,rays:false,decor:.35,lantern:false,rodAnim:2,ambAnim:3},
+ med:{aa:true,pr:1,fps:45,water:2,amb:12,fx:.7,glow:true,rays:true,decor:.8,lantern:true,rodAnim:1,ambAnim:2},
+ high:{aa:true,pr:1.75,fps:60,water:1,amb:20,fx:1,glow:true,rays:true,decor:1,lantern:true,rodAnim:1,ambAnim:1}
+};
+const GFX_ORDER=['min','low','med','high'];
+const GFX_NAME={auto:'Otomatis',min:'Terendah',low:'Rendah',med:'Sedang',high:'Tinggi'};
+const GFX_DESC={
+ min:'Untuk HP kentang. Resolusi rendah, 30 fps, tanpa ikan latar, karang, efek cahaya, dan hampir tanpa partikel.',
+ low:'Ringan. Resolusi sedang-rendah, 30 fps, sedikit ikan latar, tanpa efek cahaya berkilau.',
+ med:'Seimbang. Resolusi normal, hingga 45 fps, efek cahaya dan partikel dikurangi.',
+ high:'Terbaik. Resolusi penuh, 60 fps, semua efek dan ikan latar menyala.'
+};
+const gfxLS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+function gfxGuess(){const c=navigator.hardwareConcurrency||4,m=navigator.deviceMemory||4;if(m<=2||c<=2)return'min';if(m<=3||c<=4)return'low';if(c>=8&&m>=6)return'high';return'med';}
+const GF={mode:'auto',lv:'med',showFps:false};
+let FN=0;
+(function(){let m=gfxLS.get('mancing-gfx');if(m!=='auto'&&!GFX_LV[m])m='auto';let lv=m;if(m==='auto'){lv=gfxLS.get('mancing-gfx-lv');if(!GFX_LV[lv])lv=gfxGuess();}GF.mode=m;GF.showFps=gfxLS.get('mancing-gfx-fps')==='1';Object.assign(GF,GFX_LV[lv],{lv});})();
+function gfxPass(root){if(!root)return;root.traverse(o=>{if(o.isSprite)o.visible=GF.glow;});}
+function setGfxLevel(lv,persist){Object.assign(GF,GFX_LV[lv],{lv});if(persist&&GF.mode==='auto')gfxLS.set('mancing-gfx-lv',lv);applyGfx();}
+function setGfxMode(m){if(m!=='auto'&&!GFX_LV[m])return;GF.mode=m;gfxLS.set('mancing-gfx',m);let lv=m;if(m==='auto'){lv=gfxLS.get('mancing-gfx-lv');if(!GFX_LV[lv])lv=gfxGuess();}setGfxLevel(lv,false);}
+function applyGfx(){
+  resize();
+  const n=decor.children.length;decor.children.forEach((c,i)=>{c.visible=i<n*GF.decor;});
+  shafts.forEach(m=>{m.visible=GF.rays;});
+  amb.forEach((a,i)=>{a.m.visible=i<GF.amb;});
+  lantern.intensity=GF.lantern?.9:0;
+  gfxPass(rod);gfxPass(bobHold);
+  $('fpsBox').hidden=!GF.showFps;
+}
 let renderer;
-try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}
+try{renderer=new THREE.WebGLRenderer({canvas,antialias:GF.aa,powerPreference:'high-performance'});}
 catch(e){$('nogl').hidden=false;return;}
 renderer.setClearColor(0x0a1a2e);
 const scene=new THREE.Scene();
@@ -447,7 +483,7 @@ camera.position.set(0,2.4,5.8);
 const camLook=new V3(0,.3,-8);
 function resize(){
   const w=app.clientWidth,h=app.clientHeight;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.75));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,GF.pr));
   renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=camera.aspect<.75?70:58;camera.updateProjectionMatrix();
 }
 window.addEventListener('resize',resize);resize();
@@ -493,7 +529,9 @@ const water=new THREE.Mesh(wgeo,new THREE.MeshPhongMaterial({color:0x1798a8,emis
 water.renderOrder=1;scene.add(water);
 const ripples=[];
 function addRipple(x,z,amp){ripples.push({x,z,t:0,amp:amp||.3});if(ripples.length>5)ripples.shift();}
+let wAcc=0;
 function updateWater(t,dt){
+  wAcc+=dt;if(FN%GF.water)return;dt=wAcc;wAcc=0;
   for(let k=ripples.length-1;k>=0;k--){ripples[k].t+=dt;if(ripples[k].t>5)ripples.splice(k,1);}
   const a=wpos.array;
   for(let i=0,j=0;i<wcount;i++,j+=3){
@@ -866,13 +904,14 @@ function buildRod(def){
   /* umpan menggantung di ujung joran saat bersiap */
   tipBaitG=new THREE.Group();rodTipNode.add(tipBaitG);
   const tstr=new THREE.Mesh(new THREE.CylinderGeometry(.004,.004,.4,4),new THREE.MeshBasicMaterial({color:0xf0f0f0,transparent:true,opacity:.7}));tstr.position.y=-.2;tipBaitG.add(tstr);
-  baitTip=null;rebuildBaitModels();
+  baitTip=null;rebuildBaitModels();gfxPass(rod);
 }
 /* ===== Umpan 3D: tiap jenis punya model sendiri; makin tinggi makin mewah, beranimasi dan berefek ===== */
 function rebuildBaitModels(){
   const k=S.baitSel;
   if(bobHold){if(baitMain)bobHold.remove(baitMain);baitMain=makeBait(k);baitMain.position.y=-.4;baitMain.scale.setScalar(1.5);bobHold.add(baitMain);}
   if(tipBaitG){if(baitTip)tipBaitG.remove(baitTip);baitTip=makeBait(k);baitTip.position.y=-.42;baitTip.scale.setScalar(1.7);tipBaitG.add(baitTip);}
+  gfxPass(baitMain);gfxPass(baitTip);
   baitKey=k;
 }
 function makeBait(key){
@@ -1339,15 +1378,16 @@ for(let i=0;i<20;i++){
   m.rotation.y=amb[i].h;scene.add(m);
 }
 function updateAmbient(t,dt){
-  for(const a of amb){
-    const m=a.m;
+  for(let ai=0;ai<amb.length;ai++){
+    if(ai>=GF.amb)break;
+    const a=amb[ai],m=a.m;
     if(Math.abs(m.position.x)>38||m.position.z<-55||m.position.z>-2){
       const ht=Math.atan2(-(-25-m.position.z),-m.position.x);a.h+=angDiff(a.h,ht)*Math.min(1,dt*1.6);
     }else a.h+=a.turn*dt*(1+Math.sin(t*.3+a.ph)*.5);
     m.position.x+=Math.cos(a.h)*a.sp*dt;m.position.z+=-Math.sin(a.h)*a.sp*dt;
     m.position.y=a.y0+Math.sin(t*.7+a.ph)*.35;
     if(a.def.kind!=='jelly')m.rotation.y=a.h;
-    animateFish(m,t+a.ph,a.sp);
+    if((FN+ai)%GF.ambAnim===0)animateFish(m,t+a.ph,a.sp);
   }
 }
 const leavers=[];
@@ -1372,6 +1412,7 @@ class FX{
     this.pts.frustumCulled=false;this.pts.renderOrder=3;scene.add(this.pts);
   }
   emit(x,y,z,vx,vy,vz,life,color,grav){
+    if(GF.fx<1&&Math.random()>GF.fx)return;
     const i=this.i;this.i=(i+1)%this.n;const j=i*3;
     this.pos[j]=x;this.pos[j+1]=y;this.pos[j+2]=z;this.vel[j]=vx;this.vel[j+1]=vy;this.vel[j+2]=vz;
     this.life[i]=this.max[i]=life;this.grav[i]=grav;
@@ -1695,6 +1736,12 @@ function renderSheet(){
     t.textContent='Misi';h='<p class="sub">Selesaikan misi untuk umpan dan koin.</p>';
     QUESTS.forEach(q=>{const p=Math.min(q.get(S),q.n),done=p>=q.n,cl=S.claimed[q.id];
       h+=`<div class="row"><div class="tx"><b>${q.t}</b><small>${p}/${q.n} · hadiah ${q.rt}</small><div class="bar2"><i style="width:${p/q.n*100}%"></i></div></div><button class="btn" data-claim="${q.id}" ${done&&!cl?'':'disabled'}>${cl?'Selesai':'Klaim'}</button></div>`;});
+  }else if(sheetKind==='gfx'){
+    t.textContent='Grafik';
+    h='<p class="sub">Kalau game terasa berat atau patah-patah, turunkan kualitas grafik. Pilihan disimpan di perangkat ini.</p>';
+    [['auto','Otomatis','Mulai dari tebakan terbaik untuk HP-mu, lalu turun sendiri kalau terasa lag. Sekarang: '+GFX_NAME[GF.lv]+'.'],['min','Terendah (HP kentang)',GFX_DESC.min],['low','Rendah',GFX_DESC.low],['med','Sedang',GFX_DESC.med],['high','Tinggi',GFX_DESC.high]].forEach(([k,n,ds])=>{
+      const on=GF.mode===k;h+=`<div class="row"><div class="tx"><b>${n}</b><small>${ds}</small></div><button class="btn" data-gfx="${k}" ${on?'disabled':''}>${on?'Dipakai':'Pakai'}</button></div>`;});
+    h+=`<div class="row"><div class="tx"><b>Tampilkan FPS</b><small>Angka kecepatan gambar di pojok layar, untuk mengecek apakah sudah lancar.</small></div><button class="btn alt" data-gfxfps="1">${GF.showFps?'Matikan':'Nyalakan'}</button></div><p class="sub">Anti-aliasing (tepi halus) baru berubah setelah game dimuat ulang.</p>`;
   }else{
     t.textContent='Cara Bermain';
     h=`<ol class="steps"><li>Tahan tombol LEMPAR untuk mengisi tenaga, geser jari untuk membidik, lalu lepas. Makin jauh, makin dalam dan makin langka ikannya.</li><li>Lemparkan tepat ke cincin emas berkilau (titik harta) untuk peluang ikan langka yang jauh lebih besar.</li><li>Saat pelampung tenggelam dan tombol merah, tahan tombol dengan cepat sebelum ikan lepas.</li><li>Saat menggulung, tahan untuk menaikkan zona hijau dan lepas untuk menurunkannya. Jaga ikan tetap di dalam zona sampai bar emas penuh.</li><li>Tukar chip di Toko (chip yang sama dengan DAF Arena) untuk membeli joran dan umpan yang lebih bagus. Joran lentur melengkung saat ikan menarik. Setiap lemparan memakai satu umpan.</li></ol>`;
@@ -1704,6 +1751,8 @@ function renderSheet(){
 $('sheetBody').addEventListener('click',e=>{
   const bt=e.target.closest('button');if(!bt||bt.disabled)return;
   const d=bt.dataset;
+  if(d.gfx){setGfxMode(d.gfx);SFX.tap();renderSheet();return;}
+  if(d.gfxfps){GF.showFps=!GF.showFps;gfxLS.set('mancing-gfx-fps',GF.showFps?'1':'0');applyGfx();SFX.tap();renderSheet();return;}
   if(d.tab){shopTab=d.tab;SFX.tap();renderSheet();return;}
   if(d.rbuy){const r=RODS.find(x=>x.id===d.rbuy);if(r&&!S.rods[r.id]&&S.coins>=r.price){S.coins-=r.price;chipDelta(-r.price);S.rods[r.id]=true;S.rod=r.id;buildRod(r);SFX.coin();SFX.fanfare('rare');toast('Joran baru: '+r.name);}}
   else if(d.equip){const r=RODS.find(x=>x.id===d.equip);if(r&&S.rods[r.id]){S.rod=r.id;buildRod(r);SFX.tap();toast('Memakai '+r.name);}}
@@ -1720,6 +1769,7 @@ $('pBait').addEventListener('click',()=>{shopTab='bait';openSheet('shop');});
 document.querySelectorAll('[data-sheet]').forEach(b=>b.addEventListener('click',()=>openSheet(b.dataset.sheet)));
 $('sheetClose').addEventListener('click',closeSheet);$('backdrop').addEventListener('click',closeSheet);
 $('rvOk').addEventListener('click',closeReveal);
+$('bGfx').addEventListener('click',()=>openSheet('gfx'));$('startGfx').addEventListener('click',()=>openSheet('gfx'));
 
 /* ===== Input ===== */
 const actB=$('act');
@@ -1737,10 +1787,21 @@ $('startBtn').addEventListener('click',()=>{if(!MODE.ready)return;audioInit();G.
 const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let T=0,last=performance.now(),shown='';
 const tmp=new V3();
+let rafLast=performance.now(),facc=0,fpsE=60,fpsT=0,slowT=0,autoHold=performance.now()+8000;
 function frame(now){
   requestAnimationFrame(frame);
-  const dt=Math.min(.05,(now-last)/1000);last=now;T+=dt;
+  const step=1000/GF.fps;facc+=now-rafLast;rafLast=now;
+  if(facc<step-1)return;
+  facc=facc>step*2?0:facc-step;
+  const raw=(now-last)/1000,dt=Math.min(.05,raw);last=now;T+=dt;FN++;
   updateWorld(T,dt);renderer.render(scene,camera);
+  if(raw<.5){
+    fpsE=lerp(fpsE,1/Math.max(.001,raw),.08);fpsT+=raw;
+    if(GF.showFps&&fpsT>=.5){fpsT=0;$('fpsBox').textContent=Math.round(fpsE)+' FPS · '+GFX_NAME[GF.lv];}
+    if(GF.mode==='auto'&&G.started&&now>autoHold){
+      if(fpsE<Math.min(GF.fps,60)*.72){slowT+=raw;if(slowT>2.5){const i=GFX_ORDER.indexOf(GF.lv);if(i>0){setGfxLevel(GFX_ORDER[i-1],true);toast('Grafik diturunkan otomatis ke '+GFX_NAME[GF.lv]);}slowT=0;autoHold=now+5000;fpsE=60;}}else slowT=0;
+    }
+  }
 }
 function updateWorld(t,dt){
   const s=G.state;
@@ -1815,7 +1876,7 @@ function updateWorld(t,dt){
   const yawT=(s==='idle'||s==='reveal'||s==='landing')?0:-Math.atan2(bx-rod.position.x,rod.position.z-bz);
   rod.rotation.y=lerp(rod.rotation.y,yawT,Math.min(1,dt*8));
   updateRodBend(dt,tb,ts);rodReelSpin.rotation.x+=spin*dt;
-  for(let i=0;i<rodAnim.length;i++)rodAnim[i](t,dt);
+  if(FN%GF.rodAnim===0)for(let i=0;i<rodAnim.length;i++)rodAnim[i](t,dt);
   if(tipBaitG){const tv=(s==='idle'||s==='charging')&&S.bait>0;tipBaitG.visible=tv;if(tv){tipBaitG.rotation.x=-rod.rotation.x;tipBaitG.rotation.z=Math.sin(t*1.7)*.1;if(baitTip)baitTip.userData.anim(t,dt);}}
   if(bobber.visible&&baitMain)baitMain.userData.anim(t,dt);
   if(line.visible)updateLine(tension,rodTipWorld().distanceTo(bobber.position));
@@ -1828,12 +1889,12 @@ function updateWorld(t,dt){
   camera.lookAt(camLook);
   /* dunia */
   updateWater(t,dt);updateAmbient(t,dt);updateLeavers(t,dt);fx.update(dt);updateBubbles(dt);updateRings(dt);updateSpot(t,dt);
-  shafts.forEach(m=>{m.position.x+=Math.sin(t*.2+m.userData.ph)*.004;m.material.opacity=.35+Math.sin(t*.8+m.userData.ph)*.15;});
-  weeds.forEach(w=>{w.rotation.z=Math.sin(t*.9+w.userData.ph)*.18;});
+  if(GF.rays)shafts.forEach(m=>{m.position.x+=Math.sin(t*.2+m.userData.ph)*.004;m.material.opacity=.35+Math.sin(t*.8+m.userData.ph)*.15;});
+  if(GF.decor>.5)weeds.forEach(w=>{w.rotation.z=Math.sin(t*.9+w.userData.ph)*.18;});
   cglow.material.opacity=.7+Math.sin(t*2)*.3;lampGlow.scale.setScalar(1.8+Math.sin(t*7)*.08);
   if(Math.random()<dt*2)fx.emit(chest.position.x+rand(-.6,.6),-5,chest.position.z,0,rand(.5,1.2),0,rand(1.5,2.5),0xffc93c,0);
 }
-updateHud();refreshAct();
+applyGfx();updateHud();refreshAct();
 requestAnimationFrame(frame);
 function bootFail(msg){$('bootTxt').textContent=msg||'Gagal memuat game.';$('bootBar').hidden=true;$('bootExit').hidden=false;}
 async function leave(){if(G.started&&G.state!=='idle'){toast('Selesaikan pancingan dulu.');return;}if(G.ui)closeSheet();await flushAll();post({t:'fish-exit'});if(window.parent===window)location.reload();}
