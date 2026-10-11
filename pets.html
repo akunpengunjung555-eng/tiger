@@ -286,11 +286,11 @@ function load(st){S=null;try{S=st||JSON.parse(localStorage.getItem(KEY))||(NET.o
  /* tanpa hasil offline: chip hanya masuk saat game dimainkan */}
 function save(){S.last=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function toast(m){if(/tidak cukup|penuh|habis|belum|tidak valid|sudah |gagal|kabur/i.test(m))SND.ui('err');const t=$('#t');t.innerHTML=m;t.classList.add('on');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('on'),2600)}
-function addPet(sp,lv,mu){S.pets.push({id:S.n++,sp,f:80,j:80,acc:0,lv:lv||1,xp:0,mu:mu||''});S.seen=S.seen||[];if(!S.seen.includes(sp))S.seen.push(sp);if(mu){S.ms=S.ms||[];if(!S.ms.includes(mu))S.ms.push(mu)}}
+function addPet(sp,lv,mu){const st=S.pets.filter(q=>!q.st).length>=cap()?1:0;S.pets.push({id:S.n++,sp,f:80,j:80,acc:0,lv:lv||1,xp:0,mu:mu||'',st});if(st&&typeof toast==='function')setTimeout(()=>toast('Kandang penuh: '+SP[sp][1]+' otomatis disimpan'),1800);S.seen=S.seen||[];if(!S.seen.includes(sp))S.seen.push(sp);if(mu){S.ms=S.ms||[];if(!S.ms.includes(mu))S.ms.push(mu)}}
 const CHIP_SCALE=.35; /* atur di sini: makin kecil = hasil chip hewan makin sedikit */
 const rate=p=>CHIP_SCALE*RAR[SP[p.sp][2]].r*(1+(p.lv-1)*.4)*(p.mu?MU[p.mu].m:1)*((p.f>25&&p.j>25)?1:.25)*dm();
 function tick(dt){
- S.pets.forEach(p=>{p.f=Math.max(0,p.f-dt*.05);p.j=Math.max(0,p.j-dt*.04);if(p.f>25&&p.j>25&&p.lv<10){p.xp+=dt/20;while(p.lv<10&&p.xp>=p.lv*5){p.xp-=p.lv*5;p.lv++}}
+ S.pets.forEach(p=>{if(p.st)return;p.f=Math.max(0,p.f-dt*.05);p.j=Math.max(0,p.j-dt*.04);if(p.f>25&&p.j>25&&p.lv<10){p.xp+=dt/20;while(p.lv<10&&p.xp>=p.lv*5){p.xp-=p.lv*5;p.lv++}}
   p.acc=Math.min(p.acc+rate(p)/60*dt,rate(p)*30)});
  auTick(dt);visTick(dt)}
 /* ===== LELANG ===== */
@@ -312,14 +312,14 @@ function roll(prem){const x=Math.random()*100,o=prem?{L:5,R:25,U:40}:{L:1,R:7,U:
  const k=x<o.L?'L':x<o.L+o.R?'R':x<o.L+o.R+o.U?'U':'C';return rnd(Object.keys(SP).filter(i=>SP[i][2]===k))}
 const sig=s=>{let h=7;for(const c of s+'daf')h=(h*31+c.charCodeAt(0))>>>0;return h.toString(36)};
 const A={
- feed(id){const p=S.pets.find(x=>x.id==id);if(p&&spend(feedCost(p))){p.f=Math.min(100,p.f+40);xp(p)}},
- play(id){const p=S.pets.find(x=>x.id==id);if(p&&spend(playCost(p))){p.j=Math.min(100,p.j+25);p.f=Math.max(0,p.f-5);xp(p)}},
+ feed(id){const p=S.pets.find(x=>x.id==id);if(p&&p.st)return toast('Letakkan di kandang dulu');if(p&&spend(feedCost(p))){p.f=Math.min(100,p.f+40);xp(p)}},
+ play(id){const p=S.pets.find(x=>x.id==id);if(p&&p.st)return toast('Letakkan di kandang dulu');if(p&&spend(playCost(p))){p.j=Math.min(100,p.j+25);p.f=Math.max(0,p.f-5);xp(p)}},
  pat(id){const p=S.pets.find(x=>x.id==id);if(p){p.j=Math.min(100,p.j+8);fx(id,'❤️')}},
- feedAll(){const n=S.pets.length;const c=feedAllCost();if(!c)return toast('Semua hewan masih kenyang');if(spend(c)){S.pets.filter(p=>p.f<85).forEach(p=>{p.f=Math.min(100,p.f+40);xp(p)});toast('Mangkuk terisi, hewan yang lapar makan (-'+fmt(c)+')')}},
+ feedAll(){const n=S.pets.length;const c=feedAllCost();if(!c)return toast('Semua hewan masih kenyang');if(spend(c)){S.pets.filter(p=>!p.st&&p.f<85).forEach(p=>{p.f=Math.min(100,p.f+40);xp(p)});toast('Mangkuk terisi, hewan yang lapar makan (-'+fmt(c)+')')}},
  claim(id){const p=S.pets.find(x=>x.id==id);if(p&&p.acc>=1){const g=Math.floor(p.acc);ADAPTER.add(g);p.acc-=g;p.ct=Date.now()+6e5;toast('+'+fmt(g)+' chip')}},
  claimAll(){let g=0;S.pets.forEach(p=>{const q=Math.floor(p.acc);g+=q;p.acc-=q;if(q>=1)p.ct=Date.now()+6e5});ADAPTER.add(g);toast('+'+fmt(g)+' chip dari semua hewan')},
  buy(){toast('Hewan tidak dijual langsung: dapatkan dari telur, lelang, atau hadiah')},
- up(){const y=S.yl||0;if(y>=6)return;if(spend(125000000*(y+1)**2)){S.yl=y+1;toast('Kandang diperbesar: maks '+cap()+' hewan')}},
+ up(){const y=S.yl||0;if(y>=6)return;if(spend(125000000*(y+1)**2)){S.yl=y+1;toast('Kandang diperbesar: maks '+cap()+' hewan di kandang')}},
  daily(){const f=d=>new Date(d).toISOString().slice(0,10),td=f(Date.now()),dl=S.dl;if(dl.d===td)return toast('Hadiah harian sudah diambil, kembali besok');
   dl.s=dl.d===f(Date.now()-864e5)?dl.s+1:1;dl.d=td;const g=DAILY[(dl.s-1)%7];ADAPTER.add(g);
   if(dl.s%7===0){S.eggs.push({id:S.n++,tp:'langka',at:0});toast('🎁 Hari ke-'+dl.s+': +'+fmt(g)+' chip dan Telur Langka gratis!')}else toast('🎁 Hari ke-'+dl.s+': +'+fmt(g)+' chip')},
@@ -353,12 +353,12 @@ const V={
 kandang(){
  if(!S.pets.length)return '<div class="empty">Kandang kosong. Beli telur di Toko, atau menangkan lelang.</div>';
  const tot=S.pets.reduce((a,p)=>a+Math.floor(p.acc),0);
- return `<button class="b gd" data-a="claimAll" ${tot<1?'disabled':''}>Ambil semua (${fmt(tot)} chip)</button> <button class="b" data-a="up" ${S.yl>=6?'disabled':''}>Perbesar kandang ${S.pets.length}/${cap()} (${S.yl>=6?'maks':fmt(125000000*(S.yl+1)**2)})</button> <button class="b" data-a="placeAll">📤 Letakkan semua</button> <button class="b" data-a="storeAll">📥 Simpan semua</button><div class="grid" style="margin-top:8px">`+
+ return `<button class="b gd" data-a="claimAll" ${tot<1?'disabled':''}>Ambil semua (${fmt(tot)} chip)</button> <button class="b" data-a="up" ${S.yl>=6?'disabled':''}>Perbesar kandang ${yardN()}/${cap()} (${S.yl>=6?'maks':fmt(125000000*(S.yl+1)**2)})</button> <button class="b" data-a="placeAll">📤 Letakkan semua</button> <button class="b" data-a="storeAll">📥 Simpan semua</button><div class="grid" style="margin-top:8px">`+
  S.pets.map(p=>{const r=RAR[SP[p.sp][2]];return `<div class="card ${SP[p.sp][2]}" style="--rc:${r.c}">`+
   head(p.sp,` <small>Lv ${p.lv}</small>${p.mu?` <b style="color:#ffd34d">✨${MU[p.mu].n}</b>`:''}${p.st?' <small>📦 Disimpan</small>':' <small>🏡 Di kandang</small>'}`)+
   `<small>Lapar</small>${bar(p.f,'#ffb02e')}<small>Senang</small>${bar(p.j,'#ff7ad9')}`+
   `<small>Hasil ${fmt(rate(p))} chip/menit${(p.f<=25||p.j<=25)?' (turun, hewan butuh perhatian)':''}</small>`+
-  `<div class="btns"><button class="b" data-a="feed" data-i="${p.id}">Makan ${sh(feedCost(p))}</button><button class="b" data-a="play" data-i="${p.id}">Main ${sh(playCost(p))}</button>`+
+  `<div class="btns"><button class="b" data-a="feed" data-i="${p.id}" ${p.st?'disabled':''}>Makan ${sh(feedCost(p))}</button><button class="b" data-a="play" data-i="${p.id}" ${p.st?'disabled':''}>Main ${sh(playCost(p))}</button>`+
   `<button class="b go" data-a="claim" data-i="${p.id}" ${p.acc<1?'disabled':''}>Ambil ${fmt(p.acc)}</button><button class="b" data-a="sell" data-i="${p.id}">Lelang</button><button class="b ${p.st?'gd':''}" data-a="toggle" data-i="${p.id}">${p.st?'📤 Letakkan':'📥 Simpan'}</button></div></div>`}).join('')+'</div><h2>Koleksi '+S.seen.length+'/'+Object.keys(SP).length+'</h2><div class="btns" style="font-size:30px">'+Object.keys(SP).map(k=>`<span class="col ${S.seen.includes(k)?'':'lock'}" style="--rc:${RAR[SP[k][2]].c}" title="${SP[k][1]}">${pic(k)}</span>`).join('')+'</div>'},
 toko(){
  return `<h2>Telur misterius</h2><div class="grid">
@@ -388,7 +388,8 @@ document.addEventListener('click',e=>{
 /* ===== KANDANG 3D (three.js): model hewan dibuat dari bentuk dasar, berjalan, tidur, siklus siang-malam ===== */
 const WT={harimau:22,singa:19,panda:16,gajah:13,rubah:11,serigala:8,merak:6,naga:5},CH={C:.8,U:.55,R:.3,L:.12};
 function cap(){return 6+(S.yl||0)*2}
-function full(){return S.pets.length>=cap()}
+function yardN(){return S.pets.filter(p=>!p.st).length}
+function full(){return false}/* hewan baru tidak pernah ditolak: kalau kandang penuh otomatis disimpan */
 function visTick(dt){const n=Date.now(),v=S.vis;restock();eggNote();
  if(v&&n>v.until){const g=Math.floor(SP[v.sp][3]*.1);ADAPTER.add(g);toast('Tamu '+SP[v.sp][1]+' pergi, meninggalkan '+g+' chip');S.vis=null}
  else if(!v&&Math.random()<dt/90){let r=Math.random()*Object.values(WT).reduce((a,b)=>a+b),k='harimau';for(const x in WT){r-=WT[x];if(r<0){k=x;break}}S.vis={sp:k,until:n+60000};toast('✨ Tamu langka datang: '+SP[k][1]+'! Cek kandang')}}
@@ -651,7 +652,7 @@ V.lelang=function(){const now=Date.now(),L=a=>{const s=Math.max(0,Math.round((a.
 const FB={C:1e6,U:2.5e6,R:8e6,L:25e6,M:80e6};
 function feedCost(p){return Math.round(FB[SP[p.sp][2]]*(1+(p.lv-1)*.2)/1e5)*1e5}
 function playCost(p){return Math.round(FB[SP[p.sp][2]]*.4*(1+(p.lv-1)*.2)/1e5)*1e5}
-function feedAllCost(){return S.pets.filter(p=>p.f<85).reduce((a,p)=>a+feedCost(p),0)}
+function feedAllCost(){return S.pets.filter(p=>!p.st&&p.f<85).reduce((a,p)=>a+feedCost(p),0)}
 function careInfo(){return '<h2>Biaya perawatan</h2><div class="card"><small>Harga per hewan di Lv1, naik 20% tiap level. Makan +40 kenyang, Main +25 senang, Elus gratis.</small>'+Object.keys(FB).map(t=>`<div>${RAR[t].n}: Makan <b>${sh(FB[t])}</b> · Main <b>${sh(FB[t]*.4)}</b></div>`).join('')+'<small>Mangkuk memberi makan semua hewan yang lapar (kenyang di bawah 85).</small></div>'}
 /* ===== PROPERTI LANJUTAN: sampai 1 triliun, ada penghitung harta ===== */
 Object.assign(DEC,{taman:{n:'Taman bunga',c:15e9,b:.2,e:'🌷'},menara:{n:'Menara pengintai',c:5e10,b:.3,e:'🗼'},kincir:{n:'Kincir angin',c:1.2e11,b:.4,e:'🌀'},kastil:{n:'Kastil mini',c:3e11,b:.6,e:'🏰'},piramida:{n:'Piramida emas',c:6e11,b:.8,e:'🔺'},langit:{n:'Istana langit',c:1e12,b:1.5,e:'☁️'}});
@@ -667,7 +668,7 @@ function harta(){return ADAPTER.get()+Object.keys(S.dec||{}).reduce((a,k)=>a+DEC
 function decShop(){const h=harta(),tot=Object.keys(S.dec||{}).reduce((a,k)=>a+DEC[k].b,0);
  return `<h2>Harta ${sh(h)} / 1 T${h>=1e12?' ✅ target tercapai':''}</h2><div class="bar"><i style="width:${Math.min(100,h/1e10)}%;background:#ffd34d"></i></div><small>Harta = chip + nilai properti + nilai hewan. Bonus properti sekarang +${Math.round(tot*100)}% chip semua hewan.</small><h2>Properti kandang</h2><div class="grid">`+Object.keys(DEC).map(k=>{const D=DEC[k],has=(S.dec||{})[k];return `<div class="card"><span class="em">${D.e}</span><br><b>${D.n}</b> · +${Math.round(D.b*100)}% chip<div class="btns"><button class="b gd" data-a="buyD" data-i="${k}" ${has?'disabled':''}>${has?'Terpasang':'Beli '+fmt(D.c)}</button></div></div>`}).join('')+'</div>'}
 {const _k=V.kandang,_t=V.toko;V.kandang=()=>{const k=_k(),g=k.indexOf('<div class="grid" style="margin-top:8px">'),i=k.indexOf('<h2>Koleksi'),pr=decOwned().replace('<h2>Properti saya</h2>','');
-  let body;if(g<0||i<0)body=k;else body=k.slice(0,g)+secBox('hw','🐾 Hewan ('+S.pets.length+')',k.slice(g,i))+(pr?secBox('pr','🏗️ Properti ('+Object.keys(S.dec||{}).filter(x=>S.dec[x]&&DEC[x]).length+')',pr):'')+k.slice(i);
+  let body;if(g<0||i<0)body=k;else body=k.slice(0,g)+secBox('hw','🐾 Hewan ('+yardN()+'/'+cap()+' di kandang'+(S.pets.length>yardN()?' · '+(S.pets.length-yardN())+' disimpan':'')+')',k.slice(g,i))+(pr?secBox('pr','🏗️ Properti ('+Object.keys(S.dec||{}).filter(x=>S.dec[x]&&DEC[x]).length+')',pr):'')+k.slice(i);
   return eggList()+'<!--e-->'+body+mutBook()+careInfo()};V.toko=()=>_t().replace(/<h2>Telur misterius<\/h2>[\s\S]*?(?=<h2>Hewan langsung)/,eggShop()).replace(/<h2>Hewan langsung<\/h2>[\s\S]*?(?=<h2>Gabung hewan)/,'<small>Hewan tidak dijual langsung. Dapatkan dari telur, tamu langka, lelang pemain, atau hadiah teman.</small>')+decShop();V.hadiah=(h=>()=>qList()+h())(V.hadiah)}
 
 /* ===== HADIAH HARIAN: akun login memakai hadiah harian SERVER (satu streak, satu klaim/hari, sama dengan tombol Harian di lobi) ===== */
@@ -708,8 +709,8 @@ Object.assign(A,{
  toggleD(k){if(!DEC[k]||!(S.dec||{})[k])return;const o=dpos(k);o.st=o.st?0:1;if(o.st&&MV.k===k)MV.k=null;SND.ui('ok');toast(DEC[k].n+(o.st?' disimpan':' diletakkan di kandang'))},
  moveD(k){if(MV.k===k){MV.k=null;return toast('Selesai memindahkan')}MV.k=k;toast('Ketuk lokasi di kandang untuk memindahkan '+DEC[k].n)},
  rotD(k){const o=dpos(k),g=T&&T.D&&T.D[k];o.r=(o.r!=null?o.r:(g?g.rotation.y:0))+Math.PI/4},
- toggle(id){const p=S.pets.find(x=>x.id==id);if(!p)return;p.st=p.st?0:1;SND.ui('ok');toast(p.st?SP[p.sp][1]+' disimpan dari kandang':SP[p.sp][1]+' diletakkan di kandang')},
- placeAll(){S.pets.forEach(p=>p.st=0);toast('Semua hewan diletakkan di kandang')},
+ toggle(id){const p=S.pets.find(x=>x.id==id);if(!p)return;if(p.st&&yardN()>=cap())return toast('Kandang penuh ('+cap()+'). Simpan hewan lain dulu atau perbesar kandang');p.st=p.st?0:1;SND.ui('ok');toast(p.st?SP[p.sp][1]+' disimpan (berhenti makan, level, dan chip)':SP[p.sp][1]+' diletakkan di kandang')},
+ placeAll(){let n=yardN();S.pets.forEach(p=>{if(p.st&&n<cap()){p.st=0;n++}});toast(S.pets.some(p=>p.st)?'Kandang penuh, sisanya tetap disimpan':'Semua hewan diletakkan di kandang')},
  storeAll(){S.pets.forEach(p=>p.st=1);toast('Semua hewan disimpan')}});
 bgmUI();
 load();setNet();R();requestAnimationFrame(yardLoop);netBoot();
